@@ -100,6 +100,7 @@ export const render_nodes = (
             const el_target = entry.target as HTMLElement;
             const w = el_target.offsetWidth;
             const h = el_target.offsetHeight;
+            if (w === 0 && h === 0) continue; // Skip updates when hidden by culling
             const current_size = current_node.size;
             if (current_size && (Math.abs(current_size.x - w) > 2 || Math.abs(current_size.y - h) > 2)) {
               dispatch(s => s.nodes[id] ? {
@@ -151,6 +152,8 @@ export const render_nodes = (
     const state = state_ref.value;
     const zoom = state.camera.zoom;
     container_element.style.transform = `translate(${state.camera.position.x}px, ${state.camera.position.y}px) scale(${zoom})`;
+    container.style.backgroundPosition = `${state.camera.position.x}px ${state.camera.position.y}px`;
+    container.style.backgroundSize = `${20 * zoom}px ${20 * zoom}px`;
 
     const viewport_world_pos = vec2_create(
       -state.camera.position.x / zoom,

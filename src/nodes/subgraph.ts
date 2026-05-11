@@ -69,7 +69,7 @@ export class SubgraphInputNode extends EaselNode {
   private body!: HTMLElement;
 
   mount(node_data: GraphNode): void {
-    this.container.style.background = '#1a3b5c';
+    this.container.style.background = 'var(--primary-color)';
     this.body = document.createElement('div');
     this.body.className = 'node-body';
     this.container.appendChild(this.body);
@@ -97,7 +97,7 @@ export class SubgraphOutputNode extends EaselNode {
   private body!: HTMLElement;
 
   mount(node_data: GraphNode): void {
-    this.container.style.background = '#5c1a1a';
+    this.container.style.background = 'var(--port-color)';
     this.body = document.createElement('div');
     this.body.className = 'node-body';
     this.container.appendChild(this.body);

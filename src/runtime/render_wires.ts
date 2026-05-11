@@ -26,7 +26,7 @@ export const render_wires = (
     type: "input" | "output",
     state: State
   ) => {
-    const node_el = document.querySelector(
+    const node_el = container.querySelector(
       `.node[data-id="${node_id}"]`
     ) as HTMLElement;
     if (!node_el) return { x: 0, y: 0 };
@@ -92,6 +92,19 @@ export const render_wires = (
         svg.appendChild(el);
         wire_elements.set(id, el);
       }
+
+      const source_node = state.nodes[wire.source_node_id];
+      const source_port = source_node?.outputs.find(p => p.id === wire.source_port_id);
+      const type = source_port?.value_type;
+      
+      let color = 'var(--wire-color)';
+      if (type === 'text') color = '#3b82f6';
+      else if (type === 'image') color = '#10b981';
+      else if (type === 'video') color = '#8b5cf6';
+      else if (type === 'audio') color = '#f59e0b';
+      else if (type === 'number') color = '#0dcaf0';
+
+      el.setAttribute('stroke', color);
 
       const p1 = get_port_position(
         wire.source_node_id,

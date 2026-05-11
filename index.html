@@ -4,11 +4,97 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Easel Playground</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: #1e1e1e;
+        color: #fff;
+        font-family: sans-serif;
+        transition: background 0.3s, color 0.3s;
+      }
+      #app {
+        width: 100vw;
+        height: 100vh;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+      }
+      .easel-canvas {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+      }
+      .easel-hud {
+        width: 300px;
+        background: #252526;
+        border-left: 1px solid #333;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        box-sizing: border-box;
+        overflow-y: auto;
+        transition: background 0.3s, border-color 0.3s;
+      }
+      .hud-section {
+        background: #1e1e1e;
+        padding: 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        transition: background 0.3s;
+      }
+      .hud-section h3 {
+        margin: 0 0 8px 0;
+        font-size: 14px;
+        color: #aaa;
+      }
+      .btn-row {
+        display: flex;
+        gap: 8px;
+      }
+      button {
+        background: #007acc;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        flex: 1;
+      }
+      button:hover {
+        background: #0098ff;
+      }
+      .node-drag-item {
+        background: #333;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 8px;
+        cursor: grab;
+        font-size: 12px;
+        text-align: center;
+        border: 1px solid #444;
+        transition: background 0.3s;
+      }
+      .node-drag-item:hover {
+        background: #444;
+      }
+      .node-drag-item:active {
+        cursor: grabbing;
+      }
+    </style>
   </head>
   <body>
     <div id="app">
       <div id="canvas" class="easel-canvas"></div>
       <div id="hud" class="easel-hud">
+        <div class="hud-section">
+          <h3>Add Nodes (Drag & Drop)</h3>
+          <div class="node-drag-item" style="border-left: 4px solid #3b82f6;" draggable="true" data-type="text_generation">Text Generation</div>
+          <div class="node-drag-item" style="border-left: 4px solid #10b981;" draggable="true" data-type="image_generation">Image Generation</div>
+          <div class="node-drag-item" style="border-left: 4px solid #f59e0b;" draggable="true" data-type="audio_generation">Audio Generation</div>
+          <div class="node-drag-item" style="border-left: 4px solid #8b5cf6;" draggable="true" data-type="video_concatenation">Video Concatenation</div>
+        </div>
         <div class="hud-section">
           <h3>State Actions</h3>
           <div class="btn-row">
@@ -20,6 +106,12 @@
               <option value="default">Default Scene</option>
               <option value="perf">Performance Test</option>
               <option value="math">Math Test</option>
+            </select>
+          </div>
+          <div class="btn-row" style="margin-top: 8px;">
+            <select id="theme-selector" style="flex: 1; padding: 6px; background: #333; color: white; border: none; border-radius: 4px;">
+              <option value="dark">Dark Theme</option>
+              <option value="light">Light Theme</option>
             </select>
           </div>
           <div class="btn-row" style="margin-top: 8px;">

@@ -1,16 +1,17 @@
 import { effect } from "@vue/reactivity";
-import EventEmitter from "eventemitter3";
-import { create_store } from "./runtime/store";
-import { setup_events } from "./runtime/events";
-import { render_nodes } from "./runtime/render";
-import { render_wires } from "./runtime/render_wires";
+import { mount_easel } from "./runtime/mount";
 import { EaselNode, register_node_type } from "./runtime/registry";
-import { with_guidelines } from "./plugins/guidelines";
 import { add_node, update_node_data } from "./core/node_ops";
 import { create_initial_state } from "./core/state";
 import { serialize_state, deserialize_state } from "./core/serialization";
 import { vec2_create } from "./core/math";
 import type { GraphNode, State } from "./core/types";
+import { light_theme, default_theme } from "./runtime/theme";
+import { minimap_plugin } from "./plugins/minimap";
+import { controls_plugin } from "./plugins/controls";
+import { context_menu_plugin } from "./plugins/context_menu";
+import { history_plugin } from "./plugins/history";
+import { auto_pan_plugin } from "./plugins/auto_pan";
 
 import {
   SubgraphNode,
@@ -21,8 +22,7 @@ import { MathNode } from "./nodes/math";
 import { GroupNode } from "./nodes/group";
 import { load_math_scene, evaluate_math_graph } from "./scenes/scene_math";
 import { load_perf_scene } from "./scenes/scene_perf";
-
-import "./style.css";
+import EventEmitter from "eventemitter3";
 
 const app_events = new EventEmitter();
 
@@ -81,8 +81,46 @@ const init = () => {
   const canvas_el = document.getElementById("canvas");
   if (!canvas_el) return;
 
-  const { state, dispatch } = create_store();
-  const context = { app_events };
+  const { state, dispatch, app_events, set_theme } = mount_easel(canvas_el, {
+    plugins: [
+      minimap_plugin,
+      controls_plugin,
+      context_menu_plugin,
+      history_plugin,
+      auto_pan_plugin
+    ],
+    custom_css: `
+      .image-toolbar {
+        position: absolute;
+        bottom: -50px;
+        left: 0;
+        width: 100%;
+        display: none;
+        gap: 8px;
+        background: var(--node-bg);
+        padding: 8px;
+        border-radius: 8px;
+        box-sizing: border-box;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+        border: 1px solid var(--node-border);
+      }
+      .node.selected .image-toolbar {
+        display: flex;
+      }
+      .image-toolbar button {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        flex: 1;
+      }
+      .image-toolbar button:hover {
+        background: var(--primary-hover, #0098ff);
+      }
+    `,
+  });
 
   // Graph Stack Management
   type StackItem = { parent_node_id: string; parent_state: State };
@@ -222,6 +260,31 @@ const init = () => {
     load_scene((e.target as HTMLSelectElement).value);
   });
 
+  document.getElementById("theme-selector")?.addEventListener("change", (e) => {
+    const val = (e.target as HTMLSelectElement).value;
+    if (val === "light") {
+      set_theme(light_theme);
+      document.body.style.background = "#e0e0e0";
+      document.body.style.color = "#333";
+      document.getElementById("hud")!.style.background = "#f5f5f5";
+      document.getElementById("hud")!.style.color = "#333";
+      document.getElementById("hud")!.style.borderColor = "#ccc";
+      document
+        .querySelectorAll(".hud-section")
+        .forEach((el) => ((el as HTMLElement).style.background = "#fff"));
+    } else {
+      set_theme(default_theme);
+      document.body.style.background = "#1e1e1e";
+      document.body.style.color = "#fff";
+      document.getElementById("hud")!.style.background = "#252526";
+      document.getElementById("hud")!.style.color = "#fff";
+      document.getElementById("hud")!.style.borderColor = "#333";
+      document
+        .querySelectorAll(".hud-section")
+        .forEach((el) => ((el as HTMLElement).style.background = "#1e1e1e"));
+    }
+  });
+
   // Math Evaluator Effect
   effect(() => {
     if (
@@ -231,12 +294,6 @@ const init = () => {
       dispatch((s) => evaluate_math_graph(s));
     }
   });
-
-  const enhanced_dispatch = with_guidelines(canvas_el, state, dispatch);
-
-  render_nodes(canvas_el, state, enhanced_dispatch, context);
-  render_wires(canvas_el, state);
-  setup_events(canvas_el, enhanced_dispatch, app_events);
 
   // HUD 逻辑
   const stats_el = document.getElementById("hud-stats");
@@ -267,6 +324,104 @@ const init = () => {
       }
     });
   }
+
+  // Drag and Drop Node Creation
+  canvas_el.addEventListener('dragover', (e) => {
+    e.preventDefault();
+  });
+
+  canvas_el.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const type = e.dataTransfer?.getData('text/plain');
+    if (!type) return;
+
+    const rect = canvas_el.getBoundingClientRect();
+    const screen_x = e.clientX - rect.left;
+    const screen_y = e.clientY - rect.top;
+
+    const s = state.value;
+    const world_x = (screen_x - s.camera.position.x) / s.camera.zoom;
+    const world_y = (screen_y - s.camera.position.y) / s.camera.zoom;
+
+    const id = `${type}_${Date.now()}`;
+    
+    let node_data: GraphNode = {
+      id,
+      type: 'default',
+      position: vec2_create(world_x, world_y),
+      size: vec2_create(200, 120),
+      title: type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      inputs: [],
+      outputs: [],
+      custom_data: {}
+    };
+
+    if (type === 'text_generation') {
+      node_data = {
+        ...node_data,
+        custom_data: { color: '#3b82f6' },
+        inputs: [
+          { id: 'prompt', label: 'Prompt', type: 'input', value_type: 'text' }
+        ],
+        outputs: [
+          { id: 'out_list', label: 'List [ ]', type: 'output', value_type: 'text' }
+        ],
+        widgets: [
+          { id: 'min_len', type: 'number', label: 'Minimum list length', value: 6 },
+          { id: 'max_len', type: 'number', label: 'Maximum list length', value: 8 }
+        ]
+      };
+    } else if (type === 'image_generation') {
+      node_data = {
+        ...node_data,
+        custom_data: { color: '#10b981' },
+        inputs: [
+          { id: 'prompt', label: '[ ] Prompt', type: 'input', value_type: 'image' },
+          { id: 'ref', label: 'Reference Image', type: 'input', value_type: 'image' }
+        ],
+        outputs: [
+          { id: 'out_img', label: 'Image [ ]', type: 'output', value_type: 'image' }
+        ],
+        widgets: [
+          { id: 'model', type: 'text', label: 'Model', value: 'Flux Dev' }
+        ]
+      };
+    } else if (type === 'audio_generation') {
+      node_data = {
+        ...node_data,
+        custom_data: { color: '#f59e0b' },
+        inputs: [
+          { id: 'script', label: '[ ] Script', type: 'input', value_type: 'audio' }
+        ],
+        outputs: [
+          { id: 'out_audio', label: 'Audio [ ]', type: 'output', value_type: 'audio' }
+        ],
+        widgets: [
+          { id: 'voice_id', type: 'text', label: 'Voice ID', value: 'Storyteller' }
+        ]
+      };
+    } else if (type === 'video_concatenation') {
+      node_data = {
+        ...node_data,
+        custom_data: { color: '#8b5cf6' },
+        inputs: [
+          { id: 'videos', label: '[ ] Videos', type: 'input', value_type: 'video' }
+        ],
+        outputs: [
+          { id: 'out_video', label: 'Video [ ]', type: 'output', value_type: 'video' }
+        ]
+      };
+    }
+
+    dispatch(st => add_node(st, node_data));
+  });
+
+  document.querySelectorAll('.node-drag-item').forEach(el => {
+    el.addEventListener('dragstart', (e) => {
+      const type = (e.target as HTMLElement).dataset['type'];
+      (e as DragEvent).dataTransfer?.setData('text/plain', type || '');
+    });
+  });
 
   // Load initial scene
   load_scene("default");

@@ -1,6 +1,6 @@
 import { EaselNode } from './registry';
 import type { GraphNode } from '../core/types';
-import { update_node_data, update_widget_value } from '../core/node_ops';
+import { update_node_data, update_widget_value, remove_node } from '../core/node_ops';
 
 export class DefaultNode extends EaselNode {
   private header!: HTMLElement;
@@ -56,13 +56,24 @@ export class DefaultNode extends EaselNode {
   }
 
   update(node_data: GraphNode, state: import('../core/types').State): void {
+    const hue = (node_data.custom_data['color'] as string) || 'var(--primary-color)';
     const title_html = `
-      <button data-action="toggle_collapse" class="collapse-btn">${node_data.collapsed ? '+' : '-'}</button>
+      <button data-action="toggle_collapse" class="collapse-btn" style="margin-right: 4px;">${node_data.collapsed ? '+' : '-'}</button>
+      <div class="type-indicator" style="background: ${hue}"></div>
       <span class="title-text">${node_data.title}</span>
       <div style="flex:1"></div>
+      <div style="cursor: pointer; color: var(--text-muted); font-size: 14px; opacity: 0.5;" title="Delete" data-action="delete">🗑</div>
     `;
     if (this.header.innerHTML !== title_html) {
       this.header.innerHTML = title_html;
+      
+      const del_btn = this.header.querySelector('[data-action="delete"]');
+      if (del_btn) {
+        del_btn.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();
+          this.dispatch(s => remove_node(s, this.node_id));
+        });
+      }
     }
 
     const is_port_connected = (p_id: string) => Object.values(state.wires).some(
@@ -113,11 +124,8 @@ export class DefaultNode extends EaselNode {
         else if (w.type === 'boolean') input_html = `<input type="checkbox" data-widget-id="${w.id}" ${w.value ? 'checked' : ''} ${disabled} />`;
 
         return `
-          <div class="port-row widget-row">
-            <div class="port" data-port-id="${w.id}" data-port-type="input">
-              <div class="port-dot ${type_class} ${connected_class}"></div>
-              <label>${w.label}</label>
-            </div>
+          <div class="widget-row">
+            <label>${w.label}</label>
             ${input_html}
           </div>
         `;

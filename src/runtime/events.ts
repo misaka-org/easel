@@ -7,6 +7,9 @@ import * as O from 'fp-ts/Option';
 type Dispatch = (updater: (state: State) => State) => void;
 
 export const setup_events = (container: HTMLElement, dispatch: Dispatch, app_events: any): void => {
+  const forward = (name: string) => (e: Event) => app_events.emit(name, e);
+  container.addEventListener('contextmenu', forward('contextmenu'));
+  
   const get_modifiers = (e: MouseEvent | KeyboardEvent | WheelEvent): Modifiers => ({
     ctrl: e.ctrlKey,
     shift: e.shiftKey,
@@ -18,9 +21,10 @@ export const setup_events = (container: HTMLElement, dispatch: Dispatch, app_eve
     const rect = container.getBoundingClientRect();
     const position = vec2_create(e.clientX - rect.left, e.clientY - rect.top);
     
-    let target = e.target as HTMLElement;
+    let target = (e.composedPath()[0] || e.target) as HTMLElement;
     if (e.type === 'pointerup') {
-      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const root = container.getRootNode() as ShadowRoot | Document;
+      const el = root.elementFromPoint(e.clientX, e.clientY);
       if (el) target = el as HTMLElement;
     }
     
@@ -43,7 +47,8 @@ export const setup_events = (container: HTMLElement, dispatch: Dispatch, app_eve
   };
 
   window.addEventListener('keydown', (e) => {
-    const target = e.target as HTMLElement;
+    app_events.emit('keydown', e);
+    const target = (e.composedPath()[0] || e.target) as HTMLElement;
     const is_input = target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
 
     const is_ctrl = e.ctrlKey || e.metaKey;
@@ -101,11 +106,13 @@ export const setup_events = (container: HTMLElement, dispatch: Dispatch, app_eve
   });
 
   window.addEventListener('keyup', (e) => {
+    app_events.emit('keyup', e);
     dispatch(state => update_modifiers(state, get_modifiers(e)));
   });
 
   container.addEventListener('pointerdown', (e) => {
-    const target = e.target as HTMLElement;
+    app_events.emit('pointerdown', e);
+    const target = (e.composedPath()[0] || e.target) as HTMLElement;
     if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName)) {
       return;
     }
@@ -114,11 +121,13 @@ export const setup_events = (container: HTMLElement, dispatch: Dispatch, app_eve
   });
 
   container.addEventListener('pointermove', (e) => {
+    app_events.emit('pointermove', e);
     dispatch((state) => pointer_move(state, get_pointer_params(e)));
   });
 
   container.addEventListener('dblclick', (e) => {
-    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const root = container.getRootNode() as ShadowRoot | Document;
+    const el = root.elementFromPoint(e.clientX, e.clientY);
     const target = (el || e.target) as HTMLElement;
     
     const node_element = target.closest('.node') as HTMLElement | null;
@@ -129,6 +138,7 @@ export const setup_events = (container: HTMLElement, dispatch: Dispatch, app_eve
   });
 
   container.addEventListener('pointerup', (e) => {
+    app_events.emit('pointerup', e);
     container.releasePointerCapture(e.pointerId);
     dispatch((state) => {
       const mode = state.interaction.mode;
