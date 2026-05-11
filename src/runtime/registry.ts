@@ -71,3 +71,7 @@ export const register_node_type = (type: string, constructor: EaselNodeConstruct
 export const get_node_constructor = (type: string): EaselNodeConstructor | undefined => {
   return registry.get(type);
 };
+
+export const get_registered_types = (): string[] => {
+  return Array.from(registry.keys());
+};

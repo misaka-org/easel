@@ -42,44 +42,80 @@ export const controls_plugin: EaselPlugin = (ctx) => {
   btn_fullscreen.innerHTML = icon_fullscreen;
   btn_fullscreen.title = 'Toggle Fullscreen';
 
+  // 注入 controls 专用样式（shadcn 风格）
+  const root_node = ctx.container.getRootNode() as ShadowRoot | Document;
+  if (!root_node.querySelector('#easel-controls-style')) {
+    const style_el = document.createElement('style');
+    style_el.id = 'easel-controls-style';
+    style_el.textContent = `
+      .easel-controls {
+        backdrop-filter: blur(8px);
+        background: var(--popover-bg, rgba(24, 24, 27, 0.9));
+        border-radius: 12px;
+        border: 1px solid var(--border-color, #27272a);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        transition: all 0.2s;
+      }
+      .easel-controls button {
+        background: transparent;
+        color: var(--text-color, #fafafa);
+        border: none;
+        cursor: pointer;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+      }
+      .easel-controls button:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--primary-color, #fafafa);
+      }
+      .easel-controls button:active {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(0.96);
+      }
+    `;
+    root_node.appendChild(style_el);
+  }
+
   const buttons = [btn_zoom_in, btn_zoom_out, btn_fit, btn_layout, btn_fullscreen];
 
   buttons.forEach((btn, idx) => {
-    btn.style.background = 'transparent';
-    btn.style.color = 'var(--text-color)';
-    btn.style.border = 'none';
-    if (idx < buttons.length - 1) {
-      btn.style.borderBottom = '1px solid var(--node-border)';
-    }
-    btn.style.cursor = 'pointer';
-    btn.style.padding = '8px';
-    btn.style.display = 'flex';
-    btn.style.alignItems = 'center';
-    btn.style.justifyContent = 'center';
-    btn.style.transition = 'background 0.2s';
+    // 应用基础样式（上面已通过全局样式控制，但为保证兼容性保留行内样式）
+    // 移除内联样式，完全依赖 CSS 类样式（保持干净）
+    btn.classList.add('easel-controls-btn');
+    // 阻止事件冒泡到画布
+    btn.addEventListener('pointerdown', (e) => e.stopPropagation());
+    btn.addEventListener('click', (e) => e.stopPropagation());
     
-    btn.addEventListener('mouseenter', () => btn.style.background = 'var(--primary-color)');
-    btn.addEventListener('mouseleave', () => btn.style.background = 'transparent');
     bar.appendChild(btn);
   });
 
   ctx.container.appendChild(bar);
 
-  btn_zoom_in.addEventListener('click', () => {
+  btn_zoom_in.addEventListener('click', (e) => {
+    e.stopPropagation();
     ctx.dispatch(s => ({
       ...s,
       camera: { ...s.camera, zoom: Math.min(10, s.camera.zoom * 1.2) }
     }));
   });
 
-  btn_zoom_out.addEventListener('click', () => {
+  btn_zoom_out.addEventListener('click', (e) => {
+    e.stopPropagation();
     ctx.dispatch(s => ({
       ...s,
       camera: { ...s.camera, zoom: Math.max(0.1, s.camera.zoom / 1.2) }
     }));
   });
 
-  btn_fit.addEventListener('click', () => {
+  btn_fit.addEventListener('click', (e) => {
+    e.stopPropagation();
     const s = ctx.state.value;
     const nodes = Object.values(s.nodes);
     if (nodes.length === 0) return;
@@ -110,7 +146,8 @@ export const controls_plugin: EaselPlugin = (ctx) => {
     }));
   });
 
-  btn_layout.addEventListener('click', () => {
+  btn_layout.addEventListener('click', (e) => {
+    e.stopPropagation();
     ctx.dispatch(s => {
       const nodes = Object.values(s.nodes);
       let x = 0, y = 0, max_h = 0;
@@ -129,7 +166,8 @@ export const controls_plugin: EaselPlugin = (ctx) => {
     });
   });
 
-  btn_fullscreen.addEventListener('click', () => {
+  btn_fullscreen.addEventListener('click', (e) => {
+    e.stopPropagation();
     const host = (ctx.container.getRootNode() as ShadowRoot).host as HTMLElement;
     const target = host || ctx.container;
     

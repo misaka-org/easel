@@ -26,6 +26,26 @@ export const render_wires = (
     type: "input" | "output",
     state: State
   ) => {
+    const node = state.nodes[node_id];
+    if (!node) return { x: 0, y: 0 };
+
+    // 如果节点处于折叠状态，统一使用节点边框中点（假设 header 高度为 40px）
+    if (node.collapsed) {
+      // 约定折叠时 header 高度约为 40px，连线点位于垂直中点（20px 偏移）
+      const header_mid_y = node.position.y + 20;
+      if (type === "input") {
+        return {
+          x: node.position.x,
+          y: header_mid_y,
+        };
+      } else {
+        return {
+          x: node.position.x + node.size.x,
+          y: header_mid_y,
+        };
+      }
+    }
+
     const node_el = container.querySelector(
       `.node[data-id="${node_id}"]`
     ) as HTMLElement;
@@ -35,8 +55,7 @@ export const render_wires = (
       `.port[data-port-id="${port_id}"] .port-dot`
     ) as HTMLElement;
     if (!port_el) {
-      const node = state.nodes[node_id];
-      if (!node) return { x: 0, y: 0 };
+      // 保底：不使用 DOM 坐标，直接根据节点位置计算偏移
       const is_in = type === "input";
       return {
         x: node.position.x + (is_in ? 0 : node.size.x),
@@ -49,9 +68,6 @@ export const render_wires = (
 
     const center_x = port_rect.left + port_rect.width / 2 - node_rect.left;
     const center_y = port_rect.top + port_rect.height / 2 - node_rect.top;
-
-    const node = state.nodes[node_id];
-    if (!node) return { x: 0, y: 0 };
 
     return {
       x: node.position.x + center_x / state.camera.zoom,

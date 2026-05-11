@@ -11,7 +11,7 @@ export class DefaultNode extends EaselNode {
   mount(node_data: GraphNode): void {
     this.header = document.createElement('div');
     this.header.className = 'node-header';
-    
+
     this.body = document.createElement('div');
     this.body.className = 'node-body';
 
@@ -20,7 +20,7 @@ export class DefaultNode extends EaselNode {
 
     this.widgets_container = document.createElement('div');
     this.widgets_container.className = 'widgets-container';
-    
+
     this.body.appendChild(this.ports_container);
     this.body.appendChild(this.widgets_container);
 
@@ -48,9 +48,16 @@ export class DefaultNode extends EaselNode {
 
     this.header.addEventListener('pointerdown', (e) => {
       const target = e.target as HTMLElement;
-      if (target.dataset['action'] === 'toggle_collapse') {
+      const action_el = target.closest('[data-action]') as HTMLElement | null;
+      if (action_el) {
         e.stopPropagation();
-        this.dispatch(state => update_node_data(state, this.node_id, n => ({ ...n, collapsed: !n.collapsed })));
+        if (e.button !== 0) return;
+        const action = action_el.dataset['action'];
+        if (action === 'toggle_collapse') {
+          this.dispatch(state => update_node_data(state, this.node_id, n => ({ ...n, collapsed: !n.collapsed })));
+        } else if (action === 'delete') {
+          this.dispatch(s => remove_node(s, this.node_id));
+        }
       }
     });
   }
@@ -58,26 +65,22 @@ export class DefaultNode extends EaselNode {
   update(node_data: GraphNode, state: import('../core/types').State): void {
     const hue = (node_data.custom_data['color'] as string) || 'var(--primary-color)';
     const title_html = `
-      <button data-action="toggle_collapse" class="collapse-btn" style="margin-right: 4px;">${node_data.collapsed ? '+' : '-'}</button>
-      <div class="type-indicator" style="background: ${hue}"></div>
+      <div class="type-indicator" data-action="toggle_collapse" style="background: ${hue}; flex-shrink: 0; margin-right: 6px;"></div>
       <span class="title-text">${node_data.title}</span>
       <div style="flex:1"></div>
-      <div style="cursor: pointer; color: var(--text-muted); font-size: 14px; opacity: 0.5;" title="Delete" data-action="delete">🗑</div>
+      <div class="node-action-btn" data-action="delete" title="Delete">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </div>
     `;
     if (this.header.innerHTML !== title_html) {
       this.header.innerHTML = title_html;
-      
-      const del_btn = this.header.querySelector('[data-action="delete"]');
-      if (del_btn) {
-        del_btn.addEventListener('pointerdown', (e) => {
-          e.stopPropagation();
-          this.dispatch(s => remove_node(s, this.node_id));
-        });
-      }
     }
 
     const is_port_connected = (p_id: string) => Object.values(state.wires).some(
-      wire => (wire.target_node_id === this.node_id && wire.target_port_id === p_id) || 
+      wire => (wire.target_node_id === this.node_id && wire.target_port_id === p_id) ||
               (wire.source_node_id === this.node_id && wire.source_port_id === p_id)
     );
 
@@ -105,7 +108,7 @@ export class DefaultNode extends EaselNode {
         </div>
       `})
     ].join('');
-    
+
     if (this.ports_container.innerHTML !== ports_html) {
       this.ports_container.innerHTML = ports_html;
     }
@@ -117,7 +120,7 @@ export class DefaultNode extends EaselNode {
         const disabled = is_connected ? 'disabled' : '';
         const type_class = `port-type-${w.type}`;
         const connected_class = is_connected ? 'connected' : '';
-        
+
         let input_html = '';
         if (w.type === 'text') input_html = `<input type="text" data-widget-id="${w.id}" value="${w.value}" ${disabled} />`;
         else if (w.type === 'number') input_html = `<input type="number" data-widget-id="${w.id}" value="${w.value}" min="${w.min ?? ''}" max="${w.max ?? ''}" ${disabled} />`;
@@ -136,7 +139,7 @@ export class DefaultNode extends EaselNode {
       const is_connected = Object.values(state.wires).some(wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id);
       return `${w.id}:${is_connected}`;
     }).join(',') || '');
-    
+
     if (this.widgets_container.dataset['schema'] !== widgets_schema) {
       this.widgets_container.innerHTML = widgets_html;
       this.widgets_container.dataset['schema'] = widgets_schema;
@@ -154,7 +157,7 @@ export class DefaultNode extends EaselNode {
         }
       });
     }
-    
+
     if (node_data.resizable && !node_data.collapsed) {
       if (!this.container.querySelector('.node-resize-handle')) {
         const handle = document.createElement('div');

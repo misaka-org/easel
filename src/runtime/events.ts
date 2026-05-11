@@ -113,7 +113,9 @@ export const setup_events = (container: HTMLElement, dispatch: Dispatch, app_eve
   container.addEventListener('pointerdown', (e) => {
     app_events.emit('pointerdown', e);
     const target = (e.composedPath()[0] || e.target) as HTMLElement;
-    if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName)) {
+    const action_el = target.closest('[data-action]');
+    // 只阻止非 resize 操作的 data-action 元素，避免影响 resize 手柄
+    if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName) || (action_el && action_el.dataset['action'] !== 'resize')) {
       return;
     }
     container.setPointerCapture(e.pointerId);

@@ -14,38 +14,38 @@ export type Theme = {
 };
 
 export const default_theme: Theme = {
-  canvas_bg: '#09090b',
-  node_bg: '#09090b',
-  node_border: '#27272a',
-  node_header_bg: 'transparent',
-  text_color: '#fafafa',
-  text_muted: '#a1a1aa',
-  primary_color: '#fafafa',
-  wire_color: '#52525b',
-  wire_active_color: '#fafafa',
-  port_color: '#52525b',
-  selection_bg: 'rgba(250, 250, 250, 0.1)',
-  selection_border: 'rgba(250, 250, 250, 0.5)'
+  canvas_bg: "#09090b",
+  node_bg: "#09090b",
+  node_border: "#27272a",
+  node_header_bg: "transparent",
+  text_color: "#fafafa",
+  text_muted: "#a1a1aa",
+  primary_color: "#fafafa",
+  wire_color: "#52525b",
+  wire_active_color: "#fafafa",
+  port_color: "#52525b",
+  selection_bg: "rgba(250, 250, 250, 0.1)",
+  selection_border: "rgba(250, 250, 250, 0.5)",
 };
 
 export const light_theme: Theme = {
-  canvas_bg: '#f5f5f5',
-  node_bg: '#ffffff',
-  node_border: '#cccccc',
-  node_header_bg: '#e0e0e0',
-  text_color: '#333333',
-  text_muted: '#666666',
-  primary_color: '#007acc',
-  wire_color: '#999999',
-  wire_active_color: '#007acc',
-  port_color: '#999999',
-  selection_bg: 'rgba(0, 122, 204, 0.1)',
-  selection_border: 'rgba(0, 122, 204, 0.8)'
+  canvas_bg: "#f5f5f5",
+  node_bg: "#ffffff",
+  node_border: "#e5e7eb",
+  node_header_bg: "#f9fafb",
+  text_color: "#171717",
+  text_muted: "#525252",
+  primary_color: "#000000",
+  wire_color: "#d4d4d8",
+  wire_active_color: "#000000",
+  port_color: "#a1a1aa",
+  selection_bg: "rgba(0, 0, 0, 0.05)",
+  selection_border: "rgba(0, 0, 0, 0.3)",
 };
 
 export const apply_theme = (container: HTMLElement, theme: Theme) => {
   for (const [key, value] of Object.entries(theme)) {
-    container.style.setProperty(`--${key.replace(/_/g, '-')}`, value);
+    container.style.setProperty(`--${key.replace(/_/g, "-")}`, value);
   }
 };
 
@@ -72,6 +72,7 @@ export const get_base_css = () => `
     overflow: hidden;
     background-color: var(--canvas-bg);
     background-image: radial-gradient(#27272a 1px, transparent 1px);
+    user-select: none;
   }
 
   .nodes-container {
@@ -97,7 +98,6 @@ export const get_base_css = () => `
 
   .node.selected {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 1px var(--primary-color), 0 4px 6px rgba(0, 0, 0, 0.3);
   }
 
   .node.borderless {
@@ -107,7 +107,7 @@ export const get_base_css = () => `
   }
 
   .node.borderless.selected {
-    box-shadow: 0 0 0 2px var(--primary-color);
+    box-shadow: 0 0 0 1px var(--primary-color);
   }
 
   .node.borderless .node-header {
@@ -117,6 +117,44 @@ export const get_base_css = () => `
   .node.borderless .node-body {
     padding: 0;
     gap: 0;
+  }
+
+  .node.subgraph-input-stub,
+  .node.subgraph-output-stub {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+  }
+  .node.subgraph-input-stub {
+    justify-content: flex-end;
+  }
+  .node.subgraph-output-stub {
+    justify-content: flex-start;
+  }
+  .node.subgraph-input-stub .node-body,
+  .node.subgraph-output-stub .node-body {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    gap: 4px;
+    background: transparent;
+  }
+  .node.subgraph-input-stub .node-body {
+    align-items: flex-end;
+  }
+  .node.subgraph-output-stub .node-body {
+    align-items: flex-start;
+  }
+  .node.subgraph-input-stub .port-dot,
+  .node.subgraph-output-stub .port-dot {
+    width: 10px;
+    height: 10px;
   }
 
   .node-header {
@@ -131,6 +169,10 @@ export const get_base_css = () => `
     align-items: center;
     color: var(--text-color);
   }
+  .node-header .title-text {
+    line-height: 20px;
+    margin-right: 4px;
+  }
 
   .type-indicator {
     width: 8px;
@@ -140,19 +182,31 @@ export const get_base_css = () => `
     flex-shrink: 0;
   }
 
-  .collapse-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    font-size: 16px;
-    line-height: 1;
-    padding: 0 4px 0 0;
+  .type-indicator {
     cursor: pointer;
+    transition: box-shadow 0.15s, opacity 0.15s;
+  }
+  .type-indicator:hover {
+    box-shadow: 0 0 0 2px var(--text-muted);
   }
 
-  .collapse-btn:hover {
-    color: var(--text-color);
-    background: transparent;
+  .node-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.4;
+    transition: opacity 0.15s, background 0.15s;
+  }
+  .node-action-btn:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .node-action-btn svg {
+    display: block;
   }
 
   .node-header:active {
@@ -312,6 +366,50 @@ export const get_base_css = () => `
     stroke-width: 2px;
     stroke-dasharray: 4;
     vector-effect: non-scaling-stroke;
+  }
+
+  /* shadcn 风格全局变量和组件样式 */
+  :host {
+    --popover-bg: #18181b;
+    --border-color: #27272a;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+  }
+
+  /* 为 controls 插件提供基础按钮样式（若插件未单独添加样式则作为 fallback） */
+  .easel-controls button {
+    background: transparent;
+    color: var(--text-color);
+    border: none;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    border-radius: 8px;
+  }
+  .easel-controls button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--primary-color);
+  }
+  .easel-controls button:active {
+    transform: scale(0.96);
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  /* 右键菜单 shadcn 风格 （如果插件没有完全覆盖样式，这里作为后备）*/
+  .easel-context-menu {
+    backdrop-filter: blur(12px);
+  }
+  .easel-context-menu > div {
+    padding: 6px 12px;
+    border-radius: var(--radius-md);
+    transition: all 0.1s;
+  }
+  .easel-context-menu > div:hover {
+    background: rgba(255, 255, 255, 0.1);
   }
 
   .lod-min .node-body {
