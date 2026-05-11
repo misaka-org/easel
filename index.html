@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Easel Playground</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="canvas" class="easel-canvas"></div>
+      <div id="hud" class="easel-hud">
+        <div class="hud-section">
+          <h3>State Actions</h3>
+          <div class="btn-row">
+            <button id="btn-save">Save</button>
+            <button id="btn-load">Load</button>
+          </div>
+          <div class="btn-row" style="margin-top: 8px;">
+            <select id="scene-selector" style="flex: 1; padding: 6px; background: #333; color: white; border: none; border-radius: 4px;">
+              <option value="default">Default Scene</option>
+              <option value="perf">Performance Test</option>
+              <option value="math">Math Test</option>
+            </select>
+          </div>
+          <div class="btn-row" style="margin-top: 8px;">
+            <button id="btn-exit-subgraph" style="background: #e6a23c; display: none;">Exit Subgraph</button>
+          </div>
+        </div>
+        <div class="hud-section">
+          <h3>Observability</h3>
+          <pre id="hud-stats" style="margin:0; white-space: pre-wrap; word-wrap: break-word;"></pre>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

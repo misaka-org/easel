@@ -1,0 +1,262 @@
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #1e1e1e;
+  color: #fff;
+  font-family: sans-serif;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+}
+
+.easel-canvas {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+
+.easel-hud {
+  width: 300px;
+  background: #252526;
+  border-left: 1px solid #333;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.hud-section {
+  background: #1e1e1e;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.hud-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #aaa;
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  background: #007acc;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  flex: 1;
+}
+
+button:hover {
+  background: #0098ff;
+}
+
+.nodes-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 0 0;
+}
+
+.node {
+  position: absolute;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+
+  contain: layout style;
+}
+
+.node.selected {
+  border-color: #646cff;
+  box-shadow: 0 0 0 1px #646cff, 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.node.borderless {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.node.borderless.selected {
+  box-shadow: 0 0 0 2px #646cff;
+}
+
+.node.borderless .node-header {
+  display: none;
+}
+
+.node.borderless .node-body {
+  padding: 0;
+  gap: 0;
+}
+
+.node-header {
+  background: #333;
+  padding: 8px 12px;
+  border-bottom: 1px solid #444;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 6px 6px 0 0;
+  cursor: grab;
+}
+
+.node-header:active {
+  cursor: grabbing;
+}
+
+.node-body {
+  padding: 12px;
+  font-size: 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.port-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.port {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.port-dot {
+  width: 10px;
+  height: 10px;
+  background: #666;
+  border-radius: 50%;
+}
+
+.port-dot:hover {
+  background: #007acc;
+  box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.3);
+}
+
+.port-type-image {
+  background: #d63384;
+}
+.port-type-number {
+  background: #0dcaf0;
+}
+.port-type-string {
+  background: #ffc107;
+}
+
+.widgets-container {
+  margin-top: 8px;
+  border-top: 1px dashed #444;
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.widget-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.widget-row label {
+  color: #aaa;
+  flex: 1;
+}
+
+.widget-row input[type="text"],
+.widget-row input[type="number"] {
+  width: 80px;
+  background: #111;
+  border: 1px solid #333;
+  color: #fff;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+.widget-row input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.selection-box {
+  position: absolute;
+  border: 1px solid rgba(100, 108, 255, 0.8);
+  background: rgba(100, 108, 255, 0.2);
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.image-toolbar {
+  position: absolute;
+  bottom: -50px;
+  left: 0;
+  width: 100%;
+  display: none;
+  gap: 8px;
+  background: #333;
+  padding: 8px;
+  border-radius: 8px;
+  box-sizing: border-box;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+}
+
+.node.selected .image-toolbar {
+  display: flex;
+}
+
+.wires-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transform-origin: 0 0;
+  overflow: visible;
+  z-index: 10;
+}
+
+.wire {
+  fill: none;
+  stroke: #888;
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+}
+
+.wire-active {
+  fill: none;
+  stroke: #007acc;
+  stroke-width: 2px;
+  stroke-dasharray: 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.lod-min .node-body {
+  display: none !important;
+}
