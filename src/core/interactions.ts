@@ -11,6 +11,7 @@ export type PointerEventParams = {
   readonly target_node_id: O.Option<string>;
   readonly target_port_id: O.Option<string>;
   readonly target_port_type: O.Option<'input' | 'output'>;
+  readonly target_action: O.Option<string>;
   readonly modifiers: Modifiers;
 };
 
@@ -31,6 +32,16 @@ const start_wiring = (state: State, source_node_id: string, source_port_id: stri
   interaction: { mode: 'wiring', source_node_id, source_port_id, target_pos: event.screen_position }
 });
 
+const start_resizing = (state: State, target_id: string, event: PointerEventParams): State => ({
+  ...state,
+  interaction: { 
+    mode: 'resizing', 
+    node_id: target_id, 
+    start_pos: event.screen_position,
+    start_size: state.nodes[target_id]?.size || vec2_create(0, 0)
+  }
+});
+
 const start_dragging = (state: State, target_id: string, event: PointerEventParams): State => {
   const is_selected = state.selected_node_ids.includes(target_id);
   const selected_node_ids = event.modifiers.shift
@@ -40,7 +51,7 @@ const start_dragging = (state: State, target_id: string, event: PointerEventPara
   return {
     ...state,
     selected_node_ids,
-    interaction: { mode: 'dragging', node_ids: selected_node_ids, start_pos: event.screen_position }
+    interaction: { mode: 'dragging', node_ids: selected_node_ids, start_pos: event.screen_position, original_nodes: state.nodes }
   };
 };
 
@@ -74,6 +85,12 @@ const try_grab_wire = (state: State, event: PointerEventParams) => pipe(
 export const pointer_down = (state: State, event: PointerEventParams): State => pipe(
   try_grab_wire(state, event),
   O.alt(() => pipe(
+    event.target_action,
+    O.filter(action => action === 'resize'),
+    O.chain(() => event.target_node_id),
+    O.map(target_id => start_resizing(state, target_id, event))
+  )),
+  O.alt(() => pipe(
     event.target_node_id,
     O.map(target_id => start_dragging(state, target_id, event))
   )),
@@ -82,10 +99,42 @@ export const pointer_down = (state: State, event: PointerEventParams): State => 
 
 const handlers_move: Record<Interaction['mode'], (state: State, i: any, event: PointerEventParams) => State> = {
   idle: (state) => state,
-  dragging: (state, i, event) => ({
-    ...move_nodes(state, i.node_ids, vec2_scale(vec2_sub(event.screen_position, i.start_pos), 1 / state.camera.zoom)),
-    interaction: { ...i, start_pos: event.screen_position }
-  }),
+  resizing: (state, i, event) => {
+    const delta = vec2_scale(vec2_sub(event.screen_position, i.start_pos), 1 / state.camera.zoom);
+    const new_size = vec2_create(
+      Math.max(50, i.start_size.x + delta.x),
+      Math.max(30, i.start_size.y + delta.y)
+    );
+    return {
+      ...state,
+      nodes: { ...state.nodes, [i.node_id]: { ...state.nodes[i.node_id]!, size: new_size } },
+      interaction: i
+    };
+  },
+  dragging: (state, i, event) => {
+    const total_delta = vec2_scale(vec2_sub(event.screen_position, i.start_pos), 1 / state.camera.zoom);
+    const restored_state = { ...state, nodes: { ...state.nodes } };
+    
+    const to_move = new Set<string>();
+    const collect = (id: string) => {
+      if (to_move.has(id)) return;
+      to_move.add(id);
+      const children = i.original_nodes[id]?.custom_data?.['children'] as string[] | undefined;
+      if (children) children.forEach(collect);
+    };
+    i.node_ids.forEach(collect);
+    
+    for (const id of to_move) {
+      if (restored_state.nodes[id] && i.original_nodes[id]) {
+        restored_state.nodes[id] = i.original_nodes[id]!;
+      }
+    }
+    
+    return {
+      ...move_nodes(restored_state, i.node_ids, total_delta),
+      interaction: i
+    };
+  },
   panning: (state, i, event) => ({
     ...state,
     camera: { ...state.camera, position: vec2_add(i.original_camera, vec2_sub(event.screen_position, i.start_pos)) }
@@ -104,22 +153,35 @@ export const pointer_move = (state: State, event: PointerEventParams): State =>
   handlers_move[state.interaction.mode](state, state.interaction, event);
 
 const try_connect_wire = (state: State, source_node_id: string, source_port_id: string, event: PointerEventParams): State => pipe(
-  O.Do,
-  O.bind('target_node_id', () => event.target_node_id),
-  O.bind('target_port_id', () => event.target_port_id),
-  O.bind('target_port_type', () => event.target_port_type),
-  O.filter(({ target_port_type }) => target_port_type === 'input'),
-  O.filter(({ target_node_id }) => target_node_id !== source_node_id),
-  O.chain(({ target_node_id, target_port_id }) => {
+  event.target_node_id,
+  O.chain(target_node_id => {
+    if (target_node_id === source_node_id) return O.none;
     const source_port = state.nodes[source_node_id]?.outputs.find(p => p.id === source_port_id);
     const target_node = state.nodes[target_node_id];
-    const target_port = target_node?.inputs.find(p => p.id === target_port_id);
-    const target_widget = target_node?.widgets?.find(w => w.id === target_port_id);
-
-    if (!source_port || (!target_port && !target_widget)) return O.none;
+    if (!source_port || !target_node) return O.none;
 
     const source_type = source_port.value_type || 'any';
-    const target_accepts = target_port ? (target_port.accepts || [target_port.value_type || 'any']) : [target_widget?.type || 'any'];
+    let target_port_id: string | undefined;
+    let target_accepts: readonly string[] = ['any'];
+
+    if (O.isSome(event.target_port_id) && O.isSome(event.target_port_type) && event.target_port_type.value === 'input') {
+      target_port_id = event.target_port_id.value;
+      const target_port = target_node.inputs.find(p => p.id === target_port_id);
+      const target_widget = target_node.widgets?.find(w => w.id === target_port_id);
+      if (!target_port && !target_widget) return O.none;
+      target_accepts = target_port ? (target_port.accepts || [target_port.value_type || 'any']) : [target_widget?.type || 'any'];
+    } else {
+      const target_port = target_node.inputs.find(p => {
+        const accepts = p.accepts || [p.value_type || 'any'];
+        return accepts.includes('any') || source_type === 'any' || accepts.includes(source_type);
+      });
+      if (target_port) {
+        target_port_id = target_port.id;
+        target_accepts = target_port.accepts || [target_port.value_type || 'any'];
+      }
+    }
+
+    if (!target_port_id) return O.none;
     
     if (target_accepts.includes('any') || source_type === 'any' || target_accepts.includes(source_type)) {
       const existing = Object.values(state.wires).find(w => w.target_node_id === target_node_id && w.target_port_id === target_port_id);
@@ -130,7 +192,7 @@ const try_connect_wire = (state: State, source_node_id: string, source_port_id: 
         source_node_id,
         source_port_id,
         target_node_id,
-        target_port_id
+        target_port_id: target_port_id
       }));
     }
     return O.none;

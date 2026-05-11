@@ -2,6 +2,7 @@ import { effect } from "@vue/reactivity";
 import type { State } from "../core/types";
 import type { Dispatch } from "../runtime/registry";
 import { frame_effect } from "../runtime/frame_effect";
+import { move_nodes } from "../core/node_ops";
 
 export const with_guidelines = (
   container: HTMLElement,
@@ -84,43 +85,62 @@ export const with_guidelines = (
           let snap_x: number | undefined = undefined;
           let snap_y: number | undefined = undefined;
 
+          const d_left = dragged.position.x;
+          const d_right = dragged.position.x + dragged.size.x;
+          const d_top = dragged.position.y;
+          const d_bottom = dragged.position.y + dragged.size.y;
+          const d_cx = dragged.position.x + dragged.size.x / 2;
+          const d_cy = dragged.position.y + dragged.size.y / 2;
+
           for (const [id, target] of Object.entries(next_state.nodes)) {
             if (next_state.selected_node_ids.includes(id)) continue;
+            
+            const t_left = target.position.x;
+            const t_right = target.position.x + target.size.x;
+            const t_top = target.position.y;
+            const t_bottom = target.position.y + target.size.y;
+            const t_cx = target.position.x + target.size.x / 2;
+            const t_cy = target.position.y + target.size.y / 2;
 
-            // Compare left edges
-            const dx = target.position.x - dragged.position.x;
-            if (Math.abs(dx) < min_dist_x) {
-              min_dist_x = Math.abs(dx);
-              best_dx = dx;
-              snap_x = target.position.x;
+            const x_pairs = [
+              { t: t_left, d: d_left, snap: t_left },
+              { t: t_left, d: d_right, snap: t_left },
+              { t: t_right, d: d_left, snap: t_right },
+              { t: t_right, d: d_right, snap: t_right },
+              { t: t_cx, d: d_cx, snap: t_cx }
+            ];
+
+            for (const pair of x_pairs) {
+              const dist = Math.abs(pair.t - pair.d);
+              if (dist < min_dist_x) {
+                min_dist_x = dist;
+                best_dx = pair.t - pair.d;
+                snap_x = pair.snap;
+              }
             }
 
-            // Compare top edges
-            const dy = target.position.y - dragged.position.y;
-            if (Math.abs(dy) < min_dist_y) {
-              min_dist_y = Math.abs(dy);
-              best_dy = dy;
-              snap_y = target.position.y;
+            const y_pairs = [
+              { t: t_top, d: d_top, snap: t_top },
+              { t: t_top, d: d_bottom, snap: t_top },
+              { t: t_bottom, d: d_top, snap: t_bottom },
+              { t: t_bottom, d: d_bottom, snap: t_bottom },
+              { t: t_cy, d: d_cy, snap: t_cy }
+            ];
+
+            for (const pair of y_pairs) {
+              const dist = Math.abs(pair.t - pair.d);
+              if (dist < min_dist_y) {
+                min_dist_y = dist;
+                best_dy = pair.t - pair.d;
+                snap_y = pair.snap;
+              }
             }
           }
 
           active_guidelines = { x: snap_x, y: snap_y };
 
           if (best_dx !== 0 || best_dy !== 0) {
-            const new_nodes = { ...next_state.nodes };
-            for (const id of next_state.selected_node_ids) {
-              const n = new_nodes[id];
-              if (n) {
-                new_nodes[id] = {
-                  ...n,
-                  position: {
-                    x: n.position.x + best_dx,
-                    y: n.position.y + best_dy,
-                  },
-                };
-              }
-            }
-            next_state = { ...next_state, nodes: new_nodes };
+            next_state = move_nodes(next_state, next_state.selected_node_ids, { x: best_dx, y: best_dy });
           }
         }
       } else {

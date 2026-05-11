@@ -18,6 +18,7 @@ import {
   SubgraphOutputNode,
 } from "./nodes/subgraph";
 import { MathNode } from "./nodes/math";
+import { GroupNode } from "./nodes/group";
 import { load_math_scene, evaluate_math_graph } from "./scenes/scene_math";
 import { load_perf_scene } from "./scenes/scene_perf";
 
@@ -74,6 +75,7 @@ register_node_type("subgraph", SubgraphNode);
 register_node_type("subgraph_input", SubgraphInputNode);
 register_node_type("subgraph_output", SubgraphOutputNode);
 register_node_type("math", MathNode);
+register_node_type("group", GroupNode);
 
 const init = () => {
   const canvas_el = document.getElementById("canvas");
@@ -234,7 +236,7 @@ const init = () => {
 
   render_nodes(canvas_el, state, enhanced_dispatch, context);
   render_wires(canvas_el, state);
-  setup_events(canvas_el, enhanced_dispatch);
+  setup_events(canvas_el, enhanced_dispatch, app_events);
 
   // HUD 逻辑
   const stats_el = document.getElementById("hud-stats");

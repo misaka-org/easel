@@ -93,6 +93,24 @@ export const render_nodes = (
 
         container_element.appendChild(el);
 
+        const node_resize_observer = new ResizeObserver(entries => {
+          for (const entry of entries) {
+            const current_node = state_ref.value.nodes[id];
+            if (!current_node || current_node.collapsed) continue;
+            const el_target = entry.target as HTMLElement;
+            const w = el_target.offsetWidth;
+            const h = el_target.offsetHeight;
+            const current_size = current_node.size;
+            if (current_size && (Math.abs(current_size.x - w) > 2 || Math.abs(current_size.y - h) > 2)) {
+              dispatch(s => s.nodes[id] ? {
+                ...s,
+                nodes: { ...s.nodes, [id]: { ...s.nodes[id]!, size: vec2_create(w, h) } }
+              } : s);
+            }
+          }
+        });
+        node_resize_observer.observe(el);
+
         const runner = frame_effect(() => {
           const st = state_ref.value;
           const node = st.nodes[id];
@@ -101,15 +119,24 @@ export const render_nodes = (
             return;
           }
 
-          if (node.style_mode === "borderless") el.classList.add("borderless");
-          else el.classList.remove("borderless");
+          if (node.style_mode === 'borderless') el.classList.add('borderless');
+          else el.classList.remove('borderless');
+
+          if (node.collapsed) el.classList.add('collapsed');
+          else el.classList.remove('collapsed');
 
           el.style.transform = `translate(${node.position.x}px, ${node.position.y}px)`;
-          el.style.width = `${node.size.x}px`;
-          el.style.height = `${node.size.y}px`;
+          
+          if (node.resizable) {
+            el.style.width = `${node.size.x}px`;
+            el.style.height = `${node.size.y}px`;
+          } else {
+            el.style.width = 'auto';
+            el.style.height = 'auto';
+          }
 
-          if (st.selected_node_ids.includes(id)) el.classList.add("selected");
-          else el.classList.remove("selected");
+          if (st.selected_node_ids.includes(id)) el.classList.add('selected');
+          else el.classList.remove('selected');
 
           inst.update(node, st);
         });

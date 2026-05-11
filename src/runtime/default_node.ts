@@ -1,6 +1,6 @@
 import { EaselNode } from './registry';
 import type { GraphNode } from '../core/types';
-import { update_widget_value } from '../core/node_ops';
+import { update_node_data, update_widget_value } from '../core/node_ops';
 
 export class DefaultNode extends EaselNode {
   private header!: HTMLElement;
@@ -46,32 +46,50 @@ export class DefaultNode extends EaselNode {
       }
     });
 
+    this.header.addEventListener('pointerdown', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.dataset['action'] === 'toggle_collapse') {
+        e.stopPropagation();
+        this.dispatch(state => update_node_data(state, this.node_id, n => ({ ...n, collapsed: !n.collapsed })));
+      }
+    });
   }
 
   update(node_data: GraphNode, state: import('../core/types').State): void {
-    // NOTE: 必须使用 textContent 使用 innerText 会导致 reflow 重新计算样式
-    if (this.header.textContent !== node_data.title) {
-      this.header.textContent = node_data.title;
+    const title_html = `
+      <button data-action="toggle_collapse" class="collapse-btn">${node_data.collapsed ? '+' : '-'}</button>
+      <span class="title-text">${node_data.title}</span>
+      <div style="flex:1"></div>
+    `;
+    if (this.header.innerHTML !== title_html) {
+      this.header.innerHTML = title_html;
     }
+
+    const is_port_connected = (p_id: string) => Object.values(state.wires).some(
+      wire => (wire.target_node_id === this.node_id && wire.target_port_id === p_id) || 
+              (wire.source_node_id === this.node_id && wire.source_port_id === p_id)
+    );
 
     const ports_html = [
       ...node_data.inputs.map(p => {
         const type_class = p.value_type ? `port-type-${p.value_type}` : '';
+        const connected_class = is_port_connected(p.id) ? 'connected' : '';
         return `
         <div class="port-row">
           <div class="port" data-port-id="${p.id}" data-port-type="input">
-            <div class="port-dot ${type_class}"></div><span class="port-label">${p.label}</span>
+            <div class="port-dot ${type_class} ${connected_class}"></div><span class="port-label">${p.label}</span>
           </div>
           <div></div>
         </div>
       `}),
       ...node_data.outputs.map(p => {
         const type_class = p.value_type ? `port-type-${p.value_type}` : '';
+        const connected_class = is_port_connected(p.id) ? 'connected' : '';
         return `
         <div class="port-row">
           <div></div>
           <div class="port" data-port-id="${p.id}" data-port-type="output">
-            <span class="port-label">${p.label}</span><div class="port-dot ${type_class}"></div>
+            <span class="port-label">${p.label}</span><div class="port-dot ${type_class} ${connected_class}"></div>
           </div>
         </div>
       `})
@@ -87,6 +105,7 @@ export class DefaultNode extends EaselNode {
         const is_connected = Object.values(state.wires).some(wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id);
         const disabled = is_connected ? 'disabled' : '';
         const type_class = `port-type-${w.type}`;
+        const connected_class = is_connected ? 'connected' : '';
         
         let input_html = '';
         if (w.type === 'text') input_html = `<input type="text" data-widget-id="${w.id}" value="${w.value}" ${disabled} />`;
@@ -96,7 +115,7 @@ export class DefaultNode extends EaselNode {
         return `
           <div class="port-row widget-row">
             <div class="port" data-port-id="${w.id}" data-port-type="input">
-              <div class="port-dot ${type_class}"></div>
+              <div class="port-dot ${type_class} ${connected_class}"></div>
               <label>${w.label}</label>
             </div>
             ${input_html}
@@ -126,6 +145,18 @@ export class DefaultNode extends EaselNode {
           }
         }
       });
+    }
+    
+    if (node_data.resizable && !node_data.collapsed) {
+      if (!this.container.querySelector('.node-resize-handle')) {
+        const handle = document.createElement('div');
+        handle.className = 'node-resize-handle';
+        handle.dataset['action'] = 'resize';
+        this.container.appendChild(handle);
+      }
+    } else {
+      const handle = this.container.querySelector('.node-resize-handle');
+      if (handle) handle.remove();
     }
   }
 

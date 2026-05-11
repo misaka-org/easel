@@ -13,3 +13,12 @@ export const aabb_intersect = (pos1: Vec2, size1: Vec2, pos2: Vec2, size2: Vec2)
     pos1.y + size1.y > pos2.y
   );
 };
+
+export const aabb_contains = (pos1: Vec2, size1: Vec2, pos2: Vec2, size2: Vec2): boolean => {
+  return (
+    pos2.x >= pos1.x &&
+    pos2.y >= pos1.y &&
+    pos2.x + size2.x <= pos1.x + size1.x &&
+    pos2.y + size2.y <= pos1.y + size1.y
+  );
+};

@@ -119,6 +119,23 @@ button:hover {
   font-weight: 600;
   border-radius: 6px 6px 0 0;
   cursor: grab;
+  display: flex;
+  align-items: center;
+}
+
+.collapse-btn {
+  background: transparent;
+  border: none;
+  color: #aaa;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 4px 0 0;
+  cursor: pointer;
+}
+
+.collapse-btn:hover {
+  color: #fff;
+  background: transparent;
 }
 
 .node-header:active {
@@ -132,6 +149,21 @@ button:hover {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.node.collapsed .node-body {
+  display: none !important;
+}
+
+.node-resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  cursor: se-resize;
+  background: linear-gradient(135deg, transparent 50%, #666 50%);
+  border-bottom-right-radius: 6px;
 }
 
 .port-row {
@@ -153,6 +185,17 @@ button:hover {
 }
 
 .port-dot:hover {
+  background: #007acc;
+  box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.3);
+}
+
+.port-dot.connected {
+  border: 1.5px solid #fff;
+  box-shadow: 0 0 4px currentColor;
+  box-sizing: border-box;
+}
+
+.port:hover .port-dot {
   background: #007acc;
   box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.3);
 }
@@ -259,4 +302,16 @@ button:hover {
 
 .lod-min .node-body {
   display: none !important;
+}
+
+.group-node {
+  z-index: -1;
+}
+
+.group-node.selected {
+  box-shadow: none !important;
+}
+
+.group-body {
+  pointer-events: none;
 }

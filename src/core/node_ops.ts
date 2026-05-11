@@ -13,25 +13,39 @@ export const add_node = (state: State, node: GraphNode): State => ({
   nodes: { ...state.nodes, [node.id]: node }
 });
 
-export const move_node = (state: State, node_id: string, delta: Vec2): State => {
+export const move_node = (state: State, node_id: string, delta: Vec2, visited = new Set<string>()): State => {
+  if (visited.has(node_id)) return state;
+  visited.add(node_id);
+
   return pipe(
     get_node(state, node_id),
-    O.map((node) => ({
-      ...state,
-      nodes: {
-        ...state.nodes,
-        [node_id]: {
-          ...node,
-          position: vec2_add(node.position, delta)
+    O.map((node) => {
+      let next_state = {
+        ...state,
+        nodes: {
+          ...state.nodes,
+          [node_id]: {
+            ...node,
+            position: vec2_add(node.position, delta)
+          }
+        }
+      };
+
+      const children = node.custom_data?.['children'] as string[] | undefined;
+      if (children && Array.isArray(children)) {
+        for (const child_id of children) {
+          next_state = move_node(next_state, child_id, delta, visited);
         }
       }
-    })),
+      return next_state;
+    }),
     O.getOrElse(() => state)
   );
 };
 
 export const move_nodes = (state: State, node_ids: readonly string[], delta: Vec2): State => {
-  return node_ids.reduce((acc, id) => move_node(acc, id, delta), state);
+  const visited = new Set<string>();
+  return node_ids.reduce((acc, id) => move_node(acc, id, delta, visited), state);
 };
 
 export const update_node_data = (state: State, node_id: string, updater: (node: GraphNode) => GraphNode): State => {

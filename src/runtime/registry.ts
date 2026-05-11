@@ -18,6 +18,41 @@ export abstract class EaselNode {
   abstract mount(node_data: GraphNode): void;
   abstract update(node_data: GraphNode, state: State): void;
   abstract unmount(): void;
+
+  get_input_value(state: State, port_id: string): any {
+    const wire = Object.values(state.wires).find(w => w.target_node_id === this.node_id && w.target_port_id === port_id);
+    if (!wire) return undefined;
+    const source_node = state.nodes[wire.source_node_id];
+    return source_node?.custom_data[wire.source_port_id];
+  }
+
+  get_widget_value(state: State, widget_id: string): any {
+    const node = state.nodes[this.node_id];
+    return node?.widgets?.find(w => w.id === widget_id)?.value;
+  }
+
+  get_value(state: State, id: string): any {
+    const val = this.get_input_value(state, id);
+    if (val !== undefined) return val;
+    return this.get_widget_value(state, id);
+  }
+
+  set_output_value(port_id: string, value: any) {
+    this.dispatch(state => {
+      const node = state.nodes[this.node_id];
+      if (!node || node.custom_data[port_id] === value) return state;
+      return {
+        ...state,
+        nodes: {
+          ...state.nodes,
+          [this.node_id]: {
+            ...node,
+            custom_data: { ...node.custom_data, [port_id]: value }
+          }
+        }
+      };
+    });
+  }
 }
 
 export type EaselNodeConstructor = new (

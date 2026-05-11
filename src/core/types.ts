@@ -29,6 +29,8 @@ export type GraphNode = {
   readonly outputs: readonly Port[];
   readonly widgets?: readonly Widget[];
   readonly style_mode?: 'default' | 'borderless';
+  readonly resizable?: boolean;
+  readonly collapsed?: boolean;
   readonly custom_data: Record<string, unknown>;
 };
 
@@ -47,7 +49,8 @@ export type Camera = {
 
 export type Interaction =
   | { readonly mode: 'idle' }
-  | { readonly mode: 'dragging'; readonly node_ids: readonly string[]; readonly start_pos: Vec2 }
+  | { readonly mode: 'dragging'; readonly node_ids: readonly string[]; readonly start_pos: Vec2; readonly original_nodes: Record<string, GraphNode> }
+  | { readonly mode: 'resizing'; readonly node_id: string; readonly start_pos: Vec2; readonly start_size: Vec2 }
   | { readonly mode: 'panning'; readonly start_pos: Vec2; readonly original_camera: Vec2 }
   | { readonly mode: 'wiring'; readonly source_node_id: string; readonly source_port_id: string; readonly target_pos: Vec2 }
   | { readonly mode: 'box_selecting'; readonly start_pos: Vec2; readonly current_pos: Vec2 };
