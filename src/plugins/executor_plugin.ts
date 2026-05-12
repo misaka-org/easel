@@ -1,13 +1,13 @@
-import type { EaselPlugin } from '@/runtime/mount';
-import { init_execution, step_execution, run_execution, create_initial_execution_state } from '@/executor/engine';
-import type { ExecutionState } from '@/executor/types';
+import type { EaselPlugin } from '@/runtime/easel';
+import { GraphExecutor } from '@/executor/engine';
 import { frame_effect } from '@/runtime/frame_effect';
-import { ref, effect } from '@vue/reactivity';
+import { effect } from '@vue/reactivity';
 import * as E from 'fp-ts/Either';
 import { apply_styles } from '@/utils/css';
 
-export const executor_plugin: EaselPlugin = (ctx) => {
-  const exec_state = ref(create_initial_execution_state());
+export const executor_plugin: EaselPlugin = (easel) => {
+  const executor = new GraphExecutor(easel);
+  const exec_state = executor.state;
 
   const container = document.createElement('div');
   container.className = 'easel-executor-panel';
@@ -35,6 +35,9 @@ export const executor_plugin: EaselPlugin = (ctx) => {
   const btn_run = document.createElement('button');
   btn_run.textContent = 'Run';
 
+  const btn_stop = document.createElement('button');
+  btn_stop.textContent = 'Stop';
+
   const btn_reset = document.createElement('button');
   btn_reset.textContent = 'Reset';
 
@@ -47,7 +50,7 @@ export const executor_plugin: EaselPlugin = (ctx) => {
   });
   status_txt.textContent = 'Idle';
 
-  [btn_init, btn_step, btn_run, btn_reset].forEach(btn => {
+  [btn_init, btn_step, btn_run, btn_stop, btn_reset].forEach(btn => {
     apply_styles(btn, {
       background: 'var(--primary-color)',
       color: 'var(--canvas-bg)',
@@ -61,11 +64,10 @@ export const executor_plugin: EaselPlugin = (ctx) => {
   });
   container.appendChild(status_txt);
 
-  ctx.container.appendChild(container);
+  easel.container.appendChild(container);
 
   container.addEventListener('pointerdown', e => e.stopPropagation());
 
-  // Status overlay on nodes
   const node_overlays = new Map<string, HTMLElement>();
   const overlays_container = document.createElement('div');
   overlays_container.className = 'executor-overlays';
@@ -79,53 +81,43 @@ export const executor_plugin: EaselPlugin = (ctx) => {
     zIndex: '100',
     transformOrigin: '0 0',
   });
-  ctx.container.appendChild(overlays_container);
-
-  const handle_state_change = (new_state: ExecutionState) => {
-    exec_state.value = new_state;
-  };
+  easel.container.appendChild(overlays_container);
 
   btn_init.addEventListener('click', () => {
-    const res = init_execution(ctx.state.value.nodes, ctx.state.value.wires);
+    const res = executor.compile();
     if (E.isLeft(res)) {
       alert(`Compile Error: ${res.left.message}`);
-    } else {
-      handle_state_change(res.right);
     }
   });
 
   btn_step.addEventListener('click', async () => {
-    if (exec_state.value.execution_queue.length === 0 || exec_state.value.status === 'completed') {
-      btn_init.click();
-    }
-    const step_task = step_execution(exec_state.value, ctx.state.value.nodes, ctx.state.value.wires, handle_state_change);
-    await step_task();
+    await executor.step();
   });
 
   btn_run.addEventListener('click', async () => {
-    if (exec_state.value.execution_queue.length === 0 || exec_state.value.status === 'completed') {
-      btn_init.click();
-    }
-    const run_task = run_execution(exec_state.value, ctx.state.value.nodes, ctx.state.value.wires, handle_state_change);
-    await run_task();
+    await executor.run();
+  });
+
+  btn_stop.addEventListener('click', () => {
+    executor.stop();
   });
 
   btn_reset.addEventListener('click', () => {
-    handle_state_change(create_initial_execution_state());
+    executor.stop();
+    executor.compile();
   });
 
   effect(() => {
     const current_exec_state = exec_state.value;
-    status_txt.textContent = `Status: ${current_exec_state.status} | Q: ${current_exec_state.current_node_index}/${current_exec_state.execution_queue.length}`;
+    status_txt.textContent = `Status: ${current_exec_state.status} | Q: ${current_exec_state.ready_queue.length}`;
   });
 
   frame_effect(() => {
-    const st = ctx.state.value;
+    const st = easel.state.value;
     const current_exec_state = exec_state.value;
     const zoom = st.camera.zoom;
     overlays_container.style.transform = `translate(${st.camera.position.x}px, ${st.camera.position.y}px) scale(${zoom})`;
 
-    // create or update overlays
     for (const [id, node] of Object.entries(st.nodes)) {
       const node_state = current_exec_state.node_states[id];
       if (!node_state && node_overlays.has(id)) {
@@ -167,6 +159,7 @@ export const executor_plugin: EaselPlugin = (ctx) => {
             color: '#ef4444',
             fontSize: '12px',
             fontWeight: 'bold',
+            whiteSpace: 'nowrap',
           });
           el.appendChild(error_text);
           

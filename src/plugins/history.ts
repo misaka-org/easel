@@ -1,9 +1,9 @@
-import type { EaselPlugin } from '../runtime/mount';
+import type { EaselPlugin } from '../runtime/easel';
 import type { State } from '../core/types';
 import { apply_styles } from '@/utils/css';
 
-export const history_plugin: EaselPlugin = (ctx) => {
-  const history: State[] = [ctx.state.value];
+export const history_plugin: EaselPlugin = (easel) => {
+  const history: State[] = [easel.state.value];
   let current_index = 0;
   let is_undoing = false;
 
@@ -47,7 +47,7 @@ export const history_plugin: EaselPlugin = (ctx) => {
   });
   panel.appendChild(list_container);
 
-  ctx.container.appendChild(panel);
+  easel.container.appendChild(panel);
 
   panel.addEventListener('pointerdown', e => e.stopPropagation());
 
@@ -97,17 +97,17 @@ export const history_plugin: EaselPlugin = (ctx) => {
     render_list();
   };
 
-  const original_dispatch = ctx.dispatch;
+  const original_dispatch = easel.dispatch;
 
-  ctx.dispatch = (updater) => {
+  easel.dispatch = (updater) => {
     if (is_undoing) {
       original_dispatch(updater);
       return;
     }
 
-    const prev_state = ctx.state.value;
+    const prev_state = easel.state.value;
     original_dispatch(updater);
-    const next_state = ctx.state.value;
+    const next_state = easel.state.value;
 
     if (prev_state !== next_state) {
       if (next_state.interaction.mode === 'idle') {
@@ -130,7 +130,7 @@ export const history_plugin: EaselPlugin = (ctx) => {
 
   render_list();
 
-  ctx.app_events.on('keydown', (e: KeyboardEvent) => {
+  easel.app_events.on('keydown', (e: KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
       e.preventDefault();
       if (e.shiftKey) {

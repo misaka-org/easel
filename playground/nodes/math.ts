@@ -2,7 +2,25 @@ import { EaselNode } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import { update_widget_value } from '@/core/node_ops';
 
+import type { ExecuteContext } from '@/index';
+
 export class MathNode extends EaselNode {
+  async execute({ node, inputs, report_progress }: ExecuteContext) {
+    report_progress(30);
+    await new Promise((r) => setTimeout(r, 500));
+    report_progress(60);
+    await new Promise((r) => setTimeout(r, 500));
+    
+    const a = Number(inputs['a'] || 0);
+    const b = Number(inputs['b'] || 0);
+    
+    const op = node.custom_data['operation'] || 'add';
+    const res = op === 'add' ? a + b : 0;
+    
+    report_progress(100);
+    return { out: res };
+  }
+
   private body!: HTMLElement;
   private header!: HTMLElement;
 

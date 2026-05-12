@@ -6,6 +6,7 @@ export type Port = {
   readonly type: 'input' | 'output';
   readonly value_type?: string;
   readonly accepts?: readonly string[];
+  readonly required?: boolean;
 };
 
 export type WidgetValue = string | number | boolean;
@@ -19,6 +20,7 @@ export type Widget = {
   readonly max?: number;
   readonly value_type?: string;
   readonly accepts?: readonly string[];
+  readonly required?: boolean;
 };
 
 export type GraphNode = {

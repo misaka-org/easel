@@ -1,8 +1,8 @@
-import type { EaselPlugin } from '../runtime/mount';
+import type { EaselPlugin } from '../runtime/easel';
 import { vec2_create } from '../core/math';
 import { apply_styles } from '@/utils/css';
 
-export const controls_plugin: EaselPlugin = (ctx) => {
+export const controls_plugin: EaselPlugin = (easel) => {
   const bar = document.createElement('div');
   bar.className = 'easel-controls';
   apply_styles(bar, {
@@ -46,7 +46,7 @@ export const controls_plugin: EaselPlugin = (ctx) => {
   btn_fullscreen.title = 'Toggle Fullscreen';
 
   // 注入 controls 专用样式
-  const root_node = ctx.container.getRootNode() as ShadowRoot | Document;
+  const root_node = easel.container.getRootNode() as ShadowRoot | Document;
   if (!root_node.querySelector('#easel-controls-style')) {
     const style_el = document.createElement('style');
     style_el.id = 'easel-controls-style';
@@ -94,24 +94,24 @@ export const controls_plugin: EaselPlugin = (ctx) => {
     bar.appendChild(btn);
   });
 
-  ctx.container.appendChild(bar);
+  easel.container.appendChild(bar);
 
   btn_zoom_in.addEventListener('click', () => {
-    ctx.dispatch(s => ({
+    easel.dispatch(s => ({
       ...s,
       camera: { ...s.camera, zoom: Math.min(10, s.camera.zoom * 1.2) }
     }));
   });
 
   btn_zoom_out.addEventListener('click', () => {
-    ctx.dispatch(s => ({
+    easel.dispatch(s => ({
       ...s,
       camera: { ...s.camera, zoom: Math.max(0.1, s.camera.zoom / 1.2) }
     }));
   });
 
   btn_fit.addEventListener('click', () => {
-    const s = ctx.state.value;
+    const s = easel.state.value;
     const nodes = Object.values(s.nodes);
     if (nodes.length === 0) return;
     
@@ -123,7 +123,7 @@ export const controls_plugin: EaselPlugin = (ctx) => {
       max_y = Math.max(max_y, n.position.y + n.size.y);
     });
 
-    const vp = ctx.container.getBoundingClientRect();
+    const vp = easel.container.getBoundingClientRect();
     const padding = 60;
     const w = max_x - min_x + padding * 2;
     const h = max_y - min_y + padding * 2;
@@ -132,7 +132,7 @@ export const controls_plugin: EaselPlugin = (ctx) => {
     const center_x = (min_x + max_x) / 2;
     const center_y = (min_y + max_y) / 2;
 
-    ctx.dispatch(s => ({
+    easel.dispatch(s => ({
       ...s,
       camera: {
         zoom,
@@ -142,7 +142,7 @@ export const controls_plugin: EaselPlugin = (ctx) => {
   });
 
   btn_layout.addEventListener('click', () => {
-    ctx.dispatch(s => {
+    easel.dispatch(s => {
       const nodes = Object.values(s.nodes);
       let x = 0, y = 0, max_h = 0;
       const new_nodes = { ...s.nodes };
@@ -161,8 +161,8 @@ export const controls_plugin: EaselPlugin = (ctx) => {
   });
 
   btn_fullscreen.addEventListener('click', () => {
-    const host = (ctx.container.getRootNode() as ShadowRoot).host as HTMLElement;
-    const target = host || ctx.container;
+    const host = (easel.container.getRootNode() as ShadowRoot).host as HTMLElement;
+    const target = host || easel.container;
     
     if (!document.fullscreenElement) {
       if (target.requestFullscreen) {

@@ -1,8 +1,8 @@
-import type { EaselPlugin } from '../runtime/mount';
+import type { EaselPlugin } from '../runtime/easel';
 import { frame_effect } from '../runtime/frame_effect';
 import { apply_styles } from '@/utils/css';
 
-export const minimap_plugin: EaselPlugin = (ctx) => {
+export const minimap_plugin: EaselPlugin = (easel) => {
   const minimap_container = document.createElement('div');
   minimap_container.className = 'easel-minimap';
   apply_styles(minimap_container, {
@@ -25,12 +25,12 @@ export const minimap_plugin: EaselPlugin = (ctx) => {
   minimap_canvas.height = 100;
   minimap_container.appendChild(minimap_canvas);
   
-  ctx.container.appendChild(minimap_container);
+  easel.container.appendChild(minimap_container);
 
   const minimap_ctx = minimap_canvas.getContext('2d')!;
 
   frame_effect(() => {
-    const state = ctx.state.value;
+    const state = easel.state.value;
     minimap_ctx.clearRect(0, 0, 150, 100);
 
     let min_x = Infinity, min_y = Infinity, max_x = -Infinity, max_y = -Infinity;
@@ -68,7 +68,7 @@ export const minimap_plugin: EaselPlugin = (ctx) => {
       );
     });
 
-    const viewport_rect = ctx.container.getBoundingClientRect();
+    const viewport_rect = easel.container.getBoundingClientRect();
     const vp_x = -state.camera.position.x / state.camera.zoom;
     const vp_y = -state.camera.position.y / state.camera.zoom;
     const vp_w = viewport_rect.width / state.camera.zoom;

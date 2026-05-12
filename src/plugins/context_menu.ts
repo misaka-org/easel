@@ -1,13 +1,13 @@
-import type { EaselPlugin } from '../runtime/mount';
+import type { EaselPlugin } from '../runtime/easel';
 import { remove_node } from '../core/node_ops';
 import { add_node } from '../core/node_ops';
 import { vec2_create } from '../core/math';
 import { get_registered_types } from '../runtime/registry';
 import { apply_styles } from '@/utils/css';
 
-export const context_menu_plugin: EaselPlugin = (ctx) => {
+export const context_menu_plugin: EaselPlugin = (easel) => {
   // Inject styles once
-  const root_node = ctx.container.getRootNode() as ShadowRoot | Document;
+  const root_node = easel.container.getRootNode() as ShadowRoot | Document;
   if (!root_node.querySelector('#easel-context-menu-style')) {
     const style_el = document.createElement('style');
     style_el.id = 'easel-context-menu-style';
@@ -51,7 +51,7 @@ export const context_menu_plugin: EaselPlugin = (ctx) => {
 
   const menu = document.createElement('div');
   menu.className = 'easel-context-menu';
-  ctx.container.appendChild(menu);
+  easel.container.appendChild(menu);
 
   let target_node_id: string | null = null;
   let click_pos = vec2_create(0, 0);
@@ -90,7 +90,7 @@ export const context_menu_plugin: EaselPlugin = (ctx) => {
         menu.style.display = 'none';
         hide_submenu();
 
-        const state = ctx.state.value;
+        const state = easel.state.value;
         const world_x = (click_pos.x - state.camera.position.x) / state.camera.zoom;
         const world_y = (click_pos.y - state.camera.position.y) / state.camera.zoom;
 
@@ -107,7 +107,7 @@ export const context_menu_plugin: EaselPlugin = (ctx) => {
           custom_data: {}
         };
 
-        ctx.dispatch(st => add_node(st, node_data));
+        easel.dispatch(st => add_node(st, node_data));
       });
       submenu!.appendChild(item);
     });
@@ -126,16 +126,16 @@ export const context_menu_plugin: EaselPlugin = (ctx) => {
     });
   };
 
-  ctx.app_events.on('contextmenu', (e: MouseEvent) => {
+  easel.app_events.on('contextmenu', (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const root = ctx.container.getRootNode() as ShadowRoot | Document;
+    const root = easel.container.getRootNode() as ShadowRoot | Document;
     const el = root.elementFromPoint(e.clientX, e.clientY) as HTMLElement;
     const node_el = el?.closest('.node') as HTMLElement | null;
     target_node_id = node_el?.dataset['id'] || null;
 
-    const rect = ctx.container.getBoundingClientRect();
+    const rect = easel.container.getBoundingClientRect();
     click_pos = vec2_create(e.clientX - rect.left, e.clientY - rect.top);
 
     menu.style.left = `${click_pos.x}px`;
@@ -173,12 +173,12 @@ export const context_menu_plugin: EaselPlugin = (ctx) => {
     if (target_node_id) {
       create_item('Delete Node', () => {
         if (target_node_id) {
-          ctx.dispatch(s => remove_node(s, target_node_id!));
+          easel.dispatch(s => remove_node(s, target_node_id!));
         }
       });
       create_item('Duplicate', () => {
         if (target_node_id) {
-          ctx.dispatch(s => {
+          easel.dispatch(s => {
             const n = s.nodes[target_node_id!];
             if (!n) return s;
             const new_id = `${n.type}_${Date.now()}`;
@@ -196,18 +196,18 @@ export const context_menu_plugin: EaselPlugin = (ctx) => {
     } else {
       create_item('Add Node', () => {}, true);
       create_item('Reset Camera', () => {
-        ctx.dispatch(s => ({
+        easel.dispatch(s => ({
           ...s,
           camera: { position: vec2_create(0, 0), zoom: 1 }
         }));
       });
       create_item('Clear Wires', () => {
-        ctx.dispatch(s => ({ ...s, wires: {} }));
+        easel.dispatch(s => ({ ...s, wires: {} }));
       });
     }
   });
 
-  ctx.app_events.on('pointerdown', (e: MouseEvent) => {
+  easel.app_events.on('pointerdown', (e: MouseEvent) => {
     if (!(e.target as HTMLElement).closest('.easel-context-menu')) {
       menu.style.display = 'none';
       hide_submenu();

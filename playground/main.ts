@@ -1,5 +1,5 @@
 import { effect } from "@vue/reactivity";
-import { mount_easel, register_node_type, register_execute_fn, EaselNode } from "@/index";
+import { Easel, register_node_type, EaselNode, type ExecuteContext } from "@/index";
 import { add_node, update_node_data } from "@/core/node_ops";
 import { create_initial_state } from "@/core/state";
 import { serialize_state, deserialize_state } from "@/core/serialization";
@@ -12,66 +12,60 @@ import { context_menu_plugin } from "@/plugins/context_menu";
 import { history_plugin } from "@/plugins/history";
 import { auto_pan_plugin } from "@/plugins/auto_pan";
 import { executor_plugin } from "@/plugins/executor_plugin";
+import { DefaultNode } from "@/index";
 
-import { SubgraphNode, SubgraphInputNode, SubgraphOutputNode } from "@/nodes/subgraph";
-import { GroupNode } from "@/nodes/group";
 import { MathNode } from "./nodes/math";
 import { load_math_scene, evaluate_math_graph } from "./scenes/scene_math";
 import { load_perf_scene } from "./scenes/scene_perf";
 import { load_executor_scene } from "./scenes/scene_executor";
-import EventEmitter from "eventemitter3";
 import { ImagePreviewNode } from "./nodes/image_preview";
 
+class ExecutableDefaultNode extends DefaultNode {
+  async execute({ node, inputs, report_progress }: ExecuteContext) {
+    report_progress(50);
+    await new Promise((r) => setTimeout(r, 500));
+    report_progress(100);
+    return { out: (inputs['val'] as number) || 0 };
+  }
+}
+
+class TextGenNode extends DefaultNode {
+  async execute({ node, inputs, report_progress, signal }: ExecuteContext) {
+    report_progress(30);
+    await new Promise((r) => setTimeout(r, 400));
+    if (signal?.aborted) throw new Error("Aborted");
+    report_progress(70);
+    await new Promise((r) => setTimeout(r, 400));
+    if (signal?.aborted) throw new Error("Aborted");
+    report_progress(100);
+    return { out_list: `Gen: ${inputs['prompt'] || 'empty'}` };
+  }
+}
+
+class ImageGenNode extends DefaultNode {
+  async execute({ node, inputs, report_progress, signal }: ExecuteContext) {
+    report_progress(10);
+    await new Promise((r) => setTimeout(r, 300));
+    if (signal?.aborted) throw new Error("Aborted");
+    report_progress(50);
+    await new Promise((r) => setTimeout(r, 600));
+    if (signal?.aborted) throw new Error("Aborted");
+    report_progress(100);
+    return { out_img: `Image for: ${inputs['prompt']}` };
+  }
+}
+
+register_node_type("default", ExecutableDefaultNode);
+register_node_type("text_generation", TextGenNode);
+register_node_type("image_generation", ImageGenNode);
 register_node_type("image_preview", ImagePreviewNode);
-register_node_type("subgraph", SubgraphNode);
-register_node_type("subgraph_input", SubgraphInputNode);
-register_node_type("subgraph_output", SubgraphOutputNode);
-register_node_type("group", GroupNode);
 register_node_type("math", MathNode);
-
-register_execute_fn("math", async ({ node, inputs, report_progress }) => {
-  report_progress(30);
-  await new Promise((r) => setTimeout(r, 500));
-  report_progress(60);
-  await new Promise((r) => setTimeout(r, 500));
-  const a = Number(inputs['a'] || 0);
-  const b = Number(inputs['b'] || 0);
-  const op = node.custom_data['operation'] || 'add';
-  const res = op === 'add' ? a + b : 0;
-  report_progress(100);
-  return { out: res };
-});
-
-register_execute_fn("default", async ({ node, inputs, report_progress }) => {
-  report_progress(50);
-  await new Promise((r) => setTimeout(r, 500));
-  report_progress(100);
-  return { out: (inputs['val'] as number) || 0 };
-});
-
-register_execute_fn("text_generation", async ({ inputs, report_progress }) => {
-  report_progress(30);
-  await new Promise((r) => setTimeout(r, 400));
-  report_progress(70);
-  await new Promise((r) => setTimeout(r, 400));
-  report_progress(100);
-  return { out_list: `Gen: ${inputs['prompt'] || 'empty'}` };
-});
-
-register_execute_fn("image_generation", async ({ inputs, report_progress }) => {
-  report_progress(10);
-  await new Promise((r) => setTimeout(r, 300));
-  report_progress(50);
-  await new Promise((r) => setTimeout(r, 600));
-  report_progress(100);
-  return { out_img: `Image for: ${inputs['prompt']}` };
-});
 
 const init = () => {
   const canvas_el = document.getElementById("canvas");
   if (!canvas_el) return;
 
-  const { state, dispatch, app_events, set_theme } = mount_easel(canvas_el, {
+  const easel = new Easel(canvas_el, {
     plugins: [
       minimap_plugin,
       controls_plugin,
@@ -114,12 +108,14 @@ const init = () => {
     `,
   });
 
+  const { state, dispatch, app_events, set_theme } = easel;
+
   // Graph Stack Management
   type StackItem = { parent_node_id: string; parent_state: State };
   const graph_stack: StackItem[] = [];
 
   app_events.on("enter_subgraph", ({ node_id }) => {
-    const node = state.value.nodes[node_id];
+    const node = easel.state.value.nodes[node_id];
     if (!node) return;
 
     graph_stack.push({ parent_node_id: node_id, parent_state: state.value });
@@ -355,7 +351,7 @@ const init = () => {
         ...node_data,
         custom_data: { color: '#3b82f6' },
         inputs: [
-          { id: 'prompt', label: 'Prompt', type: 'input', value_type: 'text' }
+          { id: 'prompt', label: 'Prompt', type: 'input', value_type: 'text', required: true }
         ],
         outputs: [
           { id: 'out_list', label: 'List [ ]', type: 'output', value_type: 'text' }

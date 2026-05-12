@@ -53,7 +53,16 @@ export abstract class EaselNode {
       };
     });
   }
+
+  async execute?(ctx: ExecuteContext): Promise<Record<string, unknown>>;
 }
+
+export type ExecuteContext = {
+  readonly node: import('../core/types').GraphNode;
+  readonly inputs: Record<string, unknown>;
+  readonly report_progress: (progress: number) => void;
+  readonly signal?: AbortSignal;
+};
 
 export type EaselNodeConstructor = new (
   container: HTMLElement,

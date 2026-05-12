@@ -8,14 +8,10 @@ export type ExecutionNodeState = {
 };
 
 export type ExecutionState = {
-  readonly status: 'idle' | 'running' | 'paused' | 'error' | 'completed';
+  readonly status: 'idle' | 'running' | 'paused' | 'error' | 'completed' | 'stopped';
   readonly node_states: Record<string, ExecutionNodeState>;
-  readonly execution_queue: readonly string[];
-  readonly current_node_index: number;
-};
-
-export type ExecuteContext = {
-  readonly node: import('../core/types').GraphNode;
-  readonly inputs: Record<string, unknown>;
-  readonly report_progress: (progress: number) => void;
+  readonly ready_queue: readonly string[];
+  readonly running_nodes: readonly string[];
+  readonly in_degrees: Record<string, number>;
+  readonly adj: Record<string, string[]>;
 };

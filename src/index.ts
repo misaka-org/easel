@@ -7,13 +7,13 @@ export * from "./core/math";
 export * from "./core/types";
 
 // Runtime exports
-export { mount_easel } from "./runtime/mount";
-export { EaselNode, register_node_type, get_node_constructor, get_registered_types, type Dispatch } from "./runtime/registry";
+export { Easel, type EaselEvents } from "./runtime/easel";
+export { EaselNode, register_node_type, get_node_constructor, get_registered_types, type Dispatch, type ExecuteContext } from "./runtime/registry";
+export { DefaultNode } from "./runtime/default_node";
 export { default_theme, light_theme, apply_theme, type Theme } from "./runtime/theme";
 
 // Executor exports
-export { register_execute_fn, get_execute_fn } from "./executor/registry";
-export { init_execution, step_execution, run_execution, create_initial_execution_state } from "./executor/engine";
+export { GraphExecutor } from "./executor/engine";
 export * from "./executor/types";
 
 // Plugins (optional)

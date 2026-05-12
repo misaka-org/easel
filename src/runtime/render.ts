@@ -9,16 +9,15 @@ import {
 import { DefaultNode } from "./default_node";
 import { frame_effect } from "./frame_effect";
 
-export const render_nodes = (
-  container: HTMLElement,
-  state_ref: { value: State },
-  dispatch: Dispatch,
-  context: Record<string, any> = {}
-): void => {
-  const node_instances = new Map<
-    string,
-    { el: HTMLElement; inst: EaselNode; runner: ReactiveEffectRunner }
-  >();
+import type { Easel } from "./easel";
+
+export const render_nodes = (easel: Easel): void => {
+  const container = easel.container;
+  const state_ref = easel.state;
+  const dispatch = easel.dispatch;
+  const node_instances = easel.node_instances;
+  const context = { app_events: easel.app_events };
+
   const container_element = document.createElement("div");
   container_element.className = "nodes-container";
   container.appendChild(container_element);
