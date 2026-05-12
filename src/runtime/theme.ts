@@ -80,6 +80,7 @@ export const get_base_css = () => css`
     background-color: var(--canvas-bg);
     background-image: radial-gradient(#27272a 1px, transparent 1px);
     user-select: none;
+    contain: strict;
   }
 
   .nodes-container {
@@ -100,7 +101,7 @@ export const get_base_css = () => css`
     user-select: none;
     display: flex;
     flex-direction: column;
-    contain: layout style;
+    contain: layout style paint content;
   }
 
   .node.selected {
