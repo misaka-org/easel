@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { topological_sort } from '../scheduler';
 import * as E from 'fp-ts/Either';
-import { vec2_create } from '../../core/math';
-import type { GraphNode, Wire } from '../../core/types';
+import { vec2_create } from '@/core/math';
+import type { GraphNode, Wire } from '@/core/types';
 
 describe('scheduler', () => {
   it('should topologically sort a simple graph', () => {

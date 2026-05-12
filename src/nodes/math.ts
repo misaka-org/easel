@@ -1,6 +1,6 @@
-import { EaselNode } from '../runtime/registry';
-import type { GraphNode, State } from '../core/types';
-import { update_widget_value } from '../core/node_ops';
+import { EaselNode } from '@/runtime/registry';
+import type { GraphNode, State } from '@/core/types';
+import { update_widget_value } from '@/core/node_ops';
 
 export class MathNode extends EaselNode {
   private body!: HTMLElement;

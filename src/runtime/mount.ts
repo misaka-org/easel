@@ -2,10 +2,10 @@ import { create_store } from './store';
 import { setup_events } from './events';
 import { render_nodes } from './render';
 import { render_wires } from './render_wires';
-import { with_guidelines } from '../plugins/guidelines';
+import { with_guidelines } from '@/plugins/guidelines';
 import { get_base_css, apply_theme, default_theme, type Theme } from './theme';
 import EventEmitter from 'eventemitter3';
-import type { State } from '../core/types';
+import type { State } from '@/core/types';
 import type { ShallowRef } from '@vue/reactivity';
 
 export type Dispatch = (updater: (state: State) => State) => void;

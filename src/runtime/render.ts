@@ -1,6 +1,6 @@
 import { effect, stop, type ReactiveEffectRunner } from "@vue/reactivity";
-import type { State } from "../core/types";
-import { aabb_intersect, vec2_create } from "../core/math";
+import type { State } from "@/core/types";
+import { aabb_intersect, vec2_create } from "@/core/math";
 import {
   get_node_constructor,
   type EaselNode,

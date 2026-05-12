@@ -2,7 +2,7 @@ import * as E from 'fp-ts/Either';
 import * as T from 'fp-ts/Task';
 import { pipe } from 'fp-ts/function';
 import type { ExecutionState, ExecutionNodeState } from './types';
-import type { GraphNode, Wire } from '../core/types';
+import type { GraphNode, Wire } from '@/core/types';
 import { topological_sort } from './scheduler';
 import { get_execute_fn } from './registry';
 

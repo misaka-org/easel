@@ -1,8 +1,8 @@
-import type { EaselPlugin } from '../runtime/mount';
-import { init_execution, step_execution, run_execution, create_initial_execution_state } from '../executor/engine';
-import type { ExecutionState } from '../executor/types';
+import type { EaselPlugin } from '@/runtime/mount';
+import { init_execution, step_execution, run_execution, create_initial_execution_state } from '@/executor/engine';
+import type { ExecutionState } from '@/executor/types';
+import { frame_effect } from '@/runtime/frame_effect';
 import * as E from 'fp-ts/Either';
-import { frame_effect } from '../runtime/frame_effect';
 
 export const executor_plugin: EaselPlugin = (ctx) => {
   let exec_state = create_initial_execution_state();

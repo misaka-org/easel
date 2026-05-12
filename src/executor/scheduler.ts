@@ -1,5 +1,5 @@
 import * as E from 'fp-ts/Either';
-import type { GraphNode, Wire } from '../core/types';
+import type { GraphNode, Wire } from '@/core/types';
 
 export const build_adjacency_list = (wires: Record<string, Wire>): Record<string, string[]> => {
   const adj: Record<string, string[]> = {};

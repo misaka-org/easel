@@ -1,6 +1,6 @@
 import { effect } from "@vue/reactivity";
-import type { State } from "../core/types";
-import { vec2_sub, vec2_scale, vec2_add, vec2_create } from "../core/math";
+import type { State } from "@/core/types";
+import { vec2_sub, vec2_scale, vec2_add, vec2_create } from "@/core/math";
 import { frame_effect } from "./frame_effect";
 
 export const render_wires = (

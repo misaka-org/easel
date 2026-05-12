@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { init_execution, step_execution } from '../engine';
 import { register_execute_fn } from '../registry';
 import * as E from 'fp-ts/Either';
-import { vec2_create } from '../../core/math';
-import type { GraphNode, Wire } from '../../core/types';
+import { vec2_create } from '@/core/math';
+import type { GraphNode, Wire } from '@/core/types';
 
 describe('engine', () => {
   it('should execute a node and gather outputs', async () => {

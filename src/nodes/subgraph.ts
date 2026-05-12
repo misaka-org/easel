@@ -1,6 +1,6 @@
-import { EaselNode } from '../runtime/registry';
-import type { GraphNode, State } from '../core/types';
-import { update_node_data, remove_node } from '../core/node_ops';
+import { EaselNode } from '@/runtime/registry';
+import type { GraphNode, State } from '@/core/types';
+import { update_node_data, remove_node } from '@/core/node_ops';
 
 export class SubgraphNode extends EaselNode {
   private header!: HTMLElement;

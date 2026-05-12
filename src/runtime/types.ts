@@ -1,4 +1,4 @@
-import type { State } from '../core/types';
+import type { State } from '@/core/types';
 import type { Theme } from './theme';
 import type EventEmitter from 'eventemitter3';
 import type { ShallowRef } from '@vue/reactivity';

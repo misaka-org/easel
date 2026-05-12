@@ -1,30 +1,30 @@
 import { effect } from "@vue/reactivity";
-import { mount_easel } from "./runtime/mount";
-import { EaselNode, register_node_type } from "./runtime/registry";
-import { add_node, update_node_data } from "./core/node_ops";
-import { create_initial_state } from "./core/state";
-import { serialize_state, deserialize_state } from "./core/serialization";
-import { vec2_create } from "./core/math";
-import type { GraphNode, State } from "./core/types";
-import { light_theme, default_theme } from "./runtime/theme";
-import { minimap_plugin } from "./plugins/minimap";
-import { controls_plugin } from "./plugins/controls";
-import { context_menu_plugin } from "./plugins/context_menu";
-import { history_plugin } from "./plugins/history";
-import { auto_pan_plugin } from "./plugins/auto_pan";
-import { executor_plugin } from "./plugins/executor_plugin";
-import { register_execute_fn } from "./executor/registry";
+import { mount_easel } from "@/runtime/mount";
+import { EaselNode, register_node_type } from "@/runtime/registry";
+import { add_node, update_node_data } from "@/core/node_ops";
+import { create_initial_state } from "@/core/state";
+import { serialize_state, deserialize_state } from "@/core/serialization";
+import { vec2_create } from "@/core/math";
+import type { GraphNode, State } from "@/core/types";
+import { light_theme, default_theme } from "@/runtime/theme";
+import { minimap_plugin } from "@/plugins/minimap";
+import { controls_plugin } from "@/plugins/controls";
+import { context_menu_plugin } from "@/plugins/context_menu";
+import { history_plugin } from "@/plugins/history";
+import { auto_pan_plugin } from "@/plugins/auto_pan";
+import { executor_plugin } from "@/plugins/executor_plugin";
+import { register_execute_fn } from "@/executor/registry";
 
 import {
   SubgraphNode,
   SubgraphInputNode,
   SubgraphOutputNode,
-} from "./nodes/subgraph";
-import { MathNode } from "./nodes/math";
-import { GroupNode } from "./nodes/group";
-import { load_math_scene, evaluate_math_graph } from "./scenes/scene_math";
-import { load_perf_scene } from "./scenes/scene_perf";
-import { load_executor_scene } from "./scenes/scene_executor";
+} from "@/nodes/subgraph";
+import { MathNode } from "@/nodes/math";
+import { GroupNode } from "@/nodes/group";
+import { load_math_scene, evaluate_math_graph } from "@/scenes/scene_math";
+import { load_perf_scene } from "@/scenes/scene_perf";
+import { load_executor_scene } from "@/scenes/scene_executor";
 import EventEmitter from "eventemitter3";
 
 const app_events = new EventEmitter();

@@ -1,7 +1,7 @@
-import { EaselNode } from '../runtime/registry';
-import type { GraphNode, State } from '../core/types';
-import { aabb_contains } from '../core/math';
-import { update_node_data } from '../core/node_ops';
+import { EaselNode } from '@/runtime/registry';
+import type { GraphNode, State } from '@/core/types';
+import { aabb_contains } from '@/core/math';
+import { update_node_data } from '@/core/node_ops';
 
 export class GroupNode extends EaselNode {
   private header!: HTMLElement;
