@@ -3,24 +3,27 @@ import { init_execution, step_execution, run_execution, create_initial_execution
 import type { ExecutionState } from '@/executor/types';
 import { frame_effect } from '@/runtime/frame_effect';
 import * as E from 'fp-ts/Either';
+import { apply_styles } from '@/utils/css';
 
 export const executor_plugin: EaselPlugin = (ctx) => {
   let exec_state = create_initial_execution_state();
 
   const container = document.createElement('div');
   container.className = 'easel-executor-panel';
-  container.style.position = 'absolute';
-  container.style.top = '20px';
-  container.style.left = '50%';
-  container.style.transform = 'translateX(-50%)';
-  container.style.display = 'flex';
-  container.style.gap = '8px';
-  container.style.padding = '8px';
-  container.style.background = 'var(--node-bg)';
-  container.style.border = '1px solid var(--node-border)';
-  container.style.borderRadius = '8px';
-  container.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-  container.style.zIndex = '1000';
+  apply_styles(container, {
+    position: 'absolute',
+    top: '20px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    display: 'flex',
+    gap: '8px',
+    padding: '8px',
+    background: 'var(--node-bg)',
+    border: '1px solid var(--node-border)',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+    zIndex: '1000',
+  });
 
   const btn_init = document.createElement('button');
   btn_init.textContent = 'Compile';
@@ -35,20 +38,24 @@ export const executor_plugin: EaselPlugin = (ctx) => {
   btn_reset.textContent = 'Reset';
 
   const status_txt = document.createElement('div');
-  status_txt.style.display = 'flex';
-  status_txt.style.alignItems = 'center';
-  status_txt.style.fontSize = '12px';
-  status_txt.style.padding = '0 8px';
+  apply_styles(status_txt, {
+    display: 'flex',
+    alignItems: 'center',
+    fontSize: '12px',
+    padding: '0 8px',
+  });
   status_txt.textContent = 'Idle';
 
   [btn_init, btn_step, btn_run, btn_reset].forEach(btn => {
-    btn.style.background = 'var(--primary-color)';
-    btn.style.color = 'var(--canvas-bg)';
-    btn.style.border = 'none';
-    btn.style.padding = '6px 12px';
-    btn.style.borderRadius = '4px';
-    btn.style.cursor = 'pointer';
-    btn.style.fontWeight = 'bold';
+    apply_styles(btn, {
+      background: 'var(--primary-color)',
+      color: 'var(--canvas-bg)',
+      border: 'none',
+      padding: '6px 12px',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      fontWeight: 'bold',
+    });
     container.appendChild(btn);
   });
   container.appendChild(status_txt);
@@ -59,13 +66,15 @@ export const executor_plugin: EaselPlugin = (ctx) => {
   const node_overlays = new Map<string, HTMLElement>();
   const overlays_container = document.createElement('div');
   overlays_container.className = 'executor-overlays';
-  overlays_container.style.position = 'absolute';
-  overlays_container.style.top = '0';
-  overlays_container.style.left = '0';
-  overlays_container.style.width = '100%';
-  overlays_container.style.height = '100%';
-  overlays_container.style.pointerEvents = 'none';
-  overlays_container.style.zIndex = '100';
+  apply_styles(overlays_container, {
+    position: 'absolute',
+    top: '0',
+    left: '0',
+    width: '100%',
+    height: '100%',
+    pointerEvents: 'none',
+    zIndex: '100',
+  });
   ctx.container.appendChild(overlays_container);
 
   const update_ui = () => {
@@ -123,31 +132,37 @@ export const executor_plugin: EaselPlugin = (ctx) => {
         let el = node_overlays.get(id);
         if (!el) {
           el = document.createElement('div');
-          el.style.position = 'absolute';
-          el.style.borderRadius = '10px';
-          el.style.pointerEvents = 'none';
-          el.style.boxSizing = 'border-box';
-          el.style.transition = 'border-color 0.2s, box-shadow 0.2s';
+          apply_styles(el, {
+            position: 'absolute',
+            borderRadius: '10px',
+            pointerEvents: 'none',
+            boxSizing: 'border-box',
+            transition: 'border-color 0.2s, box-shadow 0.2s',
+          });
           
           const progress_bar = document.createElement('div');
           progress_bar.className = 'progress-bar';
-          progress_bar.style.position = 'absolute';
-          progress_bar.style.bottom = '-12px';
-          progress_bar.style.left = '0';
-          progress_bar.style.height = '4px';
-          progress_bar.style.background = '#3b82f6';
-          progress_bar.style.transition = 'width 0.2s';
-          progress_bar.style.borderRadius = '2px';
+          apply_styles(progress_bar, {
+            position: 'absolute',
+            bottom: '-12px',
+            left: '0',
+            height: '4px',
+            background: '#3b82f6',
+            transition: 'width 0.2s',
+            borderRadius: '2px',
+          });
           el.appendChild(progress_bar);
           
           const error_text = document.createElement('div');
           error_text.className = 'error-text';
-          error_text.style.position = 'absolute';
-          error_text.style.top = '-20px';
-          error_text.style.left = '0';
-          error_text.style.color = '#ef4444';
-          error_text.style.fontSize = '12px';
-          error_text.style.fontWeight = 'bold';
+          apply_styles(error_text, {
+            position: 'absolute',
+            top: '-20px',
+            left: '0',
+            color: '#ef4444',
+            fontSize: '12px',
+            fontWeight: 'bold',
+          });
           el.appendChild(error_text);
           
           overlays_container.appendChild(el);

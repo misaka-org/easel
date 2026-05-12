@@ -1,21 +1,24 @@
 import type { EaselPlugin } from '../runtime/mount';
 import { frame_effect } from '../runtime/frame_effect';
+import { apply_styles } from '@/utils/css';
 
 export const minimap_plugin: EaselPlugin = (ctx) => {
   const minimap_container = document.createElement('div');
   minimap_container.className = 'easel-minimap';
-  minimap_container.style.position = 'absolute';
-  minimap_container.style.bottom = '20px';
-  minimap_container.style.right = '20px';
-  minimap_container.style.width = '150px';
-  minimap_container.style.height = '100px';
-  minimap_container.style.background = 'var(--node-bg)';
-  minimap_container.style.border = '1px solid var(--node-border)';
-  minimap_container.style.borderRadius = '4px';
-  minimap_container.style.overflow = 'hidden';
-  minimap_container.style.zIndex = '1000';
-  minimap_container.style.pointerEvents = 'none';
-  minimap_container.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+  apply_styles(minimap_container, {
+    position: 'absolute',
+    bottom: '20px',
+    right: '20px',
+    width: '150px',
+    height: '100px',
+    background: 'var(--node-bg)',
+    border: '1px solid var(--node-border)',
+    borderRadius: '4px',
+    overflow: 'hidden',
+    zIndex: '1000',
+    pointerEvents: 'none',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+  });
 
   const minimap_canvas = document.createElement('canvas');
   minimap_canvas.width = 150;

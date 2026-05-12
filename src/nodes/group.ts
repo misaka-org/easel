@@ -2,6 +2,7 @@ import { EaselNode } from '@/runtime/registry';
 import type { GraphNode, State } from '@/core/types';
 import { aabb_contains } from '@/core/math';
 import { update_node_data } from '@/core/node_ops';
+import { apply_styles } from '@/utils/css';
 
 export class GroupNode extends EaselNode {
   private header!: HTMLElement;
@@ -33,9 +34,23 @@ export class GroupNode extends EaselNode {
     if (target.tagName === 'INPUT') return;
     
     this.is_editing = true;
-    this.header.innerHTML = `<input type="text" class="group-title-input" value="${this.current_title}" style="width:100%; background:transparent; border:none; color:white; font-size:14px; font-weight:bold; outline:none; font-family:inherit; pointer-events:auto;" />`;
-    
-    const input = this.header.querySelector('input')!;
+    this.header.innerHTML = '';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'group-title-input';
+    input.value = this.current_title;
+    apply_styles(input, {
+      width: '100%',
+      background: 'transparent',
+      border: 'none',
+      color: 'white',
+      fontSize: '14px',
+      fontWeight: 'bold',
+      outline: 'none',
+      fontFamily: 'inherit',
+      pointerEvents: 'auto',
+    });
+    this.header.appendChild(input);
     input.focus();
     input.select();
     
@@ -115,10 +130,14 @@ export class GroupNode extends EaselNode {
     }
 
     const hue = node_data.custom_data['hue'] ?? 210;
-    this.container.style.backgroundColor = `hsla(${hue}, 50%, 30%, 0.15)`;
-    this.container.style.borderColor = `hsla(${hue}, 50%, 50%, 0.4)`;
-    this.header.style.backgroundColor = `hsla(${hue}, 50%, 20%, 0.5)`;
-    this.header.style.borderBottomColor = `hsla(${hue}, 50%, 50%, 0.4)`;
+    apply_styles(this.container, {
+      backgroundColor: `hsla(${hue}, 50%, 30%, 0.15)`,
+      borderColor: `hsla(${hue}, 50%, 50%, 0.4)`,
+    });
+    apply_styles(this.header, {
+      backgroundColor: `hsla(${hue}, 50%, 20%, 0.5)`,
+      borderBottomColor: `hsla(${hue}, 50%, 50%, 0.4)`,
+    });
     
     if (node_data.resizable) {
       if (!this.container.querySelector('.node-resize-handle')) {

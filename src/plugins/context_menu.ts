@@ -3,25 +3,28 @@ import { remove_node } from '../core/node_ops';
 import { add_node } from '../core/node_ops';
 import { vec2_create } from '../core/math';
 import { get_registered_types } from '../runtime/registry';
+import { apply_styles } from '@/utils/css';
 
 export const context_menu_plugin: EaselPlugin = (ctx) => {
   const menu = document.createElement('div');
   menu.className = 'easel-context-menu';
-  menu.style.position = 'absolute';
-  menu.style.display = 'none';
-  menu.style.zIndex = '2000';
-  menu.style.background = 'var(--popover-bg, #18181b)';
-  menu.style.border = '1px solid var(--border-color, #27272a)';
-  menu.style.borderRadius = '8px';
-  menu.style.padding = '4px';
-  menu.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.05)';
-  menu.style.flexDirection = 'column';
-  menu.style.gap = '2px';
-  menu.style.minWidth = '140px';
-  menu.style.backdropFilter = 'blur(12px)';
-  menu.style.fontSize = '13px';
-  menu.style.fontWeight = '400';
-  menu.style.color = 'var(--text-color, #fafafa)';
+  apply_styles(menu, {
+    position: 'absolute',
+    display: 'none',
+    zIndex: '2000',
+    background: 'var(--popover-bg, #18181b)',
+    border: '1px solid var(--border-color, #27272a)',
+    borderRadius: '8px',
+    padding: '4px',
+    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+    flexDirection: 'column',
+    gap: '2px',
+    minWidth: '140px',
+    backdropFilter: 'blur(12px)',
+    fontSize: '13px',
+    fontWeight: '400',
+    color: 'var(--text-color, #fafafa)',
+  });
 
   ctx.container.appendChild(menu);
 
@@ -48,28 +51,32 @@ export const context_menu_plugin: EaselPlugin = (ctx) => {
 
     submenu = document.createElement('div');
     submenu.className = 'easel-context-menu';
-    submenu.style.position = 'absolute';
-    submenu.style.background = 'var(--popover-bg, #18181b)';
-    submenu.style.border = '1px solid var(--border-color, #27272a)';
-    submenu.style.borderRadius = '8px';
-    submenu.style.padding = '4px';
-    submenu.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.4)';
-    submenu.style.flexDirection = 'column';
-    submenu.style.gap = '2px';
-    submenu.style.minWidth = '140px';
-    submenu.style.backdropFilter = 'blur(12px)';
-    submenu.style.fontSize = '13px';
-    submenu.style.color = 'var(--text-color, #fafafa)';
-    submenu.style.zIndex = '2001';
+    apply_styles(submenu, {
+      position: 'absolute',
+      background: 'var(--popover-bg, #18181b)',
+      border: '1px solid var(--border-color, #27272a)',
+      borderRadius: '8px',
+      padding: '4px',
+      boxShadow: '0 8px 20px rgba(0, 0, 0, 0.4)',
+      flexDirection: 'column',
+      gap: '2px',
+      minWidth: '140px',
+      backdropFilter: 'blur(12px)',
+      fontSize: '13px',
+      color: 'var(--text-color, #fafafa)',
+      zIndex: '2001',
+    });
 
     types.forEach(type_name => {
       const item = document.createElement('div');
       item.textContent = type_name.replace(/_/g, ' ');
-      item.style.padding = '6px 12px';
-      item.style.cursor = 'pointer';
-      item.style.borderRadius = '6px';
-      item.style.fontSize = '13px';
-      item.style.transition = 'background 0.1s ease';
+      apply_styles(item, {
+        padding: '6px 12px',
+        cursor: 'pointer',
+        borderRadius: '6px',
+        fontSize: '13px',
+        transition: 'background 0.1s ease',
+      });
       item.addEventListener('mouseenter', () => {
         item.style.background = 'rgba(255, 255, 255, 0.1)';
       });
@@ -138,15 +145,17 @@ export const context_menu_plugin: EaselPlugin = (ctx) => {
     const create_item = (label: string, action: () => void, has_submenu: boolean = false) => {
       const item = document.createElement('div');
       item.textContent = label;
-      item.style.padding = '6px 12px';
-      item.style.cursor = 'pointer';
-      item.style.borderRadius = '6px';
-      item.style.color = 'var(--text-color, #fafafa)';
-      item.style.fontSize = '13px';
-      item.style.transition = 'background 0.1s ease';
-      item.style.display = 'flex';
-      item.style.justifyContent = 'space-between';
-      item.style.alignItems = 'center';
+      apply_styles(item, {
+        padding: '6px 12px',
+        cursor: 'pointer',
+        borderRadius: '6px',
+        color: 'var(--text-color, #fafafa)',
+        fontSize: '13px',
+        transition: 'background 0.1s ease',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      });
 
       if (has_submenu) {
         const arrow = document.createElement('span');

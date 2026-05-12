@@ -1,20 +1,23 @@
 import type { EaselPlugin } from '../runtime/mount';
 import { vec2_create } from '../core/math';
+import { apply_styles } from '@/utils/css';
 
 export const controls_plugin: EaselPlugin = (ctx) => {
   const bar = document.createElement('div');
   bar.className = 'easel-controls';
-  bar.style.position = 'absolute';
-  bar.style.bottom = '20px';
-  bar.style.left = '20px';
-  bar.style.display = 'flex';
-  bar.style.flexDirection = 'column';
-  bar.style.zIndex = '1000';
-  bar.style.background = 'var(--node-bg)';
-  bar.style.borderRadius = '6px';
-  bar.style.border = '1px solid var(--node-border)';
-  bar.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
-  bar.style.overflow = 'hidden';
+  apply_styles(bar, {
+    position: 'absolute',
+    bottom: '20px',
+    left: '20px',
+    display: 'flex',
+    flexDirection: 'column',
+    zIndex: '1000',
+    background: 'var(--node-bg)',
+    borderRadius: '6px',
+    border: '1px solid var(--node-border)',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+    overflow: 'hidden',
+  });
 
   const icon_plus = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
   const icon_minus = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;

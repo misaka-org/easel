@@ -3,6 +3,7 @@ import type { State } from "../core/types";
 import type { Dispatch } from "../runtime/registry";
 import { frame_effect } from "../runtime/frame_effect";
 import { move_nodes } from "../core/node_ops";
+import { apply_styles } from "@/utils/css";
 
 export const with_guidelines = (
   container: HTMLElement,
@@ -10,13 +11,15 @@ export const with_guidelines = (
   dispatch: Dispatch
 ): Dispatch => {
   const overlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  overlay.style.position = "absolute";
-  overlay.style.top = "0";
-  overlay.style.left = "0";
-  overlay.style.width = "100%";
-  overlay.style.height = "100%";
-  overlay.style.pointerEvents = "none";
-  overlay.style.zIndex = "100";
+  apply_styles(overlay, {
+    position: "absolute",
+    top: "0",
+    left: "0",
+    width: "100%",
+    height: "100%",
+    pointerEvents: "none",
+    zIndex: "100",
+  });
   container.appendChild(overlay);
 
   const SNAP_THRESHOLD = 10;

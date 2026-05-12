@@ -1,5 +1,6 @@
 import type { EaselPlugin } from '../runtime/mount';
 import type { State } from '../core/types';
+import { apply_styles } from '@/utils/css';
 
 export const history_plugin: EaselPlugin = (ctx) => {
   const history: State[] = [ctx.state.value];
@@ -8,36 +9,42 @@ export const history_plugin: EaselPlugin = (ctx) => {
 
   const panel = document.createElement('div');
   panel.className = 'easel-history-panel';
-  panel.style.position = 'absolute';
-  panel.style.top = '20px';
-  panel.style.right = '20px';
-  panel.style.width = '180px';
-  panel.style.maxHeight = '300px';
-  panel.style.display = 'flex';
-  panel.style.flexDirection = 'column';
-  panel.style.zIndex = '1000';
-  panel.style.background = 'var(--node-bg)';
-  panel.style.border = '1px solid var(--node-border)';
-  panel.style.borderRadius = '6px';
-  panel.style.boxShadow = '0 4px 6px rgba(0,0,0,0.3)';
-  panel.style.overflow = 'hidden';
+  apply_styles(panel, {
+    position: 'absolute',
+    top: '20px',
+    right: '20px',
+    width: '180px',
+    maxHeight: '300px',
+    display: 'flex',
+    flexDirection: 'column',
+    zIndex: '1000',
+    background: 'var(--node-bg)',
+    border: '1px solid var(--node-border)',
+    borderRadius: '6px',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+    overflow: 'hidden',
+  });
 
   const header = document.createElement('div');
   header.textContent = 'History';
-  header.style.padding = '8px';
-  header.style.fontWeight = 'bold';
-  header.style.background = 'var(--node-header-bg)';
-  header.style.borderBottom = '1px solid var(--node-border)';
-  header.style.fontSize = '12px';
+  apply_styles(header, {
+    padding: '8px',
+    fontWeight: 'bold',
+    background: 'var(--node-header-bg)',
+    borderBottom: '1px solid var(--node-border)',
+    fontSize: '12px',
+  });
   panel.appendChild(header);
 
   const list_container = document.createElement('div');
-  list_container.style.overflowY = 'auto';
-  list_container.style.flex = '1';
-  list_container.style.padding = '4px';
-  list_container.style.display = 'flex';
-  list_container.style.flexDirection = 'column';
-  list_container.style.gap = '2px';
+  apply_styles(list_container, {
+    overflowY: 'auto',
+    flex: '1',
+    padding: '4px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+  });
   panel.appendChild(list_container);
 
   ctx.container.appendChild(panel);
@@ -47,10 +54,12 @@ export const history_plugin: EaselPlugin = (ctx) => {
     history.forEach((_, idx) => {
       const item = document.createElement('div');
       item.textContent = idx === 0 ? 'Initial State' : `Action ${idx}`;
-      item.style.padding = '4px 8px';
-      item.style.cursor = 'pointer';
-      item.style.fontSize = '12px';
-      item.style.borderRadius = '4px';
+      apply_styles(item, {
+        padding: '4px 8px',
+        cursor: 'pointer',
+        fontSize: '12px',
+        borderRadius: '4px',
+      });
       
       if (idx === current_index) {
         item.style.background = 'var(--primary-color)';
