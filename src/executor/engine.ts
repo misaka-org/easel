@@ -17,6 +17,8 @@ export class GraphExecutor {
   state: Ref<ExecutionState>;
   easel: Easel;
   private abort_controller: AbortController | null = null;
+  // Persists across compilations — caches outputs keyed by (node_id, inputs_fingerprint)
+  private input_cache = new Map<string, { fingerprint: string; outputs: Record<string, unknown> }>();
 
   constructor(easel: Easel) {
     this.easel = easel;
@@ -48,7 +50,10 @@ export class GraphExecutor {
     const node_states: Record<string, ExecutionNodeState> = {};
     const ready_queue: string[] = [];
 
+    const prev_states = this.state.value?.node_states || {};
+
     for (const id of Object.keys(nodes)) {
+      const prev = prev_states[id];
       if (missing_reqs[id]) {
         node_states[id] = { status: 'error', progress: 0, error: missing_reqs[id], outputs: {} };
       } else {
@@ -183,6 +188,18 @@ export class GraphExecutor {
     return inputs;
   }
 
+  private static deep_clone<T>(val: T): T {
+    return structuredClone(val);
+  }
+
+  /** Deterministic fingerprint of input values — two compilations with same inputs produce same fingerprint */
+  private inputs_fingerprint(inputs: Record<string, unknown>): string {
+    const keys = Object.keys(inputs).sort();
+    const ordered: Record<string, unknown> = {};
+    for (const k of keys) ordered[k] = inputs[k];
+    return JSON.stringify(ordered);
+  }
+
   private async execute_node(id: string) {
     if (this.abort_controller?.signal.aborted) return;
 
@@ -195,6 +212,17 @@ export class GraphExecutor {
       if (inst && typeof inst.execute === 'function') {
         const node = this.easel.state.value.nodes[id];
         const inputs = this.gather_inputs(id);
+
+        // Separate cache (persists across compilations) — skip execution when inputs unchanged
+        const fingerprint = this.inputs_fingerprint(inputs);
+        const cached = this.input_cache.get(id);
+        if (cached && cached.fingerprint === fingerprint) {
+          outputs = GraphExecutor.deep_clone(cached.outputs);
+          this.update_node_state(id, { status: 'completed', progress: 100, outputs });
+          this.finish_node(id);
+          return;
+        }
+
         outputs = await inst.execute({
           node: node!,
           inputs,
@@ -210,6 +238,11 @@ export class GraphExecutor {
       }
 
       if (this.abort_controller?.signal.aborted) return;
+
+      // Cache fresh outputs so unchanged inputs skip execution on future runs
+      const fresh_inputs = this.gather_inputs(id);
+      const fresh_fingerprint = this.inputs_fingerprint(fresh_inputs);
+      this.input_cache.set(id, { fingerprint: fresh_fingerprint, outputs: GraphExecutor.deep_clone(outputs) });
 
       this.update_node_state(id, { status: 'completed', progress: 100, outputs });
       this.finish_node(id);

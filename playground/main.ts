@@ -19,6 +19,10 @@ import { load_math_scene, evaluate_math_graph } from "./scenes/scene_math";
 import { load_perf_scene } from "./scenes/scene_perf";
 import { load_executor_scene } from "./scenes/scene_executor";
 import { ImagePreviewNode } from "./nodes/image_preview";
+import { IpApiNode } from "./nodes/ip_api";
+import { TextInputNode } from "./nodes/text_input";
+import { TextViewNode } from "./nodes/text_view";
+import { load_ip_api_scene } from "./scenes/scene_ip_api";
 
 class ExecutableDefaultNode extends DefaultNode {
   async execute({ node, inputs, report_progress }: ExecuteContext) {
@@ -60,6 +64,9 @@ register_node_type("text_generation", TextGenNode);
 register_node_type("image_generation", ImageGenNode);
 register_node_type("image_preview", ImagePreviewNode);
 register_node_type("math", MathNode);
+register_node_type("ip_api", IpApiNode);
+register_node_type("text_input", TextInputNode);
+register_node_type("text_view", TextViewNode);
 
 const init = () => {
   const canvas_el = document.getElementById("canvas");
@@ -243,6 +250,8 @@ const init = () => {
       load_math_scene(dispatch);
     } else if (name === "executor") {
       load_executor_scene(dispatch);
+    } else if (name === "ip_api") {
+      load_ip_api_scene(dispatch);
     }
   };
 
@@ -400,6 +409,36 @@ const init = () => {
         outputs: [
           { id: 'out_video', label: 'Video [ ]', type: 'output', value_type: 'video' }
         ]
+      };
+    } else if (type === 'ip_api') {
+      node_data = {
+        ...node_data,
+        custom_data: { color: '#06b6d4' },
+        inputs: [{ id: 'query', label: 'Query', type: 'input', value_type: 'text' }],
+        outputs: [
+          { id: 'result', label: 'Result', type: 'output', value_type: 'object' },
+          { id: 'country', label: 'Country', type: 'output', value_type: 'text' },
+          { id: 'city', label: 'City', type: 'output', value_type: 'text' },
+          { id: 'isp', label: 'ISP', type: 'output', value_type: 'text' },
+          { id: 'lat', label: 'Lat', type: 'output', value_type: 'number' },
+          { id: 'lon', label: 'Lon', type: 'output', value_type: 'number' },
+          { id: 'query_ip', label: 'Queried', type: 'output', value_type: 'text' },
+        ],
+      };
+    } else if (type === 'text_input') {
+      node_data = {
+        ...node_data,
+        custom_data: { color: '#22c55e' },
+        inputs: [],
+        outputs: [{ id: 'query', label: 'Query', type: 'output', value_type: 'text' }],
+        widgets: [{ id: 'value', type: 'text', label: 'Value', value: '', value_type: 'text' }],
+      };
+    } else if (type === 'text_view') {
+      node_data = {
+        ...node_data,
+        custom_data: { color: '#a855f7' },
+        inputs: [{ id: 'content', label: 'Content', type: 'input', value_type: 'text' }],
+        outputs: [],
       };
     }
 

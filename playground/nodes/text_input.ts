@@ -1,0 +1,148 @@
+import { EaselNode } from '@/index';
+import type { GraphNode, State } from '@/core/types';
+import type { ExecuteContext } from '@/index';
+import { update_widget_value } from '@/core/node_ops';
+
+export class TextInputNode extends EaselNode {
+  private header!: HTMLElement;
+  private body!: HTMLElement;
+  private portsContainer!: HTMLElement;
+  private widgetsContainer!: HTMLElement;
+
+  async execute({ node }: ExecuteContext) {
+    const value = (node.widgets?.find(w => w.id === 'value')?.value as string) || '';
+    return { query: value };
+  }
+
+  mount(node_data: GraphNode): void {
+    this.container.style.minWidth = '220px';
+
+    this.header = document.createElement('div');
+    this.header.className = 'node-header';
+
+    this.body = document.createElement('div');
+    this.body.className = 'node-body';
+
+    this.portsContainer = document.createElement('div');
+    this.portsContainer.className = 'ports-container';
+
+    this.widgetsContainer = document.createElement('div');
+    this.widgetsContainer.className = 'widgets-container';
+
+    this.body.appendChild(this.portsContainer);
+    this.body.appendChild(this.widgetsContainer);
+    this.container.appendChild(this.header);
+    this.container.appendChild(this.body);
+
+    this.body.addEventListener('pointerdown', (e) => {
+      const target = e.target as HTMLElement;
+      if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName)) {
+        e.stopPropagation();
+      }
+    });
+
+    this.widgetsContainer.addEventListener('input', (e) => {
+      const target = e.target as HTMLInputElement;
+      const widget_id = target.dataset['widgetId'];
+      if (widget_id) {
+        this.dispatch(s => update_widget_value(s, this.node_id, widget_id, target.value));
+      }
+    });
+
+    this.update(node_data, { wires: {} } as State);
+  }
+
+  update(node_data: GraphNode, state: State): void {
+    // Header
+    const hue = (node_data.custom_data?.['color'] as string) || '#22c55e';
+    const title_html = `
+      <div class="type-indicator" style="background:${hue};flex-shrink:0;margin-right:6px;"></div>
+      <span class="title-text">${node_data.title}</span>
+      <div style="flex:1"></div>
+    `;
+    if (this.header.innerHTML !== title_html) {
+      this.header.innerHTML = title_html;
+    }
+
+    // Ports
+    const is_port_connected = (p_id: string) =>
+      Object.values(state.wires).some(
+        wire =>
+          (wire.target_node_id === this.node_id && wire.target_port_id === p_id) ||
+          (wire.source_node_id === this.node_id && wire.source_port_id === p_id),
+      );
+
+    const ports_html = node_data.outputs
+      .map(p => {
+        const connected_class = is_port_connected(p.id) ? 'connected' : '';
+        return `
+        <div class="port-row">
+          <div></div>
+          <div class="port" data-port-id="${p.id}" data-port-type="output">
+            <span class="port-label">${p.label}</span><div class="port-dot port-type-text ${connected_class}"></div>
+          </div>
+        </div>
+      `;
+      })
+      .join('');
+
+    if (this.portsContainer.innerHTML !== ports_html) {
+      this.portsContainer.innerHTML = ports_html;
+    }
+
+    // Widgets
+    const widgets_html = (node_data.widgets || [])
+      .map(w => {
+        const is_connected = Object.values(state.wires).some(
+          wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id
+        );
+        const disabled = is_connected ? 'disabled' : '';
+        return `
+          <div class="widget-row">
+            <span class="port-label">${w.label}</span>
+            <div class="widget-input-container">
+              <input type="text" data-widget-id="${w.id}" value="${w.value}" ${disabled} />
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+
+    // Schema: only changes when widget structure or connection state changes (not on every value edit)
+    const widgets_schema = (node_data.widgets || [])
+      .map(w => {
+        const is_connected = Object.values(state.wires).some(
+          wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id
+        );
+        return `${w.id}:${is_connected}`;
+      })
+      .join(',');
+
+    if (this.widgetsContainer.dataset['schema'] !== widgets_schema) {
+      // Rebuild DOM only when schema changes (structure / port connections)
+      this.widgetsContainer.innerHTML = widgets_html;
+      this.widgetsContainer.dataset['schema'] = widgets_schema;
+    } else {
+      // Schema unchanged — update values in-place without destroying focus
+      node_data.widgets?.forEach(w => {
+        const input = this.widgetsContainer.querySelector(
+          `[data-widget-id="${w.id}"]`
+        ) as HTMLInputElement;
+        if (input) {
+          const current = input.value;
+          const target = String(w.value);
+          if (current !== target) {
+            input.value = target;
+          }
+        }
+      });
+    }
+  }
+
+  unmount(): void {
+    this.header.remove();
+    this.portsContainer.remove();
+    this.widgetsContainer.remove();
+    this.body.remove();
+  }
+}
