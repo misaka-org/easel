@@ -169,15 +169,34 @@ const try_connect_wire = (state: State, source_node_id: string, source_port_id: 
       const target_port = target_node.inputs.find(p => p.id === target_port_id);
       const target_widget = target_node.widgets?.find(w => w.id === target_port_id);
       if (!target_port && !target_widget) return O.none;
-      target_accepts = target_port ? (target_port.accepts || [target_port.value_type || 'any']) : [target_widget?.type || 'any'];
+      
+      if (target_port) {
+        target_accepts = target_port.accepts || [target_port.value_type || 'any'];
+      } else if (target_widget) {
+        target_accepts = target_widget.accepts || [target_widget.value_type || 'any'];
+      }
     } else {
-      const target_port = target_node.inputs.find(p => {
+      const is_port_free = (id: string) => !Object.values(state.wires).some(w => w.target_node_id === target_node_id && w.target_port_id === id);
+
+      const compatible_input = target_node.inputs.find(p => {
+        if (!is_port_free(p.id)) return false;
         const accepts = p.accepts || [p.value_type || 'any'];
         return accepts.includes('any') || source_type === 'any' || accepts.includes(source_type);
       });
-      if (target_port) {
-        target_port_id = target_port.id;
-        target_accepts = target_port.accepts || [target_port.value_type || 'any'];
+      
+      if (compatible_input) {
+        target_port_id = compatible_input.id;
+        target_accepts = compatible_input.accepts || [compatible_input.value_type || 'any'];
+      } else {
+        const compatible_widget = target_node.widgets?.find(w => {
+          if (!is_port_free(w.id)) return false;
+          const accepts = w.accepts || [w.value_type || 'any'];
+          return accepts.includes('any') || source_type === 'any' || accepts.includes(source_type);
+        });
+        if (compatible_widget) {
+          target_port_id = compatible_widget.id;
+          target_accepts = compatible_widget.accepts || [compatible_widget.value_type || 'any'];
+        }
       }
     }
 

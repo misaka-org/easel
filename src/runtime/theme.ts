@@ -49,7 +49,11 @@ export const apply_theme = (container: HTMLElement, theme: Theme) => {
   }
 };
 
-export const get_base_css = () => `
+/**
+ * 用于触发 vscode 语法高亮用的临时函数
+ */
+const css = (x:TemplateStringsArray) => x.join('');
+export const get_base_css = () => css`
   :host {
     display: block;
     position: relative;
@@ -194,16 +198,15 @@ export const get_base_css = () => `
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
+    margin-left: 6px;
     height: 20px;
     border-radius: 4px;
     cursor: pointer;
     opacity: 0.4;
-    transition: opacity 0.15s, background 0.15s;
+    transition: opacity 0.15s;
   }
   .node-action-btn:hover {
     opacity: 1;
-    background: rgba(255, 255, 255, 0.08);
   }
   .node-action-btn svg {
     display: block;
@@ -291,19 +294,22 @@ export const get_base_css = () => `
 
   .widget-row {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
   }
 
-  .widget-row label {
-    color: var(--text-muted);
-    font-size: 11px;
+  .widget-row .port {
+    flex-shrink: 0;
+  }
+  .widget-row .widget-input-container {
+    flex-grow: 1;
+    text-align: right;
   }
 
   .widget-row input[type="text"],
   .widget-row input[type="number"] {
-    width: 100%;
+    width: 80px;
     background: transparent;
     border: 1px solid var(--node-border);
     color: var(--text-color);
@@ -346,14 +352,27 @@ export const get_base_css = () => `
     z-index: 10;
   }
 
+  @keyframes easel-wire-flow {
+    to {
+      stroke-dashoffset: -16;
+    }
+  }
+
   .wire {
     fill: none;
     stroke: var(--wire-color);
     stroke-width: 2px;
-    stroke-dasharray: 8 6;
+    stroke-dasharray: 8 8;
+    animation: easel-wire-flow 1s linear infinite;
     vector-effect: non-scaling-stroke;
     opacity: 0.8;
   }
+
+  .wire[data-value-type="text"] { stroke: #3b82f6; }
+  .wire[data-value-type="image"] { stroke: #10b981; }
+  .wire[data-value-type="video"] { stroke: #8b5cf6; }
+  .wire[data-value-type="audio"] { stroke: #f59e0b; }
+  .wire[data-value-type="number"] { stroke: #0dcaf0; }
 
   .wire:hover {
     opacity: 1;

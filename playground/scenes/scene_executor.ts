@@ -12,7 +12,7 @@ export const load_executor_scene = (dispatch: Dispatch) => {
     title: 'Start',
     inputs: [],
     outputs: [{ id: 'out', label: 'Out', type: 'output', value_type: 'number' }],
-    widgets: [{ id: 'val', type: 'number', label: 'Val', value: 10 }],
+    widgets: [{ id: 'val', type: 'number', label: 'Val', value: 10, value_type: 'number' }],
     custom_data: {}
   }));
 

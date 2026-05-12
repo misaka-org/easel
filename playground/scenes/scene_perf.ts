@@ -17,7 +17,7 @@ export const load_perf_scene = (dispatch: Dispatch) => {
           title: `Node ${x},${y}`,
           inputs: [{ id: "in", label: "In", type: "input" }],
           outputs: [{ id: "out", label: "Out", type: "output" }],
-          widgets: [{ id: "val", type: "number", label: "Val", value: x + y }],
+          widgets: [{ id: "val", type: "number", label: "Val", value: x + y, value_type: "number" }],
           custom_data: {},
         })
       );

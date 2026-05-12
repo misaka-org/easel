@@ -25,9 +25,9 @@ export const render_wires = (
     port_id: string,
     type: "input" | "output",
     state: State
-  ) => {
+  ): { x: number; y: number } | undefined => {
     const node = state.nodes[node_id];
-    if (!node) return { x: 0, y: 0 };
+    if (!node) return undefined;
 
     // 如果节点处于折叠状态，统一使用节点边框中点（假设 header 高度为 40px）
     if (node.collapsed) {
@@ -49,22 +49,26 @@ export const render_wires = (
     const node_el = container.querySelector(
       `.node[data-id="${node_id}"]`
     ) as HTMLElement;
-    if (!node_el) return { x: 0, y: 0 };
+    if (!node_el) return undefined;
 
     const port_el = node_el.querySelector(
       `.port[data-port-id="${port_id}"] .port-dot`
     ) as HTMLElement;
     if (!port_el) {
-      // 保底：不使用 DOM 坐标，直接根据节点位置计算偏移
-      const is_in = type === "input";
-      return {
-        x: node.position.x + (is_in ? 0 : node.size.x),
-        y: node.position.y + 40,
-      };
+      return undefined;
     }
 
     const node_rect = node_el.getBoundingClientRect();
     const port_rect = port_el.getBoundingClientRect();
+
+    // Fallback for when a node is expanded and port rect is not yet computed by layout
+    if (port_rect.width === 0 && port_rect.height === 0) {
+      const is_input = type === 'input';
+      return {
+        x: node.position.x + (is_input ? 0 : node.size.x),
+        y: node.position.y + node.size.y / 2, // Use vertical center as a fallback
+      };
+    }
 
     const center_x = port_rect.left + port_rect.width / 2 - node_rect.left;
     const center_y = port_rect.top + port_rect.height / 2 - node_rect.top;
@@ -113,14 +117,11 @@ export const render_wires = (
       const source_port = source_node?.outputs.find(p => p.id === wire.source_port_id);
       const type = source_port?.value_type;
       
-      let color = 'var(--wire-color)';
-      if (type === 'text') color = '#3b82f6';
-      else if (type === 'image') color = '#10b981';
-      else if (type === 'video') color = '#8b5cf6';
-      else if (type === 'audio') color = '#f59e0b';
-      else if (type === 'number') color = '#0dcaf0';
-
-      el.setAttribute('stroke', color);
+      if (type) {
+        el.dataset.valueType = type;
+      } else {
+        delete el.dataset.valueType;
+      }
 
       const p1 = get_port_position(
         wire.source_node_id,
@@ -135,7 +136,11 @@ export const render_wires = (
         state
       );
 
-      el.setAttribute("d", draw_bezier(p1.x, p1.y, p2.x, p2.y));
+      if (p1 && p2) {
+        el.setAttribute("d", draw_bezier(p1.x, p1.y, p2.x, p2.y));
+      } else {
+        el.setAttribute("d", ""); // Hide wire if port not found
+      }
     });
 
     if (state.interaction.mode === "wiring") {
@@ -147,16 +152,20 @@ export const render_wires = (
         state
       );
 
-      const screen_delta = vec2_sub(
-        state.interaction.target_pos,
-        state.camera.position
-      );
-      const world_target = vec2_scale(screen_delta, 1 / state.camera.zoom);
+      if (p1) {
+        const screen_delta = vec2_sub(
+          state.interaction.target_pos,
+          state.camera.position
+        );
+        const world_target = vec2_scale(screen_delta, 1 / state.camera.zoom);
 
-      active_wire_path.setAttribute(
-        "d",
-        draw_bezier(p1.x, p1.y, world_target.x, world_target.y)
-      );
+        active_wire_path.setAttribute(
+          "d",
+          draw_bezier(p1.x, p1.y, world_target.x, world_target.y)
+        );
+      } else {
+        active_wire_path.setAttribute("d", "");
+      }
     } else {
       active_wire_path.style.display = "none";
     }

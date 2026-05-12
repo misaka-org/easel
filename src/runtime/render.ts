@@ -123,17 +123,22 @@ export const render_nodes = (
           if (node.style_mode === 'borderless') el.classList.add('borderless');
           else el.classList.remove('borderless');
 
-          if (node.collapsed) el.classList.add('collapsed');
-          else el.classList.remove('collapsed');
-
           el.style.transform = `translate(${node.position.x}px, ${node.position.y}px)`;
-          
-          if (node.resizable) {
+
+          if (node.collapsed) {
+            el.classList.add('collapsed');
             el.style.width = `${node.size.x}px`;
-            el.style.height = `${node.size.y}px`;
-          } else {
-            el.style.width = 'auto';
             el.style.height = 'auto';
+          } else {
+            el.classList.remove('collapsed');
+            const is_resizable = node.resizable !== false;
+            if (is_resizable) {
+              el.style.width = `${node.size.x}px`;
+              el.style.height = `${node.size.y}px`;
+            } else {
+              el.style.width = 'auto';
+              el.style.height = 'auto';
+            }
           }
 
           if (st.selected_node_ids.includes(id)) el.classList.add('selected');

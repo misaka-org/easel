@@ -229,7 +229,7 @@ const init = () => {
               value_type: "image",
             },
           ],
-          widgets: [{ id: "seed", type: "number", label: "Seed", value: 42 }],
+          widgets: [{ id: "seed", type: "number", label: "Seed", value: 42, value_type: 'number' }],
           custom_data: {},
         })
       );
@@ -404,8 +404,8 @@ const init = () => {
           { id: 'out_list', label: 'List [ ]', type: 'output', value_type: 'text' }
         ],
         widgets: [
-          { id: 'min_len', type: 'number', label: 'Minimum list length', value: 6 },
-          { id: 'max_len', type: 'number', label: 'Maximum list length', value: 8 }
+          { id: 'min_len', type: 'number', label: 'Minimum list length', value: 6, value_type: 'number' },
+          { id: 'max_len', type: 'number', label: 'Maximum list length', value: 8, value_type: 'number' }
         ]
       };
     } else if (type === 'image_generation') {
@@ -420,7 +420,7 @@ const init = () => {
           { id: 'out_img', label: 'Image [ ]', type: 'output', value_type: 'image' }
         ],
         widgets: [
-          { id: 'model', type: 'text', label: 'Model', value: 'Flux Dev' }
+          { id: 'model', type: 'text', label: 'Model', value: 'Flux Dev', value_type: 'text' }
         ]
       };
     } else if (type === 'audio_generation') {
@@ -434,7 +434,7 @@ const init = () => {
           { id: 'out_audio', label: 'Audio [ ]', type: 'output', value_type: 'audio' }
         ],
         widgets: [
-          { id: 'voice_id', type: 'text', label: 'Voice ID', value: 'Storyteller' }
+          { id: 'voice_id', type: 'text', label: 'Voice ID', value: 'Storyteller', value_type: 'text' }
         ]
       };
     } else if (type === 'video_concatenation') {

@@ -139,7 +139,7 @@ export class GroupNode extends EaselNode {
       borderBottomColor: `hsla(${hue}, 50%, 50%, 0.4)`,
     });
     
-    if (node_data.resizable) {
+    if (node_data.resizable !== false) {
       if (!this.container.querySelector('.node-resize-handle')) {
         const handle = document.createElement('div');
         handle.className = 'node-resize-handle';

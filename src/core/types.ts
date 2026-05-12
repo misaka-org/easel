@@ -17,6 +17,8 @@ export type Widget = {
   readonly value: WidgetValue;
   readonly min?: number;
   readonly max?: number;
+  readonly value_type?: string;
+  readonly accepts?: readonly string[];
 };
 
 export type GraphNode = {

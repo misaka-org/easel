@@ -128,8 +128,11 @@ export class DefaultNode extends EaselNode {
 
         return `
           <div class="widget-row">
-            <label>${w.label}</label>
-            ${input_html}
+            <div class="port" data-port-id="${w.id}" data-port-type="input">
+              <div class="port-dot ${type_class} ${connected_class}"></div>
+              <span class="port-label">${w.label}</span>
+            </div>
+            <div class="widget-input-container">${input_html}</div>
           </div>
         `;
       }).join('');
@@ -158,7 +161,7 @@ export class DefaultNode extends EaselNode {
       });
     }
 
-    if (node_data.resizable && !node_data.collapsed) {
+    if ((node_data.resizable !== false) && !node_data.collapsed) {
       if (!this.container.querySelector('.node-resize-handle')) {
         const handle = document.createElement('div');
         handle.className = 'node-resize-handle';

@@ -15,7 +15,7 @@ export const load_math_scene = (dispatch: Dispatch) => {
       outputs: [
         { id: "out", label: "Value", type: "output", value_type: "number" },
       ],
-      widgets: [{ id: "val", type: "number", label: "Val", value: 5 }],
+      widgets: [{ id: "val", type: "number", label: "Val", value: 5, value_type: "number" }],
       custom_data: {},
     })
   );
@@ -31,7 +31,7 @@ export const load_math_scene = (dispatch: Dispatch) => {
       outputs: [
         { id: "out", label: "Value", type: "output", value_type: "number" },
       ],
-      widgets: [{ id: "val", type: "number", label: "Val", value: 10 }],
+      widgets: [{ id: "val", type: "number", label: "Val", value: 10, value_type: "number" }],
       custom_data: {},
     })
   );
