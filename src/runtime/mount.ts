@@ -7,6 +7,7 @@ import { get_base_css, apply_theme, default_theme, type Theme } from './theme';
 import EventEmitter from 'eventemitter3';
 import type { State } from '@/core/types';
 import type { ShallowRef } from '@vue/reactivity';
+import { register_builtin_nodes } from '@/index';
 
 export type Dispatch = (updater: (state: State) => State) => void;
 
@@ -28,6 +29,9 @@ export type MountOptions = {
 };
 
 export const mount_easel = (container: HTMLElement, options: MountOptions = {}) => {
+  // Register built-in node types once
+  register_builtin_nodes();
+
   const shadow = container.attachShadow({ mode: 'open' });
   
   const style_el = document.createElement('style');

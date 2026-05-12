@@ -1,6 +1,5 @@
 import { effect } from "@vue/reactivity";
-import { mount_easel } from "@/runtime/mount";
-import { EaselNode, register_node_type } from "@/runtime/registry";
+import { mount_easel, register_node_type, register_execute_fn, EaselNode } from "@/index";
 import { add_node, update_node_data } from "@/core/node_ops";
 import { create_initial_state } from "@/core/state";
 import { serialize_state, deserialize_state } from "@/core/serialization";
@@ -13,18 +12,13 @@ import { context_menu_plugin } from "@/plugins/context_menu";
 import { history_plugin } from "@/plugins/history";
 import { auto_pan_plugin } from "@/plugins/auto_pan";
 import { executor_plugin } from "@/plugins/executor_plugin";
-import { register_execute_fn } from "@/executor/registry";
 
-import {
-  SubgraphNode,
-  SubgraphInputNode,
-  SubgraphOutputNode,
-} from "@/nodes/subgraph";
-import { MathNode } from "@/nodes/math";
+import { SubgraphNode, SubgraphInputNode, SubgraphOutputNode } from "@/nodes/subgraph";
 import { GroupNode } from "@/nodes/group";
-import { load_math_scene, evaluate_math_graph } from "@/scenes/scene_math";
-import { load_perf_scene } from "@/scenes/scene_perf";
-import { load_executor_scene } from "@/scenes/scene_executor";
+import { MathNode } from "./nodes/math";
+import { load_math_scene, evaluate_math_graph } from "./scenes/scene_math";
+import { load_perf_scene } from "./scenes/scene_perf";
+import { load_executor_scene } from "./scenes/scene_executor";
 import EventEmitter from "eventemitter3";
 
 const app_events = new EventEmitter();
@@ -49,7 +43,6 @@ class ImagePreviewNode extends EaselNode {
     this.preview.style.height = "100%";
     this.preview.style.objectFit = "cover";
     this.preview.style.pointerEvents = "none";
-    // this.preview.style.borderRadius = "8px";
     this.preview.src = (node_data.custom_data["url"] as string) || "";
 
     this.toolbar = document.createElement("div");
@@ -77,8 +70,8 @@ register_node_type("image_preview", ImagePreviewNode);
 register_node_type("subgraph", SubgraphNode);
 register_node_type("subgraph_input", SubgraphInputNode);
 register_node_type("subgraph_output", SubgraphOutputNode);
-register_node_type("math", MathNode);
 register_node_type("group", GroupNode);
+register_node_type("math", MathNode);
 
 register_execute_fn("math", async ({ node, inputs, report_progress }) => {
   report_progress(30);

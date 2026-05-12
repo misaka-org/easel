@@ -16,6 +16,6 @@
     "noEmit": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
-  "include": ["src"],
+  "include": ["src", "playground"],
   "exclude": ["node_modules", "dist"]
 }
