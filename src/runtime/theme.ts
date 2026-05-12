@@ -52,7 +52,7 @@ export const apply_theme = (container: HTMLElement, theme: Theme) => {
 /**
  * 用于触发 vscode 语法高亮用的临时函数
  */
-const css = (x:TemplateStringsArray) => x.join('');
+const css = (x:TemplateStringsArray,...v:any[]) => x.map((s,i) => s + (v[i] || '')).join('');
 export const get_base_css = () => css`
   :host {
     display: block;
@@ -440,7 +440,7 @@ export const get_base_css = () => css`
   }
 
   .group-node.selected {
-    box-shadow: none !important;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4);
   }
 
   .group-body {
