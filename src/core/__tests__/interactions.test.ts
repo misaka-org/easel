@@ -32,6 +32,7 @@ describe("interactions", () => {
       target_node_id: O.some("node_1"),
       target_port_id: O.none,
       target_port_type: O.none,
+      target_action: O.none,
       modifiers: empty_modifiers,
     });
     expect(state.selected_node_ids).toEqual(["node_1"]);
@@ -44,6 +45,7 @@ describe("interactions", () => {
       target_node_id: O.none,
       target_port_id: O.none,
       target_port_type: O.none,
+      target_action: O.none,
       modifiers: { ...empty_modifiers, ctrl: true },
     });
     expect(state.selected_node_ids).toEqual([]);
@@ -56,6 +58,7 @@ describe("interactions", () => {
       target_node_id: O.some("node_1"),
       target_port_id: O.none,
       target_port_type: O.none,
+      target_action: O.none,
       modifiers: empty_modifiers,
     });
     state = pointer_move(state, {
@@ -63,6 +66,7 @@ describe("interactions", () => {
       target_node_id: O.some("node_1"),
       target_port_id: O.none,
       target_port_type: O.none,
+      target_action: O.none,
       modifiers: empty_modifiers,
     });
     expect(state.nodes["node_1"]?.position).toEqual(vec2_create(10, 10)); // Based on zoom=1
@@ -72,6 +76,7 @@ describe("interactions", () => {
       target_node_id: O.none,
       target_port_id: O.none,
       target_port_type: O.none,
+      target_action: O.none,
       modifiers: empty_modifiers,
     });
     expect(state.interaction.mode).toBe("idle");
