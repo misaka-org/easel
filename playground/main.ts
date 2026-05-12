@@ -20,51 +20,7 @@ import { load_math_scene, evaluate_math_graph } from "./scenes/scene_math";
 import { load_perf_scene } from "./scenes/scene_perf";
 import { load_executor_scene } from "./scenes/scene_executor";
 import EventEmitter from "eventemitter3";
-
-const app_events = new EventEmitter();
-
-// Custom Node Example
-class ImagePreviewNode extends EaselNode {
-  private body!: HTMLElement;
-  private preview!: HTMLImageElement;
-  private toolbar!: HTMLElement;
-
-  mount(node_data: GraphNode): void {
-    this.container.classList.add("borderless");
-    this.container.style.borderRadius = "0px";
-
-    this.body = document.createElement("div");
-    this.body.className = "node-body";
-    this.body.style.width = "100%";
-    this.body.style.height = "100%";
-
-    this.preview = document.createElement("img");
-    this.preview.style.width = "100%";
-    this.preview.style.height = "100%";
-    this.preview.style.objectFit = "cover";
-    this.preview.style.pointerEvents = "none";
-    this.preview.src = (node_data.custom_data["url"] as string) || "";
-
-    this.toolbar = document.createElement("div");
-    this.toolbar.className = "image-toolbar";
-    this.toolbar.innerHTML = `
-      <button>Crop</button>
-      <button>Edit</button>
-    `;
-
-    this.body.appendChild(this.preview);
-    this.body.appendChild(this.toolbar);
-    this.container.appendChild(this.body);
-  }
-
-  update(_node_data: GraphNode, _state: any): void {
-    // 静态内容，仅依靠CSS显示隐藏toolbar
-  }
-
-  unmount(): void {
-    this.body.remove();
-  }
-}
+import { ImagePreviewNode } from "./nodes/image_preview";
 
 register_node_type("image_preview", ImagePreviewNode);
 register_node_type("subgraph", SubgraphNode);
@@ -144,12 +100,13 @@ const init = () => {
       }
       .image-toolbar button {
         background: var(--primary-color);
-        color: white;
+        color: var(--canvas-bg);
         border: none;
         padding: 6px 12px;
         border-radius: 4px;
         cursor: pointer;
         flex: 1;
+        transition: background 0.2s, color 0.2s;
       }
       .image-toolbar button:hover {
         background: var(--primary-hover, #0098ff);

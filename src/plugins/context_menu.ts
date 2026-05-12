@@ -6,26 +6,51 @@ import { get_registered_types } from '../runtime/registry';
 import { apply_styles } from '@/utils/css';
 
 export const context_menu_plugin: EaselPlugin = (ctx) => {
+  // Inject styles once
+  const root_node = ctx.container.getRootNode() as ShadowRoot | Document;
+  if (!root_node.querySelector('#easel-context-menu-style')) {
+    const style_el = document.createElement('style');
+    style_el.id = 'easel-context-menu-style';
+    style_el.textContent = `
+      .easel-context-menu {
+        position: absolute;
+        display: none;
+        z-index: 2000;
+        background: var(--popover-bg, #18181b);
+        border: 1px solid var(--border-color, #27272a);
+        border-radius: 8px;
+        padding: 4px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.05);
+        flex-direction: column;
+        gap: 2px;
+        min-width: 140px;
+        backdrop-filter: blur(12px);
+        font-size: 13px;
+        font-weight: 400;
+        color: var(--text-color, #fafafa);
+      }
+      .easel-context-menu-item {
+        padding: 6px 12px;
+        cursor: pointer;
+        border-radius: 6px;
+        font-size: 13px;
+        transition: background 0.1s ease;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .easel-context-menu-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .easel-context-menu-item-arrow {
+        font-size: 10px;
+      }
+    `;
+    (root_node === document ? document.head : root_node).appendChild(style_el);
+  }
+
   const menu = document.createElement('div');
   menu.className = 'easel-context-menu';
-  apply_styles(menu, {
-    position: 'absolute',
-    display: 'none',
-    zIndex: '2000',
-    background: 'var(--popover-bg, #18181b)',
-    border: '1px solid var(--border-color, #27272a)',
-    borderRadius: '8px',
-    padding: '4px',
-    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.05)',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: '140px',
-    backdropFilter: 'blur(12px)',
-    fontSize: '13px',
-    fontWeight: '400',
-    color: 'var(--text-color, #fafafa)',
-  });
-
   ctx.container.appendChild(menu);
 
   let target_node_id: string | null = null;
@@ -53,36 +78,13 @@ export const context_menu_plugin: EaselPlugin = (ctx) => {
     submenu.className = 'easel-context-menu';
     apply_styles(submenu, {
       position: 'absolute',
-      background: 'var(--popover-bg, #18181b)',
-      border: '1px solid var(--border-color, #27272a)',
-      borderRadius: '8px',
-      padding: '4px',
-      boxShadow: '0 8px 20px rgba(0, 0, 0, 0.4)',
-      flexDirection: 'column',
-      gap: '2px',
-      minWidth: '140px',
-      backdropFilter: 'blur(12px)',
-      fontSize: '13px',
-      color: 'var(--text-color, #fafafa)',
       zIndex: '2001',
     });
 
     types.forEach(type_name => {
       const item = document.createElement('div');
       item.textContent = type_name.replace(/_/g, ' ');
-      apply_styles(item, {
-        padding: '6px 12px',
-        cursor: 'pointer',
-        borderRadius: '6px',
-        fontSize: '13px',
-        transition: 'background 0.1s ease',
-      });
-      item.addEventListener('mouseenter', () => {
-        item.style.background = 'rgba(255, 255, 255, 0.1)';
-      });
-      item.addEventListener('mouseleave', () => {
-        item.style.background = 'transparent';
-      });
+      item.className = 'easel-context-menu-item';
       item.addEventListener('click', (e) => {
         e.stopPropagation();
         menu.style.display = 'none';
@@ -144,34 +146,20 @@ export const context_menu_plugin: EaselPlugin = (ctx) => {
 
     const create_item = (label: string, action: () => void, has_submenu: boolean = false) => {
       const item = document.createElement('div');
+      item.className = 'easel-context-menu-item';
       item.textContent = label;
-      apply_styles(item, {
-        padding: '6px 12px',
-        cursor: 'pointer',
-        borderRadius: '6px',
-        color: 'var(--text-color, #fafafa)',
-        fontSize: '13px',
-        transition: 'background 0.1s ease',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-      });
-
+      
       if (has_submenu) {
         const arrow = document.createElement('span');
+        arrow.className = 'easel-context-menu-item-arrow';
         arrow.innerHTML = '&#x25B6;';
-        arrow.style.fontSize = '10px';
         item.appendChild(arrow);
       }
 
       item.addEventListener('mouseenter', () => {
-        item.style.background = 'rgba(255, 255, 255, 0.1)';
         if (has_submenu) {
           show_submenu(item);
         }
-      });
-      item.addEventListener('mouseleave', () => {
-        item.style.background = 'transparent';
       });
       item.addEventListener('click', () => {
         action();

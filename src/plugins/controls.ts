@@ -45,7 +45,7 @@ export const controls_plugin: EaselPlugin = (ctx) => {
   btn_fullscreen.innerHTML = icon_fullscreen;
   btn_fullscreen.title = 'Toggle Fullscreen';
 
-  // 注入 controls 专用样式（shadcn 风格）
+  // 注入 controls 专用样式
   const root_node = ctx.container.getRootNode() as ShadowRoot | Document;
   if (!root_node.querySelector('#easel-controls-style')) {
     const style_el = document.createElement('style');
@@ -83,42 +83,34 @@ export const controls_plugin: EaselPlugin = (ctx) => {
         transform: scale(0.96);
       }
     `;
-    root_node.appendChild(style_el);
+    (root_node === document ? document.head : root_node).appendChild(style_el);
   }
 
   const buttons = [btn_zoom_in, btn_zoom_out, btn_fit, btn_layout, btn_fullscreen];
 
-  buttons.forEach((btn, idx) => {
-    // 应用基础样式（上面已通过全局样式控制，但为保证兼容性保留行内样式）
-    // 移除内联样式，完全依赖 CSS 类样式（保持干净）
-    btn.classList.add('easel-controls-btn');
+  buttons.forEach((btn) => {
     // 阻止事件冒泡到画布
     btn.addEventListener('pointerdown', (e) => e.stopPropagation());
-    btn.addEventListener('click', (e) => e.stopPropagation());
-    
     bar.appendChild(btn);
   });
 
   ctx.container.appendChild(bar);
 
-  btn_zoom_in.addEventListener('click', (e) => {
-    e.stopPropagation();
+  btn_zoom_in.addEventListener('click', () => {
     ctx.dispatch(s => ({
       ...s,
       camera: { ...s.camera, zoom: Math.min(10, s.camera.zoom * 1.2) }
     }));
   });
 
-  btn_zoom_out.addEventListener('click', (e) => {
-    e.stopPropagation();
+  btn_zoom_out.addEventListener('click', () => {
     ctx.dispatch(s => ({
       ...s,
       camera: { ...s.camera, zoom: Math.max(0.1, s.camera.zoom / 1.2) }
     }));
   });
 
-  btn_fit.addEventListener('click', (e) => {
-    e.stopPropagation();
+  btn_fit.addEventListener('click', () => {
     const s = ctx.state.value;
     const nodes = Object.values(s.nodes);
     if (nodes.length === 0) return;
@@ -149,8 +141,7 @@ export const controls_plugin: EaselPlugin = (ctx) => {
     }));
   });
 
-  btn_layout.addEventListener('click', (e) => {
-    e.stopPropagation();
+  btn_layout.addEventListener('click', () => {
     ctx.dispatch(s => {
       const nodes = Object.values(s.nodes);
       let x = 0, y = 0, max_h = 0;
@@ -169,8 +160,7 @@ export const controls_plugin: EaselPlugin = (ctx) => {
     });
   });
 
-  btn_fullscreen.addEventListener('click', (e) => {
-    e.stopPropagation();
+  btn_fullscreen.addEventListener('click', () => {
     const host = (ctx.container.getRootNode() as ShadowRoot).host as HTMLElement;
     const target = host || ctx.container;
     

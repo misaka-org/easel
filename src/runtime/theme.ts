@@ -6,6 +6,7 @@ export type Theme = {
   text_color: string;
   text_muted: string;
   primary_color: string;
+  primary_hover: string;
   wire_color: string;
   wire_active_color: string;
   port_color: string;
@@ -21,6 +22,7 @@ export const default_theme: Theme = {
   text_color: "#fafafa",
   text_muted: "#a1a1aa",
   primary_color: "#fafafa",
+  primary_hover: "rgba(255, 255, 255, 0.5)",
   wire_color: "#52525b",
   wire_active_color: "#fafafa",
   port_color: "#52525b",
@@ -36,6 +38,7 @@ export const light_theme: Theme = {
   text_color: "#171717",
   text_muted: "#525252",
   primary_color: "#000000",
+  primary_hover: "rgba(0, 0, 0, 0.5)",
   wire_color: "#d4d4d8",
   wire_active_color: "#000000",
   port_color: "#a1a1aa",
@@ -387,48 +390,12 @@ export const get_base_css = () => css`
     vector-effect: non-scaling-stroke;
   }
 
-  /* shadcn 风格全局变量和组件样式 */
+  /* shadcn 风格全局变量 */
   :host {
     --popover-bg: #18181b;
     --border-color: #27272a;
     --radius-md: 0.375rem;
     --radius-lg: 0.5rem;
-  }
-
-  /* 为 controls 插件提供基础按钮样式（若插件未单独添加样式则作为 fallback） */
-  .easel-controls button {
-    background: transparent;
-    color: var(--text-color);
-    border: none;
-    cursor: pointer;
-    width: 36px;
-    height: 36px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s ease;
-    border-radius: 8px;
-  }
-  .easel-controls button:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--primary-color);
-  }
-  .easel-controls button:active {
-    transform: scale(0.96);
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  /* 右键菜单 shadcn 风格 （如果插件没有完全覆盖样式，这里作为后备）*/
-  .easel-context-menu {
-    backdrop-filter: blur(12px);
-  }
-  .easel-context-menu > div {
-    padding: 6px 12px;
-    border-radius: var(--radius-md);
-    transition: all 0.1s;
-  }
-  .easel-context-menu > div:hover {
-    background: rgba(255, 255, 255, 0.1);
   }
 
   .lod-min .node-body {

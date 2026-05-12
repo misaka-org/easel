@@ -49,6 +49,8 @@ export const history_plugin: EaselPlugin = (ctx) => {
 
   ctx.container.appendChild(panel);
 
+  panel.addEventListener('pointerdown', e => e.stopPropagation());
+
   const render_list = () => {
     list_container.innerHTML = '';
     history.forEach((_, idx) => {
@@ -63,7 +65,7 @@ export const history_plugin: EaselPlugin = (ctx) => {
       
       if (idx === current_index) {
         item.style.background = 'var(--primary-color)';
-        item.style.color = 'white';
+        item.style.color = 'var(--canvas-bg)';
       } else if (idx > current_index) {
         item.style.color = 'var(--text-muted)';
       } else {
