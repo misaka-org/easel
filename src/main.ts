@@ -12,6 +12,8 @@ import { controls_plugin } from "./plugins/controls";
 import { context_menu_plugin } from "./plugins/context_menu";
 import { history_plugin } from "./plugins/history";
 import { auto_pan_plugin } from "./plugins/auto_pan";
+import { executor_plugin } from "./plugins/executor_plugin";
+import { register_execute_fn } from "./executor/registry";
 
 import {
   SubgraphNode,
@@ -22,6 +24,7 @@ import { MathNode } from "./nodes/math";
 import { GroupNode } from "./nodes/group";
 import { load_math_scene, evaluate_math_graph } from "./scenes/scene_math";
 import { load_perf_scene } from "./scenes/scene_perf";
+import { load_executor_scene } from "./scenes/scene_executor";
 import EventEmitter from "eventemitter3";
 
 const app_events = new EventEmitter();
@@ -77,6 +80,44 @@ register_node_type("subgraph_output", SubgraphOutputNode);
 register_node_type("math", MathNode);
 register_node_type("group", GroupNode);
 
+register_execute_fn("math", async ({ node, inputs, report_progress }) => {
+  report_progress(30);
+  await new Promise((r) => setTimeout(r, 500));
+  report_progress(60);
+  await new Promise((r) => setTimeout(r, 500));
+  const a = Number(inputs['a'] || 0);
+  const b = Number(inputs['b'] || 0);
+  const op = node.custom_data['operation'] || 'add';
+  const res = op === 'add' ? a + b : 0;
+  report_progress(100);
+  return { out: res };
+});
+
+register_execute_fn("default", async ({ node, inputs, report_progress }) => {
+  report_progress(50);
+  await new Promise((r) => setTimeout(r, 500));
+  report_progress(100);
+  return { out: (inputs['val'] as number) || 0 };
+});
+
+register_execute_fn("text_generation", async ({ inputs, report_progress }) => {
+  report_progress(30);
+  await new Promise((r) => setTimeout(r, 400));
+  report_progress(70);
+  await new Promise((r) => setTimeout(r, 400));
+  report_progress(100);
+  return { out_list: `Gen: ${inputs['prompt'] || 'empty'}` };
+});
+
+register_execute_fn("image_generation", async ({ inputs, report_progress }) => {
+  report_progress(10);
+  await new Promise((r) => setTimeout(r, 300));
+  report_progress(50);
+  await new Promise((r) => setTimeout(r, 600));
+  report_progress(100);
+  return { out_img: `Image for: ${inputs['prompt']}` };
+});
+
 const init = () => {
   const canvas_el = document.getElementById("canvas");
   if (!canvas_el) return;
@@ -87,7 +128,8 @@ const init = () => {
       controls_plugin,
       context_menu_plugin,
       history_plugin,
-      auto_pan_plugin
+      auto_pan_plugin,
+      executor_plugin
     ],
     custom_css: `
       .image-toolbar {
@@ -253,6 +295,8 @@ const init = () => {
       load_perf_scene(dispatch);
     } else if (name === "math") {
       load_math_scene(dispatch);
+    } else if (name === "executor") {
+      load_executor_scene(dispatch);
     }
   };
 
