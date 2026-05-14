@@ -1,4 +1,4 @@
-import { EaselNode } from './registry';
+﻿import { EaselNode } from './registry';
 import type { GraphNode } from '@/core/types';
 import { update_node_data, update_widget_value, remove_node } from '@/core/node_ops';
 
@@ -125,6 +125,7 @@ export class DefaultNode extends EaselNode {
         if (w.type === 'text') input_html = `<input type="text" data-widget-id="${w.id}" value="${w.value}" ${disabled} />`;
         else if (w.type === 'number') input_html = `<input type="number" data-widget-id="${w.id}" value="${w.value}" min="${w.min ?? ''}" max="${w.max ?? ''}" ${disabled} />`;
         else if (w.type === 'boolean') input_html = `<input type="checkbox" data-widget-id="${w.id}" ${w.value ? 'checked' : ''} ${disabled} />`;
+        else if (w.type === 'color') input_html = `<input type="color" data-widget-id="${w.id}" value="${w.value}" ${disabled} />`;
 
         return `
           <div class="widget-row">

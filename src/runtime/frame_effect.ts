@@ -4,7 +4,7 @@ import {
   effect,
 } from "@vue/reactivity";
 
-// 帧级调度器 —— 收集所有待执行的 runner，在下一帧一次性运行
+// 帧级调度器 —— 收集所有待执行的runner，在下一帧一次性运行
 class FrameScheduler {
   private tasks = new Set<ReactiveEffectRunner>();
   private rafId: number | null = null;
@@ -31,13 +31,13 @@ const create_scheduler = (fn: () => ReactiveEffectRunner) => () =>
   global_scheduler.schedule(fn());
 
 /**
- * 帧级别副作用 用法同 effect()，但会同步所有操作在下一帧执行
+ * 帧级副作用 用法同effect()，但会同步所有操作在下一帧执行
  */
 export const frame_effect = (
   fn: () => any,
   options?: ReactiveEffectOptions
-) => {
-  const runner = effect(fn, {
+): ReactiveEffectRunner => {
+  const runner: ReactiveEffectRunner = effect(fn, {
     ...options,
     scheduler: create_scheduler(() => runner),
   });

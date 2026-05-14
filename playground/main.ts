@@ -1,4 +1,4 @@
-import { effect } from "@vue/reactivity";
+﻿import { effect } from "@vue/reactivity";
 import { Easel, register_node_type, EaselNode, type ExecuteContext } from "@/index";
 import { add_node, update_node_data } from "@/core/node_ops";
 import { create_initial_state } from "@/core/state";
@@ -22,6 +22,11 @@ import { ImagePreviewNode } from "./nodes/image_preview";
 import { IpApiNode } from "./nodes/ip_api";
 import { TextInputNode } from "./nodes/text_input";
 import { TextViewNode } from "./nodes/text_view";
+import { ColorSourceNode } from "./nodes/color_source";
+import { CSSBuilderNode } from "./nodes/css_builder";
+import { CSSPreviewNode } from "./nodes/css_preview";
+
+import { load_realtime_scene } from "./scenes/scene_realtime";
 import { load_ip_api_scene } from "./scenes/scene_ip_api";
 
 class ExecutableDefaultNode extends DefaultNode {
@@ -67,6 +72,10 @@ register_node_type("math", MathNode);
 register_node_type("ip_api", IpApiNode);
 register_node_type("text_input", TextInputNode);
 register_node_type("text_view", TextViewNode);
+register_node_type("color_source", ColorSourceNode);
+register_node_type("css_builder", CSSBuilderNode);
+register_node_type("css_preview", CSSPreviewNode);
+
 
 const init = () => {
   const canvas_el = document.getElementById("canvas");
@@ -250,6 +259,8 @@ const init = () => {
       load_math_scene(dispatch);
     } else if (name === "executor") {
       load_executor_scene(dispatch);
+    } else if (name === 'realtime') {
+      load_realtime_scene(dispatch);
     } else if (name === "ip_api") {
       load_ip_api_scene(dispatch);
     }
@@ -294,7 +305,7 @@ const init = () => {
     }
   });
 
-  // HUD 逻辑
+  // HUD 閫昏緫
   const stats_el = document.getElementById("hud-stats");
   if (stats_el) {
     effect(() => {
@@ -440,6 +451,21 @@ const init = () => {
         inputs: [{ id: 'content', label: 'Content', type: 'input', value_type: 'text' }],
         outputs: [],
       };
+      node_data = {
+        ...node_data,
+        custom_data: { color: '#f59e0b' },
+        inputs: [],
+        outputs: [{ id: 'css_out', label: 'CSS', type: 'output', value_type: 'text' }],
+        widgets: [
+          { id: 'grad_type', type: 'text', label: 'Type', value: 'linear' },
+          { id: 'angle', type: 'number', label: 'Angle', value: 45, min: 0, max: 360 },
+          { id: 'color1', type: 'color', label: 'Color 1', value: '#ff6b6b' },
+          { id: 'color2', type: 'color', label: 'Color 2', value: '#4ecdc4' },
+          { id: 'color3', type: 'color', label: 'Color 3', value: '#45b7d1' },
+          { id: 'color4', type: 'color', label: 'Color 4', value: '#96ceb4' },
+        ],
+        resizable: true,
+      };
     }
 
     dispatch(st => add_node(st, node_data));
@@ -472,3 +498,7 @@ const init = () => {
 };
 
 init();
+
+
+
+

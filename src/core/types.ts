@@ -1,4 +1,4 @@
-import type { Vec2 } from './math';
+﻿import type { Vec2 } from './math';
 
 export type Port = {
   readonly id: string;
@@ -13,7 +13,7 @@ export type WidgetValue = string | number | boolean;
 
 export type Widget = {
   readonly id: string;
-  readonly type: 'text' | 'number' | 'boolean';
+  readonly type: 'text' | 'number' | 'boolean' | 'color';
   readonly label: string;
   readonly value: WidgetValue;
   readonly min?: number;

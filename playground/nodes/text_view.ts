@@ -1,4 +1,4 @@
-import { EaselNode } from '@/index';
+﻿import { EaselNode } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 
@@ -101,7 +101,7 @@ export class TextViewNode extends EaselNode {
     }
 
     // Display content from custom_data
-    const content = node_data.custom_data?.['display_content'];
+    const content = node_data.custom_data?.['display_content'] as Record<string, any> | string | undefined;
 
     if (content === undefined || content === null) {
       if (this.cachedContent !== '') {
@@ -126,9 +126,9 @@ export class TextViewNode extends EaselNode {
       this.cachedContent = displayText;
       this.contentEl.innerHTML = '';
 
-      if (isFormatted && content.status === 'success') {
+      if (isFormatted && (content as Record<string, any>).status === 'success') {
         // Rich display for IP API result
-        const d = content;
+        const d = content as Record<string, any>;
         const rows = [
           ['Status', `<span style="color:#4ade80;">${d.status}</span>`],
           ['IP', `<span style="color:#93c5fd;">${d.query}</span>`],

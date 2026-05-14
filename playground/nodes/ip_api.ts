@@ -1,4 +1,4 @@
-import { EaselNode } from '@/index';
+﻿import { EaselNode } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 
@@ -131,17 +131,17 @@ export class IpApiNode extends EaselNode {
     }
 
     // Show result status if available
-    const result = node_data.custom_data?.['api_result'];
-    const query = node_data.custom_data?.['last_query'] as string;
+    const result = node_data.custom_data?.['api_result'] as Record<string, any> | undefined;
+    const query = node_data.custom_data?.['last_query'] as string | undefined;
 
     if (result) {
       if (result.status === 'success') {
         this.statusEl.innerHTML = `
-          <div style="color:#4ade80;font-weight:600;">✓ ${query || result.query}</div>
+          <div style="color:#4ade80;font-weight:600;">鉁?${query || result.query}</div>
           <div style="color:#aaa;margin-top:2px;">${result.country} / ${result.city || 'N/A'} &middot; ${result.isp || 'N/A'}</div>
         `;
       } else {
-        this.statusEl.innerHTML = `<div style="color:#f87171;">✗ ${result.message || 'Request failed'}</div>`;
+        this.statusEl.innerHTML = `<div style="color:#f87171;">鉁?${result.message || 'Request failed'}</div>`;
       }
     } else {
       this.statusEl.textContent = 'Awaiting execution...';

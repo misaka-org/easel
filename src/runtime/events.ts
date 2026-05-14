@@ -1,4 +1,4 @@
-import { vec2_create } from '@/core/math';
+﻿import { vec2_create } from '@/core/math';
 import { pointer_down, pointer_move, pointer_up, wheel_zoom, update_modifiers } from '@/core/interactions';
 import { remove_node, add_node } from '@/core/node_ops';
 import type { State, Modifiers } from '@/core/types';
@@ -115,7 +115,7 @@ export const setup_events = (container: HTMLElement, dispatch: Dispatch, app_eve
     const target = (e.composedPath()[0] || e.target) as HTMLElement;
     const action_el = target.closest('[data-action]');
     // 只阻止非 resize 操作的 data-action 元素，避免影响 resize 手柄
-    if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName) || (action_el && action_el.dataset['action'] !== 'resize')) {
+    if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName) || (action_el && (action_el as HTMLElement).dataset['action'] !== 'resize')) {
       return;
     }
     container.setPointerCapture(e.pointerId);

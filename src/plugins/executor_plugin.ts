@@ -1,4 +1,4 @@
-import type { EaselPlugin } from '@/runtime/easel';
+﻿import type { EaselPlugin } from '@/runtime/easel';
 import { GraphExecutor } from '@/executor/engine';
 import { frame_effect } from '@/runtime/frame_effect';
 import { effect } from '@vue/reactivity';
@@ -38,6 +38,13 @@ export const executor_plugin: EaselPlugin = (easel) => {
   const btn_stop = document.createElement('button');
   btn_stop.textContent = 'Stop';
 
+  const btn_realtime = document.createElement('button');
+  btn_realtime.textContent = 'Realtime: Off';
+  const btn_pulse = document.createElement('span');
+  btn_pulse.style.cssText = 'display:none;width:8px;height:8px;border-radius:50%;background:#10b981;margin-left:4px;';
+
+  btn_realtime.appendChild(btn_pulse);
+
   const btn_reset = document.createElement('button');
   btn_reset.textContent = 'Reset';
 
@@ -50,7 +57,7 @@ export const executor_plugin: EaselPlugin = (easel) => {
   });
   status_txt.textContent = 'Idle';
 
-  [btn_init, btn_step, btn_run, btn_stop, btn_reset].forEach(btn => {
+  [btn_init, btn_step, btn_run, btn_stop, btn_realtime, btn_reset].forEach(btn => {
     apply_styles(btn, {
       background: 'var(--primary-color)',
       color: 'var(--canvas-bg)',
@@ -102,9 +109,38 @@ export const executor_plugin: EaselPlugin = (easel) => {
     executor.stop();
   });
 
+  btn_realtime.addEventListener('click', () => {
+    if (executor.realtime.value) {
+      executor.stop_realtime();
+      btn_realtime.textContent = 'Realtime: Off';
+      btn_pulse.style.display = 'none';
+    } else {
+      executor.start_realtime();
+      btn_realtime.textContent = 'Realtime: On';
+      btn_pulse.style.display = 'inline-block';
+    }
+  });
+
   btn_reset.addEventListener('click', () => {
     executor.stop();
     executor.compile();
+  });
+
+  // Watch for widget changes when realtime is active
+  easel.app_events.on('state_changed', ({ prev, next }) => {
+    if (!executor.realtime.value) return;
+    for (const [id, next_node] of Object.entries(next.nodes)) {
+      const prev_node = prev.nodes[id];
+      if (!prev_node) continue;
+      const next_widgets = next_node.widgets || [];
+      const prev_widgets = prev_node.widgets || [];
+      for (let i = 0; i < next_widgets.length; i++) {
+        if (next_widgets[i]?.value !== prev_widgets[i]?.value) {
+          executor.notify_input_change(id);
+          break;
+        }
+      }
+    }
   });
 
   effect(() => {
