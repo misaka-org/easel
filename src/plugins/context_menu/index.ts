@@ -5,6 +5,7 @@ import { remove_node } from '@/core/node_ops';
 import { add_node } from '@/core/node_ops';
 import { vec2_create } from '@/core/math';
 import { get_registered_types } from '@/runtime/registry';
+import { get_node_ns } from '@/runtime/registry';
 
 export { ContextMenuService } from './service';
 export type { ContextMenuContext, ContextMenuItem, ContextMenuProvider } from './types';
@@ -37,6 +38,7 @@ const CSS = `
   font-size: 13px;
   transition: background 0.1s ease;
   display: flex;
+  gap: 6px;
   justify-content: space-between;
   align-items: center;
 }
@@ -52,6 +54,60 @@ const CSS = `
 }
 .easel-context-menu-item-arrow {
   font-size: 10px;
+  margin-left: auto;
+}
+.easel-context-menu-item-icon {
+  display: inline-flex;
+  align-items: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.easel-context-menu-item-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.easel-context-menu-item-label {
+  flex: 1;
+  min-width: 0;
+}
+.easel-context-menu-label {
+  padding: 6px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted, #888);
+  cursor: default;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+.easel-context-menu-label-icon {
+  display: inline-flex;
+  align-items: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+.easel-context-menu-label-icon svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.easel-context-menu-label-text {
+  flex: 1;
+  min-width: 0;
 }
 .easel-context-menu-separator {
   height: 1px;
@@ -111,6 +167,103 @@ function node_ops_provider(easel: any): ContextMenuProvider {
   };
 }
 
+/**
+ * Build a nested submenu structure from a flat list of node type entries,
+ * organized by their registered namespace (ns). Types without ns are
+ * grouped under "Other" when categorized types exist.
+ */
+function build_ns_menu(
+  entries: ReadonlyArray<{ readonly type: string; readonly label: string; readonly action: () => void }>,
+): ContextMenuItem[] {
+  const with_ns: Array<{ type: string; label: string; ns: string[]; action: () => void }> = [];
+  const without_ns: Array<{ type: string; label: string; action: () => void }> = [];
+
+  for (const entry of entries) {
+    const ns = get_node_ns(entry.type);
+    if (ns && ns.length > 0) {
+      with_ns.push({ ...entry, ns });
+    } else {
+      without_ns.push(entry);
+    }
+  }
+
+  if (with_ns.length === 0) {
+    // No ns-registered types — return flat list
+    return without_ns.map(t => ({
+      id: `add_${t.type}`,
+      label: t.label,
+      action: t.action,
+    }));
+  }
+
+  // Build a tree of submenu levels from ns paths
+  //   e.g. ["Generate", "Image"] → tree.Generate.Image = [leaf, …]
+  const tree: Record<string, any> = {};
+
+  for (const entry of with_ns) {
+    let current = tree;
+    for (let i = 0; i < entry.ns.length; i++) {
+      const seg = entry.ns[i];
+      if (i === entry.ns.length - 1) {
+        // Leaf level — store items in an array
+        if (!current[seg] || !Array.isArray(current[seg])) current[seg] = [];
+        current[seg].push({
+          id: `add_${entry.type}`,
+          label: entry.label,
+          action: entry.action,
+        });
+      } else {
+        // Intermediate level — ensure it's an object (submenu container)
+        if (!current[seg] || Array.isArray(current[seg])) current[seg] = {};
+        current = current[seg];
+      }
+    }
+  }
+
+  /** Convert the tree recursively into a flat ContextMenuItem[] with nested submenus */
+  function flatten(obj: Record<string, any>): ContextMenuItem[] {
+    const items: ContextMenuItem[] = [];
+    for (const [key, val] of Object.entries(obj)) {
+      if (Array.isArray(val)) {
+        // Leaf items — add each
+        for (const v of val) {
+          items.push(v);
+        }
+      } else {
+        // Submenu — recurse
+        items.push({
+          id: `ns_${key}`,
+          label: key,
+          submenu: flatten(val),
+        });
+      }
+    }
+    return items;
+  }
+
+  const ns_items = flatten(tree);
+
+  // Append uncategorized types under "Other"
+  if (without_ns.length > 0) {
+    const uncat_items = without_ns
+      .slice()
+      .sort((a, b) => a.label.localeCompare(b.label))
+      .map(t => ({
+        id: `add_${t.type}`,
+        label: t.label,
+        action: t.action,
+      }));
+
+    ns_items.push({
+      id: 'ns_other',
+      label: 'Other',
+      submenu: uncat_items,
+    });
+  }
+
+  return ns_items;
+}
+
 /** Add-node submenu (all registered types) */
 function add_node_provider(easel: any): ContextMenuProvider {
   return {
@@ -120,32 +273,37 @@ function add_node_provider(easel: any): ContextMenuProvider {
       const types = get_registered_types().filter(
         (t) => t !== 'subgraph_input' && t !== 'subgraph_output',
       );
+
+      const entries = types.map((type_name) => ({
+        type: type_name,
+        label: type_name.replace(/_/g, ' '),
+        action: () => {
+          const id = `${type_name}_${Date.now()}`;
+          const node_data: any = {
+            id,
+            type: type_name === 'default' ? 'default' : type_name,
+            position: vec2_create(ctx.world_pos.x, ctx.world_pos.y),
+            size: vec2_create(180, 100),
+            title: type_name
+              .replace(/_/g, ' ')
+              .replace(/\b\w/g, (l) => l.toUpperCase()),
+            inputs: [],
+            outputs: [],
+            widgets: [],
+            custom_data: {},
+          };
+          easel.dispatch((st: any) => add_node(st, node_data));
+        },
+      }));
+
+      const submenu = build_ns_menu(entries);
+
       return [
         {
           id: 'add_node',
           label: 'Add Node',
           group: 'creation',
-          submenu: types.map((type_name) => ({
-            id: `add_${type_name}`,
-            label: type_name.replace(/_/g, ' '),
-            action: () => {
-              const id = `${type_name}_${Date.now()}`;
-              const node_data: any = {
-                id,
-                type: type_name === 'default' ? 'default' : type_name,
-                position: vec2_create(ctx.world_pos.x, ctx.world_pos.y),
-                size: vec2_create(180, 100),
-                title: type_name
-                  .replace(/_/g, ' ')
-                  .replace(/\b\w/g, (l) => l.toUpperCase()),
-                inputs: [],
-                outputs: [],
-                widgets: [],
-                custom_data: {},
-              };
-              easel.dispatch((st: any) => add_node(st, node_data));
-            },
-          })),
+          submenu,
         },
       ];
     },

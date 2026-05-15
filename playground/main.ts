@@ -14,6 +14,7 @@ import { auto_pan_plugin } from "@/plugins/auto_pan";
 import { executor_plugin } from "@/plugins/executor_plugin";
 import { DefaultNode } from "@/index";
 import type { ContextMenuContext, ContextMenuItem } from "@/plugins/context_menu/types";
+import { register_node_ns } from "@/index";
 
 import { MathNode } from "./nodes/math";
 import { load_math_scene, evaluate_math_graph } from "./scenes/scene_math";
@@ -80,6 +81,23 @@ register_node_type("css_builder", CSSBuilderNode);
 register_node_type("css_preview", CSSPreviewNode);
 register_node_type("counter", CounterNode);
 
+// -------------------------------------------------------------------
+// Namespace registration — organizes the "Add Node" submenu
+// into hierarchical submenus. Nodes without ns appear under "Other".
+// -------------------------------------------------------------------
+register_node_ns("image_generation", ["生成", "图像"]);
+register_node_ns("text_generation", ["生成", "文本"]);
+register_node_ns("audio_generation", ["生成", "音频"]);
+register_node_ns("video_concatenation", ["生成", "视频"]);
+register_node_ns("ip_api", ["网络"]);
+register_node_ns("math", ["数值"]);
+register_node_ns("counter", ["数值"]);
+register_node_ns("image_preview", ["预览"]);
+register_node_ns("text_view", ["预览"]);
+register_node_ns("css_preview", ["预览"]);
+register_node_ns("css_builder", ["预览"]);
+register_node_ns("text_input", ["输入"]);
+register_node_ns("color_source", ["输入"]);
 
 const init = () => {
   const canvas_el = document.getElementById("canvas");
@@ -456,21 +474,7 @@ const init = () => {
         custom_data: { color: '#a855f7' },
         inputs: [{ id: 'content', label: 'Content', type: 'input', value_type: 'text' }],
         outputs: [],
-      };
-      node_data = {
-        ...node_data,
-        custom_data: { color: '#f59e0b' },
-        inputs: [],
-        outputs: [{ id: 'css_out', label: 'CSS', type: 'output', value_type: 'text' }],
-        widgets: [
-          { id: 'grad_type', type: 'text', label: 'Type', value: 'linear' },
-          { id: 'angle', type: 'number', label: 'Angle', value: 45, min: 0, max: 360 },
-          { id: 'color1', type: 'color', label: 'Color 1', value: '#ff6b6b' },
-          { id: 'color2', type: 'color', label: 'Color 2', value: '#4ecdc4' },
-          { id: 'color3', type: 'color', label: 'Color 3', value: '#45b7d1' },
-          { id: 'color4', type: 'color', label: 'Color 4', value: '#96ceb4' },
-        ],
-        resizable: true,
+        resizable: false,
       };
     } else if (type === 'counter') {
       node_data = {
@@ -508,12 +512,23 @@ const init = () => {
       get_items: (ctx: ContextMenuContext): readonly ContextMenuItem[] => {
         const items: ContextMenuItem[] = [];
 
+        // Node info label — shown when right-clicking any node
+        if (ctx.node_id) {
+          items.push({
+            id: 'demo_node_info',
+            kind: 'label',
+            label: `Node: ${ctx.node_id} · ${ctx.node_type}`,
+            icon: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+          });
+        }
+
         // Item visible on any node
         if (ctx.node_id) {
           items.push({
             id: 'demo_log_info',
             label: 'Log Node Info',
             group: 'playground',
+            icon: '<svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
             action: () => {
               const node = easel.state.value.nodes[ctx.node_id!];
               console.log('[ContextMenu Demo] Node:', ctx.node_id, 'Type:', ctx.node_type, 'Data:', node);
@@ -527,6 +542,7 @@ const init = () => {
             id: 'demo_fill_hello',
             label: "Fill 'Hello'",
             group: 'playground',
+            icon: '<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>',
             action: () => {
               const node_id = ctx.node_id!;
               easel.dispatch(s => {

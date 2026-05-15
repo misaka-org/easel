@@ -80,9 +80,22 @@ export type EaselNodeConstructor = new (
 ) => EaselNode;
 
 const registry = new Map<string, EaselNodeConstructor>();
+const node_ns_registry = new Map<string, string[]>();
 
 export const register_node_type = (type: string, constructor: EaselNodeConstructor): void => {
   registry.set(type, constructor);
+};
+/**
+ * Register a namespace path for a node type.
+ * The context menu plugin uses this to organize the "Add Node" submenu
+ * into hierarchical categories.
+ */
+export const register_node_ns = (type: string, ns: string[]): void => {
+  node_ns_registry.set(type, ns);
+};
+/** Retrieve the namespace path for a node type, if set. */
+export const get_node_ns = (type: string): string[] | undefined => {
+  return node_ns_registry.get(type);
 };
 
 export const get_node_constructor = (type: string): EaselNodeConstructor | undefined => {

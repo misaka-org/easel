@@ -91,10 +91,28 @@ export class ContextMenuService {
   }
 
   private create_item_element(item: ContextMenuItem): HTMLElement {
+    // Non-interactive label
+    if (item.kind === 'label') {
+      return this.create_label_element(item);
+    }
+
     const el = document.createElement('div');
     el.className = 'easel-context-menu-item';
     if (item.disabled) el.classList.add('disabled');
-    el.textContent = item.label;
+
+    // Optional icon
+    if (item.icon) {
+      const icon_el = document.createElement('span');
+      icon_el.className = 'easel-context-menu-item-icon';
+      icon_el.innerHTML = item.icon;
+      el.appendChild(icon_el);
+    }
+
+    // Label text
+    const label_el = document.createElement('span');
+    label_el.className = 'easel-context-menu-item-label';
+    label_el.textContent = item.label;
+    el.appendChild(label_el);
 
     const has_submenu = item.submenu && item.submenu.length > 0;
     if (has_submenu) {
@@ -118,44 +136,80 @@ export class ContextMenuService {
     return el;
   }
 
-  private hide_submenu(): void {
-    if (this.submenu) {
-      this.submenu.remove();
-      this.submenu = null;
+  private create_label_element(item: ContextMenuItem): HTMLElement {
+    const el = document.createElement('div');
+    el.className = 'easel-context-menu-label';
+
+    if (item.icon) {
+      const icon_el = document.createElement('span');
+      icon_el.className = 'easel-context-menu-label-icon';
+      icon_el.innerHTML = item.icon;
+      el.appendChild(icon_el);
     }
+
+    const label_el = document.createElement('span');
+    label_el.className = 'easel-context-menu-label-text';
+    label_el.textContent = item.label;
+    el.appendChild(label_el);
+
+    return el;
+  }
+
+  private hide_submenu(): void {
     if (this.submenu_timer) {
       clearTimeout(this.submenu_timer);
       this.submenu_timer = null;
     }
+    if (this.submenu) {
+      this.submenu.remove();
+      this.submenu = null;
+    }
   }
 
   private show_submenu(parent_item: HTMLElement, items: readonly ContextMenuItem[]): void {
-    this.hide_submenu();
     if (items.length === 0) return;
 
-    this.submenu = document.createElement('div');
-    this.submenu.className = 'easel-context-menu';
-    apply_styles(this.submenu, {
+    // Find the containing menu — the submenu will be attached as its child
+    const parent_menu = parent_item.closest('.easel-context-menu') as HTMLElement;
+    if (!parent_menu) return;
+
+    // Clear any close timer
+    if (this.submenu_timer) {
+      clearTimeout(this.submenu_timer);
+      this.submenu_timer = null;
+    }
+
+    // Remove any existing submenu of this parent menu (closes the previous branch)
+    const existing = parent_menu.querySelector(':scope > .easel-context-menu');
+    if (existing) existing.remove();
+
+    const sub = document.createElement('div');
+    sub.className = 'easel-context-menu';
+    apply_styles(sub, {
       position: 'absolute',
       display: 'flex',
       zIndex: '2001',
     });
 
     for (const item of items) {
-      this.submenu.appendChild(this.create_item_element(item));
+      sub.appendChild(this.create_item_element(item));
     }
 
-    this.menu_el.appendChild(this.submenu);
+    parent_menu.appendChild(sub);
 
-    const parent_rect = parent_item.getBoundingClientRect();
-    this.submenu.style.left = `${parent_rect.width}px`;
-    this.submenu.style.top = `${parent_item.offsetTop}px`;
+    // Position relative to the parent menu's coordinate space
+    const menu_rect = parent_menu.getBoundingClientRect();
+    const item_rect = parent_item.getBoundingClientRect();
+    sub.style.left = `${item_rect.right - menu_rect.left}px`;
+    sub.style.top = `${item_rect.top - menu_rect.top}px`;
 
-    this.submenu.addEventListener('mouseenter', () => {
+    sub.addEventListener('mouseenter', () => {
       if (this.submenu_timer) clearTimeout(this.submenu_timer);
     });
-    this.submenu.addEventListener('mouseleave', () => {
+    sub.addEventListener('mouseleave', () => {
       this.submenu_timer = setTimeout(() => this.hide_submenu(), 300);
     });
+
+    this.submenu = sub;
   }
 }

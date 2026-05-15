@@ -20,6 +20,17 @@ export interface ContextMenuContext {
 export interface ContextMenuItem {
   readonly id: string;
   readonly label: string;
+  /**
+   * Icon rendered before the label. HTML string — pass inline SVG or other markup.
+   * For Lucide icons, pass the full <svg> element.
+   */
+  readonly icon?: string;
+  /**
+   * Item behavior kind:
+   *   'item'   — clickable action item (default)
+   *   'label'  — non-interactive informational label (no hover, no click)
+   */
+  readonly kind?: 'item' | 'label';
   readonly action?: () => void;
   readonly submenu?: readonly ContextMenuItem[];
   readonly disabled?: boolean;
