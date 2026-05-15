@@ -148,6 +148,9 @@ export const executor_plugin: EaselPlugin = (easel) => {
     status_txt.textContent = `Status: ${current_exec_state.status} | Q: ${current_exec_state.ready_queue.length}`;
   });
 
+  const flashing_nodes = new Set<string>();
+  const prev_node_states: Record<string, string> = {};
+
   frame_effect(() => {
     const st = easel.state.value;
     const current_exec_state = exec_state.value;
@@ -162,6 +165,17 @@ export const executor_plugin: EaselPlugin = (easel) => {
         continue;
       }
       if (node_state) {
+        // Detect transition from running -> completed for flash effect
+        const prev_status = prev_node_states[id];
+        const curr_status = node_state.status;
+        if (prev_status === 'running' && curr_status === 'completed') {
+          flashing_nodes.add(id);
+          setTimeout(() => {
+            flashing_nodes.delete(id);
+          }, 600);
+        }
+        prev_node_states[id] = curr_status;
+
         let el = node_overlays.get(id);
         if (!el) {
           el = document.createElement('div');
@@ -214,23 +228,28 @@ export const executor_plugin: EaselPlugin = (easel) => {
         progress_bar.style.width = `${node_state.progress}%`;
         progress_bar.style.display = node_state.progress > 0 && node_state.progress < 100 ? 'block' : 'none';
 
-        if (node_state.status === 'running') {
-          el.style.border = '3px solid #3b82f6';
-          el.style.boxShadow = '0 0 15px rgba(59, 130, 246, 0.5)';
-          error_text.textContent = '';
-        } else if (node_state.status === 'completed') {
+       if (node_state.status === 'running') {
+         el.style.border = '3px solid #3b82f6';
+         el.style.boxShadow = '0 0 15px rgba(59, 130, 246, 0.5)';
+         error_text.textContent = '';
+       } else if (node_state.status === 'completed') {
+        if (flashing_nodes.has(id)) {
           el.style.border = '3px solid #10b981';
           el.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.5)';
-          error_text.textContent = '';
-        } else if (node_state.status === 'error') {
-          el.style.border = '3px solid #ef4444';
-          el.style.boxShadow = '0 0 15px rgba(239, 68, 68, 0.5)';
-          error_text.textContent = node_state.error || 'Error';
         } else {
           el.style.border = 'none';
           el.style.boxShadow = 'none';
-          error_text.textContent = '';
         }
+       error_text.textContent = '';
+       } else if (node_state.status === 'error') {
+         el.style.border = '3px solid #ef4444';
+         el.style.boxShadow = '0 0 15px rgba(239, 68, 68, 0.5)';
+         error_text.textContent = node_state.error || 'Error';
+       } else {
+         el.style.border = 'none';
+         el.style.boxShadow = 'none';
+         error_text.textContent = '';
+       }
       }
     }
 
