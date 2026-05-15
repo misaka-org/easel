@@ -13,6 +13,7 @@ import { history_plugin } from "@/plugins/history";
 import { auto_pan_plugin } from "@/plugins/auto_pan";
 import { executor_plugin } from "@/plugins/executor_plugin";
 import { DefaultNode } from "@/index";
+import type { ContextMenuContext, ContextMenuItem } from "@/plugins/context_menu/types";
 
 import { MathNode } from "./nodes/math";
 import { load_math_scene, evaluate_math_graph } from "./scenes/scene_math";
@@ -25,9 +26,11 @@ import { TextViewNode } from "./nodes/text_view";
 import { ColorSourceNode } from "./nodes/color_source";
 import { CSSBuilderNode } from "./nodes/css_builder";
 import { CSSPreviewNode } from "./nodes/css_preview";
+import { CounterNode } from "./nodes/counter_node";
 
 import { load_realtime_scene } from "./scenes/scene_realtime";
 import { load_ip_api_scene } from "./scenes/scene_ip_api";
+import { load_context_menu_scene } from "./scenes/scene_context_menu";
 
 class ExecutableDefaultNode extends DefaultNode {
   async execute({ node, inputs, report_progress }: ExecuteContext) {
@@ -75,6 +78,7 @@ register_node_type("text_view", TextViewNode);
 register_node_type("color_source", ColorSourceNode);
 register_node_type("css_builder", CSSBuilderNode);
 register_node_type("css_preview", CSSPreviewNode);
+register_node_type("counter", CounterNode);
 
 
 const init = () => {
@@ -263,6 +267,8 @@ const init = () => {
       load_realtime_scene(dispatch);
     } else if (name === "ip_api") {
       load_ip_api_scene(dispatch);
+    } else if (name === "context_menu") {
+      load_context_menu_scene(dispatch);
     }
   };
 
@@ -466,6 +472,16 @@ const init = () => {
         ],
         resizable: true,
       };
+    } else if (type === 'counter') {
+      node_data = {
+        ...node_data,
+        type: 'counter',
+        custom_data: { color: '#f97316' },
+        inputs: [],
+        outputs: [{ id: 'val', label: 'Value', type: 'output', value_type: 'number' }],
+        widgets: [{ id: 'value', type: 'number', label: 'Value', value: 0, value_type: 'number' }],
+        resizable: false,
+      };
     }
 
     dispatch(st => add_node(st, node_data));
@@ -477,6 +493,60 @@ const init = () => {
       (e as DragEvent).dataTransfer?.setData('text/plain', type || '');
     });
   });
+
+  // -------------------------------------------------------------------
+  // Context menu demo — plugin-level provider.
+  // This registers extra items on every node to show how plugins
+  // can augment the context menu without modifying node code.
+  // -------------------------------------------------------------------
+  if ((easel as any).context_menu) {
+    const service = (easel as any).context_menu;
+
+    service.register({
+      id: 'playground_demo',
+      priority: -5,
+      get_items: (ctx: ContextMenuContext): readonly ContextMenuItem[] => {
+        const items: ContextMenuItem[] = [];
+
+        // Item visible on any node
+        if (ctx.node_id) {
+          items.push({
+            id: 'demo_log_info',
+            label: 'Log Node Info',
+            group: 'playground',
+            action: () => {
+              const node = easel.state.value.nodes[ctx.node_id!];
+              console.log('[ContextMenu Demo] Node:', ctx.node_id, 'Type:', ctx.node_type, 'Data:', node);
+            },
+          });
+        }
+
+        // Item only on text_input nodes
+        if (ctx.node_type === 'text_input') {
+          items.push({
+            id: 'demo_fill_hello',
+            label: "Fill 'Hello'",
+            group: 'playground',
+            action: () => {
+              const node_id = ctx.node_id!;
+              easel.dispatch(s => {
+                const node = s.nodes[node_id];
+                if (!node) return s;
+                const widgets = (node.widgets || []).map(w =>
+                  w.id === 'value' ? { ...w, value: 'Hello from ContextMenu!' } : w,
+                );
+                return { ...s, nodes: { ...s.nodes, [node_id]: { ...node, widgets } } };
+              });
+            },
+          });
+        }
+
+        return items;
+      },
+    });
+
+    console.log('[ContextMenu Demo] Plugin-level provider registered. Right-click any node to see demo items.');
+  }
 
   // Load initial scene
   load_scene("default");
