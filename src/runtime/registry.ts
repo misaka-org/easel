@@ -1,5 +1,6 @@
-import type { GraphNode, State } from '../core/types';
-
+ import type { GraphNode, State } from '../core/types';
+import type { ContextMenuContext, ContextMenuItem } from '@/plugins/context_menu/types';
+ 
 export type Dispatch = (updater: (state: State) => State) => void;
 
 export abstract class EaselNode {
@@ -18,7 +19,14 @@ export abstract class EaselNode {
   abstract mount(node_data: GraphNode): void;
   abstract update(node_data: GraphNode, state: State): void;
   abstract unmount(): void;
-
+  /**
+   * Optional: return context menu items when this node is right-clicked.
+   * Only invoked when the context_menu_plugin is loaded; it is checked at
+   * runtime by the plugin so adding the method here is purely for ergonomic
+   * / IDE support.
+   */
+  get_context_menu_items?(ctx: ContextMenuContext): readonly ContextMenuItem[];
+ 
   get_input_value(state: State, port_id: string): any {
     const wire = Object.values(state.wires).find(w => w.target_node_id === this.node_id && w.target_port_id === port_id);
     if (!wire) return undefined;

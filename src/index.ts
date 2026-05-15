@@ -19,7 +19,8 @@ export * from "./executor/types";
 // Plugins (optional)
 export { minimap_plugin } from "./plugins/minimap";
 export { controls_plugin } from "./plugins/controls";
-export { context_menu_plugin } from "./plugins/context_menu";
+export { context_menu_plugin, ContextMenuService } from "./plugins/context_menu";
+export type { ContextMenuContext, ContextMenuItem, ContextMenuProvider } from "./plugins/context_menu/types";
 export { history_plugin } from "./plugins/history";
 export { auto_pan_plugin } from "./plugins/auto_pan";
 export { executor_plugin } from "./plugins/executor_plugin";
