@@ -105,9 +105,9 @@ const init = () => {
 
   const easel = new Easel(canvas_el, {
     plugins: [
+      context_menu_plugin,
       minimap_plugin,
       controls_plugin,
-      context_menu_plugin,
       history_plugin,
       auto_pan_plugin,
       executor_plugin

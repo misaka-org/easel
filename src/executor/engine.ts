@@ -19,7 +19,7 @@ export class GraphExecutor {
   private abort_controller: AbortController | null = null;
   realtime: Ref<boolean>;
   private realtime_debounce_timer: ReturnType<typeof setTimeout> | null = null;
-  // Persists across compilations 鈥?caches outputs keyed by (node_id, inputs_fingerprint)
+  // Persists across compilations 閳?caches outputs keyed by (node_id, inputs_fingerprint)
   private input_cache = new Map<string, { fingerprint: string; outputs: Record<string, unknown> }>();
 
   constructor(easel: Easel) {
@@ -113,6 +113,11 @@ export class GraphExecutor {
       this.abort_controller.abort();
     }
     this.state.value = { ...this.state.value, status: 'stopped' };
+  }
+
+  /** Clear all cached execution results. Forces re-execution on next run. */
+  clear_cache(): void {
+    this.input_cache.clear();
   }
 
   /** Enable realtime mode: the executor will react to input changes */
@@ -376,7 +381,7 @@ export class GraphExecutor {
     return structuredClone(val);
   }
 
-  /** Deterministic fingerprint of input values 鈥?two compilations with same inputs produce same fingerprint */
+  /** Deterministic fingerprint of input values 閳?two compilations with same inputs produce same fingerprint */
   private inputs_fingerprint(inputs: Record<string, unknown>): string {
     const keys = Object.keys(inputs).sort();
     const ordered: Record<string, unknown> = {};
@@ -397,7 +402,7 @@ export class GraphExecutor {
         const node = this.easel.state.value.nodes[id];
         const inputs = this.gather_inputs(id);
 
-        // Separate cache (persists across compilations) 鈥?skip execution when inputs unchanged
+        // Separate cache (persists across compilations) 閳?skip execution when inputs unchanged
         const fingerprint = this.inputs_fingerprint(inputs);
         const cached = this.input_cache.get(id);
         if (cached && cached.fingerprint === fingerprint) {

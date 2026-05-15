@@ -1,6 +1,7 @@
 import type { EaselPlugin } from '../runtime/easel';
 import type { State } from '../core/types';
 import { apply_styles } from '@/utils/css';
+import type { ContextMenuItem, ContextMenuProvider, ContextMenuContext } from '@/plugins/context_menu/types';
 
 export const history_plugin: EaselPlugin = (easel) => {
   const history: State[] = [easel.state.value];
@@ -143,4 +144,37 @@ export const history_plugin: EaselPlugin = (easel) => {
        if (current_index < history.length - 1) jump_to(current_index + 1);
     }
   });
+
+  // -----------------------------------------------------------------------
+  // Context menu provider — register a "History" submenu
+  // -----------------------------------------------------------------------
+  const cm = (easel as any).context_menu;
+  if (cm) {
+    cm.register({
+      id: 'history',
+      priority: 50,
+      get_items: (ctx: ContextMenuContext): readonly ContextMenuItem[] => [{
+        id: 'history_submenu',
+        label: 'History',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        submenu: [
+          {
+            id: 'undo',
+            label: 'Undo (Ctrl+Z)',
+            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>',
+            disabled: current_index <= 0,
+            action: () => { if (current_index > 0) jump_to(current_index - 1); },
+          },
+          {
+            id: 'redo',
+            label: 'Redo (Ctrl+Shift+Z)',
+            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
+            disabled: current_index >= history.length - 1,
+            action: () => { if (current_index < history.length - 1) jump_to(current_index + 1); },
+          },
+        ],
+      }],
+    });
+  }
+
 };
