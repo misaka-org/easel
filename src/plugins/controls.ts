@@ -2,10 +2,20 @@ import type { EaselPlugin } from '../runtime/easel';
 import { vec2_create } from '../core/math';
 import { apply_styles } from '@/utils/css';
 import type { ContextMenuItem, ContextMenuProvider, ContextMenuContext } from '@/plugins/context_menu/types';
+import {
+  ICON_PLUS,
+  ICON_MINUS,
+  ICON_MAXIMIZE,
+  ICON_TABLE,
+  ICON_FULLSCREEN,
+  ICON_SEARCH_PLUS,
+  ICON_SEARCH_MINUS,
+  ICON_GRID,
+} from '@/icons';
 
 export const controls_plugin: EaselPlugin = (easel) => {
   // -----------------------------------------------------------------------
-  // Action functions — shared by both UI buttons and context menu
+  // Action functions �?shared by both UI buttons and context menu
   // -----------------------------------------------------------------------
   const do_zoom_in = () => {
     easel.dispatch(s => ({
@@ -96,34 +106,29 @@ export const controls_plugin: EaselPlugin = (easel) => {
     overflow: 'hidden',
   });
 
-  const icon_plus = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
-  const icon_minus = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
-  const icon_fit = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>`;
-  const icon_layout = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`;
-  const icon_fullscreen = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>`;
 
   const btn_zoom_in = document.createElement('button');
-  btn_zoom_in.innerHTML = icon_plus;
+  btn_zoom_in.innerHTML = ICON_PLUS;
   btn_zoom_in.title = 'Zoom In';
   btn_zoom_in.addEventListener('click', do_zoom_in);
 
   const btn_zoom_out = document.createElement('button');
-  btn_zoom_out.innerHTML = icon_minus;
+  btn_zoom_out.innerHTML = ICON_MINUS;
   btn_zoom_out.title = 'Zoom Out';
   btn_zoom_out.addEventListener('click', do_zoom_out);
 
   const btn_fit = document.createElement('button');
-  btn_fit.innerHTML = icon_fit;
+  btn_fit.innerHTML = ICON_MAXIMIZE;
   btn_fit.title = 'Fit to view';
   btn_fit.addEventListener('click', do_fit);
 
   const btn_layout = document.createElement('button');
-  btn_layout.innerHTML = icon_layout;
+  btn_layout.innerHTML = ICON_TABLE;
   btn_layout.title = 'Auto Layout';
   btn_layout.addEventListener('click', do_layout);
 
   const btn_fullscreen = document.createElement('button');
-  btn_fullscreen.innerHTML = icon_fullscreen;
+  btn_fullscreen.innerHTML = ICON_FULLSCREEN;
   btn_fullscreen.title = 'Toggle Fullscreen';
   btn_fullscreen.addEventListener('click', do_fullscreen);
 
@@ -164,6 +169,11 @@ export const controls_plugin: EaselPlugin = (easel) => {
         background: rgba(255, 255, 255, 0.2);
         transform: scale(0.96);
       }
+      .easel-controls button svg {
+        width: 18px;
+        height: 18px;
+        display: block;
+      }
     `;
     (root_node === document ? document.head : root_node).appendChild(style_el);
   }
@@ -171,15 +181,14 @@ export const controls_plugin: EaselPlugin = (easel) => {
   const buttons = [btn_zoom_in, btn_zoom_out, btn_fit, btn_layout, btn_fullscreen];
 
   buttons.forEach((btn) => {
-    // 阻止事件冒泡到画布
-    btn.addEventListener('pointerdown', (e) => e.stopPropagation());
+    // 阻止事件冒泡到画�?    btn.addEventListener('pointerdown', (e) => e.stopPropagation());
     bar.appendChild(btn);
   });
 
   easel.container.appendChild(bar);
 
   // -----------------------------------------------------------------------
-  // Context menu provider — register a "Controls" submenu
+  // Context menu provider �?register a "Controls" submenu
   // -----------------------------------------------------------------------
   const cm = (easel as any).context_menu;
   if (cm) {
@@ -189,36 +198,36 @@ export const controls_plugin: EaselPlugin = (easel) => {
       get_items: (ctx: ContextMenuContext): readonly ContextMenuItem[] => [{
         id: 'controls_submenu',
         label: 'Controls',
-        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>',
+        icon: ICON_TABLE,
         submenu: [
           {
             id: 'zoom_in',
             label: 'Zoom In',
-            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>',
+            icon: ICON_SEARCH_PLUS,
             action: do_zoom_in,
           },
           {
             id: 'zoom_out',
             label: 'Zoom Out',
-            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>',
+            icon: ICON_SEARCH_MINUS,
             action: do_zoom_out,
           },
           {
             id: 'fit_to_view',
             label: 'Fit to View',
-            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>',
+            icon: ICON_MAXIMIZE,
             action: do_fit,
           },
           {
             id: 'auto_layout',
             label: 'Auto Layout',
-            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+            icon: ICON_GRID,
             action: do_layout,
           },
           {
             id: 'fullscreen',
             label: 'Toggle Fullscreen',
-            icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>',
+            icon: ICON_FULLSCREEN,
             action: do_fullscreen,
           },
         ],

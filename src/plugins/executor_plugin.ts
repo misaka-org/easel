@@ -5,6 +5,15 @@ import { effect } from '@vue/reactivity';
 import * as E from 'fp-ts/Either';
 import { apply_styles } from '@/utils/css';
 import type { ContextMenuItem, ContextMenuProvider, ContextMenuContext } from '@/plugins/context_menu/types';
+import {
+  ICON_PLAY,
+  ICON_CHECK,
+  ICON_STEP,
+  ICON_STOP,
+  ICON_ACTIVITY,
+  ICON_UNDO,
+  ICON_TRASH,
+} from '@/icons';
 
 export const executor_plugin: EaselPlugin = (easel) => {
   const executor = new GraphExecutor(easel);
@@ -263,7 +272,7 @@ export const executor_plugin: EaselPlugin = (easel) => {
   });
 
   // -----------------------------------------------------------------------
-  // Context menu provider â€” register an "Executor" submenu
+  // Context menu provider â€?register an "Executor" submenu
   // -----------------------------------------------------------------------
   const cm = (easel as any).context_menu;
   if (cm) {
@@ -276,37 +285,37 @@ export const executor_plugin: EaselPlugin = (easel) => {
         return [{
           id: 'executor_submenu',
           label: 'Executor',
-          icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+          icon: ICON_PLAY,
           submenu: [
             {
               id: 'compile',
               label: 'Compile',
-              icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+              icon: ICON_CHECK,
               action: () => { const r = executor.compile(); if (E.isLeft(r)) { alert('Compile Error: ' + r.left.message); } },
             },
             {
               id: 'step',
               label: 'Step',
-              icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="4" x2="6" y2="20"/><polygon points="10 4 20 12 10 20 10 4"/></svg>',
+              icon: ICON_STEP,
               action: () => { executor.step(); },
             },
             is_running
               ? {
                   id: 'stop',
                   label: 'Stop',
-                  icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/></svg>',
+                  icon: ICON_STOP,
                   action: () => { executor.stop(); },
                 }
               : {
                   id: 'run',
                   label: 'Run',
-                  icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+                  icon: ICON_PLAY,
                   action: () => { executor.run(); },
                 },
             {
               id: 'toggle_realtime',
               label: executor.realtime.value ? 'Stop Realtime' : 'Start Realtime',
-              icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+              icon: ICON_ACTIVITY,
               action: () => {
                 if (executor.realtime.value) {
                   executor.stop_realtime();
@@ -319,7 +328,7 @@ export const executor_plugin: EaselPlugin = (easel) => {
             {
               id: 'reset',
               label: 'Reset',
-              icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>',
+              icon: ICON_UNDO,
               action: () => {
                 executor.stop();
                 executor.compile();
@@ -328,7 +337,7 @@ export const executor_plugin: EaselPlugin = (easel) => {
             {
               id: 'reset_cache',
               label: 'Reset Cache',
-              icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
+              icon: ICON_TRASH,
               action: () => { executor.clear_cache(); },
             },
           ],

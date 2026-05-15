@@ -1,6 +1,7 @@
 import { EaselNode } from './registry';
 import type { GraphNode } from '@/core/types';
 import { update_node_data, update_widget_value, remove_node } from '@/core/node_ops';
+import { ICON_X } from '@/icons';
 
 export class DefaultNode extends EaselNode {
   private header!: HTMLElement;
@@ -69,10 +70,7 @@ export class DefaultNode extends EaselNode {
       <span class="title-text">${node_data.title}</span>
       <div style="flex:1"></div>
       <div class="node-action-btn" data-action="delete" title="Delete">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
+        ${ICON_X}
       </div>
     `;
     if (this.header.innerHTML !== title_html) {

@@ -1,10 +1,11 @@
 import { EaselNode } from '@/runtime/registry';
 import { update_widget_value } from '@/core/node_ops';
 import type { ContextMenuContext, ContextMenuItem } from '@/plugins/context_menu/types';
+import { ICON_CLOCK, ICON_UNDO, ICON_PLUS, ICON_MINUS, ICON_REFRESH } from '@/icons';
 import type { GraphNode, State } from '@/core/types';
 
 /**
- * Demo node â€” shows how a node subclass can provide its own
+ * Demo node â€?shows how a node subclass can provide its own
  * context menu items via get_context_menu_items().
  *
  * Right-click on this node to see counter-specific actions
@@ -56,12 +57,12 @@ export class CounterNode extends EaselNode {
         id: 'counter_info',
         kind: 'label',
         label: `Current: ${val}`,
-        icon: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>',
+        icon: ICON_CLOCK,
       },
       {
         id: 'counter_reset',
         label: 'Reset to 0',
-        icon: '<svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>',
+        icon: ICON_UNDO,
         action: () => {
           this.dispatch(s => update_widget_value(s, this.node_id, 'value', 0));
         },
@@ -69,7 +70,7 @@ export class CounterNode extends EaselNode {
       {
         id: 'counter_inc',
         label: 'Increment +1',
-        icon: '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+        icon: ICON_PLUS,
         action: () => {
           this.dispatch(s => {
             const cur = (s.nodes[this.node_id]?.widgets?.find(w => w.id === 'value')?.value as number) ?? 0;
@@ -80,7 +81,7 @@ export class CounterNode extends EaselNode {
       {
         id: 'counter_dec',
         label: 'Decrement -1',
-        icon: '<svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+        icon: ICON_MINUS,
         action: () => {
           this.dispatch(s => {
             const cur = (s.nodes[this.node_id]?.widgets?.find(w => w.id === 'value')?.value as number) ?? 0;
@@ -92,7 +93,7 @@ export class CounterNode extends EaselNode {
         id: 'counter_double',
         label: 'Double',
         group: 'extras',
-        icon: '<svg viewBox="0 0 24 24"><polyline points="18,15 21,12 18,9"/><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>',
+        icon: ICON_REFRESH,
         action: () => {
           this.dispatch(s => {
             const cur = (s.nodes[this.node_id]?.widgets?.find(w => w.id === 'value')?.value as number) ?? 0;
