@@ -1,4 +1,4 @@
-﻿import type { Vec2 } from './math';
+import type { Vec2 } from './math';
 
 export type Port = {
   readonly id: string;

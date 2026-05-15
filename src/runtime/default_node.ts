@@ -1,4 +1,4 @@
-﻿import { EaselNode } from './registry';
+import { EaselNode } from './registry';
 import type { GraphNode } from '@/core/types';
 import { update_node_data, update_widget_value, remove_node } from '@/core/node_ops';
 

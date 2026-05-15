@@ -1,4 +1,4 @@
-﻿import { vec2_create } from '@/core/math';
+import { vec2_create } from '@/core/math';
 import { pointer_down, pointer_move, pointer_up, wheel_zoom, update_modifiers } from '@/core/interactions';
 import { remove_node, add_node } from '@/core/node_ops';
 import type { State, Modifiers } from '@/core/types';

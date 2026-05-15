@@ -1,4 +1,4 @@
-﻿import { vec2_create } from '@/core/math';
+import { vec2_create } from '@/core/math';
 import { add_node } from '@/core/node_ops';
 import { add_wire } from '@/core/wire_ops';
 import type { Dispatch } from '@/runtime/registry';

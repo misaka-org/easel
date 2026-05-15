@@ -1,4 +1,4 @@
-﻿import { EaselNode } from '@/index';
+import { EaselNode } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 

@@ -1,4 +1,4 @@
-﻿import { effect } from "@vue/reactivity";
+import { effect } from "@vue/reactivity";
 import { Easel, register_node_type, EaselNode, type ExecuteContext } from "@/index";
 import { add_node, update_node_data } from "@/core/node_ops";
 import { create_initial_state } from "@/core/state";

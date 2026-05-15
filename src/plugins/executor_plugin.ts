@@ -1,4 +1,4 @@
-﻿import type { EaselPlugin } from '@/runtime/easel';
+import type { EaselPlugin } from '@/runtime/easel';
 import { GraphExecutor } from '@/executor/engine';
 import { frame_effect } from '@/runtime/frame_effect';
 import { effect } from '@vue/reactivity';

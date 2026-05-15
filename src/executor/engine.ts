@@ -1,4 +1,4 @@
-﻿import { ref, type Ref } from '@vue/reactivity';
+import { ref, type Ref } from '@vue/reactivity';
 import type { Easel } from '@/runtime/easel';
 import type { GraphNode } from '@/core/types';
 import * as E from 'fp-ts/Either';
