@@ -15,7 +15,7 @@ import {
 
 export const controls_plugin: EaselPlugin = (easel) => {
   // -----------------------------------------------------------------------
-  // Action functions �?shared by both UI buttons and context menu
+  // Action functions —shared by both UI buttons and context menu
   // -----------------------------------------------------------------------
   const do_zoom_in = () => {
     easel.dispatch(s => ({
@@ -181,14 +181,14 @@ export const controls_plugin: EaselPlugin = (easel) => {
   const buttons = [btn_zoom_in, btn_zoom_out, btn_fit, btn_layout, btn_fullscreen];
 
   buttons.forEach((btn) => {
-    // 阻止事件冒泡到画�?    btn.addEventListener('pointerdown', (e) => e.stopPropagation());
+    // 阻止事件冒泡到画布    btn.addEventListener('pointerdown', (e) => e.stopPropagation());
     bar.appendChild(btn);
   });
 
   easel.container.appendChild(bar);
 
   // -----------------------------------------------------------------------
-  // Context menu provider �?register a "Controls" submenu
+  // Context menu provider —register a "Controls" submenu
   // -----------------------------------------------------------------------
   const cm = (easel as any).context_menu;
   if (cm) {

@@ -272,7 +272,7 @@ export const executor_plugin: EaselPlugin = (easel) => {
   });
 
   // -----------------------------------------------------------------------
-  // Context menu provider â€?register an "Executor" submenu
+  // Context menu provider â€”register an "Executor" submenu
   // -----------------------------------------------------------------------
   const cm = (easel as any).context_menu;
   if (cm) {
