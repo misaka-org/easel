@@ -12,6 +12,7 @@ import { context_menu_plugin } from "@/plugins/context_menu";
 import { history_plugin } from "@/plugins/history";
 import { auto_pan_plugin } from "@/plugins/auto_pan";
 import { executor_plugin } from "@/plugins/executor_plugin";
+import { node_picker_plugin } from "@/plugins/node_picker";
 import { DefaultNode } from "@/index";
 import type { ContextMenuContext, ContextMenuItem } from "@/plugins/context_menu/types";
 import { register_node_ns } from "@/index";
@@ -82,7 +83,7 @@ register_node_type("css_preview", CSSPreviewNode);
 register_node_type("counter", CounterNode);
 
 // -------------------------------------------------------------------
-// Namespace registration — organizes the "Add Node" submenu
+// Namespace registration �?organizes the "Add Node" submenu
 // into hierarchical submenus. Nodes without ns appear under "Other".
 // -------------------------------------------------------------------
 register_node_ns("image_generation", ["生成", "图像"]);
@@ -110,6 +111,7 @@ const init = () => {
       controls_plugin,
       history_plugin,
       auto_pan_plugin,
+      node_picker_plugin,
       executor_plugin
     ],
     custom_css: `
@@ -329,7 +331,7 @@ const init = () => {
     }
   });
 
-  // HUD 閫昏緫
+  // HUD 閫昏�?
   const stats_el = document.getElementById("hud-stats");
   if (stats_el) {
     effect(() => {
@@ -499,7 +501,7 @@ const init = () => {
   });
 
   // -------------------------------------------------------------------
-  // Context menu demo — plugin-level provider.
+  // Context menu demo �?plugin-level provider.
   // This registers extra items on every node to show how plugins
   // can augment the context menu without modifying node code.
   // -------------------------------------------------------------------
@@ -512,7 +514,7 @@ const init = () => {
       get_items: (ctx: ContextMenuContext): readonly ContextMenuItem[] => {
         const items: ContextMenuItem[] = [];
 
-        // Node info label — shown when right-clicking any node
+        // Node info label �?shown when right-clicking any node
         if (ctx.node_id) {
           items.push({
             id: 'demo_node_info',

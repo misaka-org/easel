@@ -26,6 +26,7 @@ export { history_plugin } from "./plugins/history";
 export { auto_pan_plugin } from "./plugins/auto_pan";
 export { executor_plugin } from "./plugins/executor_plugin";
 export { with_guidelines } from "./plugins/guidelines";
+export { node_picker_plugin } from "./plugins/node_picker";
 
 // Built-in nodes (internal)
 import { SubgraphNode, SubgraphInputNode, SubgraphOutputNode } from "./nodes/subgraph";
