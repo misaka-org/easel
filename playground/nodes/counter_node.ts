@@ -1,17 +1,23 @@
-import { EaselNode } from '@/runtime/registry';
+import { EaselNode, type NodeSpec } from '@/runtime/registry';
 import { update_widget_value } from '@/core/node_ops';
 import type { ContextMenuContext, ContextMenuItem } from '@/plugins/context_menu/types';
 import { ICON_CLOCK, ICON_UNDO, ICON_PLUS, ICON_MINUS, ICON_REFRESH } from '@/icons';
 import type { GraphNode, State } from '@/core/types';
 
 /**
- * Demo node â€?shows how a node subclass can provide its own
+ * Demo node â€“ shows how a node subclass can provide its own
  * context menu items via get_context_menu_items().
  *
  * Right-click on this node to see counter-specific actions
  * below the standard Delete / Duplicate items.
  */
 export class CounterNode extends EaselNode {
+  static node_spec: NodeSpec = {
+    inputs: [],
+    outputs: [{ id: 'val', label: 'Value', type: 'output', value_type: 'number' }],
+    widgets: [{ id: 'value', type: 'number', label: 'Value', value: 0, value_type: 'number' }],
+    resizable: false,
+  };
   private body!: HTMLElement;
   private display!: HTMLElement;
 
@@ -104,3 +110,4 @@ export class CounterNode extends EaselNode {
     ];
   }
 }
+

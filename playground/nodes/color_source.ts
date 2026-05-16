@@ -1,9 +1,14 @@
-import { EaselNode } from '@/index';
+import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 import { update_widget_value } from '@/core/node_ops';
 
 export class ColorSourceNode extends EaselNode {
+  static node_spec: NodeSpec = {
+    inputs: [],
+    outputs: [{ id: 'out', label: 'Color', type: 'output' }],
+    widgets: [{ id: 'color', type: 'color', label: 'Color', value: '#ff0000' }],
+  };
   private header!: HTMLElement;
   private body!: HTMLElement;
   private portsContainer!: HTMLElement;
@@ -96,3 +101,4 @@ export class ColorSourceNode extends EaselNode {
     this.header.remove(); this.portsContainer.remove(); this.widgetsContainer.remove(); this.body.remove();
   }
 }
+

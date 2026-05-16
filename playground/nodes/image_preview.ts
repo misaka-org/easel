@@ -1,7 +1,12 @@
-import { EaselNode, GraphNode } from "@/index";
+import { EaselNode, GraphNode, type NodeSpec } from "@/index";
 
 // Custom Node Example
 export class ImagePreviewNode extends EaselNode {
+  static node_spec: NodeSpec = {
+    inputs: [{ id: 'in_1', label: 'Image', type: 'input' }],
+    outputs: [],
+    style_mode: 'borderless',
+  };
   private body!: HTMLElement;
   private preview!: HTMLImageElement;
   private toolbar!: HTMLElement;
@@ -35,10 +40,11 @@ export class ImagePreviewNode extends EaselNode {
   }
 
   update(_node_data: GraphNode, _state: any): void {
-    // 静态内容，仅依靠CSS显示隐藏toolbar
+    // 静态内容，仅依赖CSS显示隐藏toolbar
   }
 
   unmount(): void {
     this.body.remove();
   }
 }
+

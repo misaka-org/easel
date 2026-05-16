@@ -1,8 +1,13 @@
-import { EaselNode } from '@/index';
+import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 
 export class TextViewNode extends EaselNode {
+  static node_spec: NodeSpec = {
+    inputs: [{ id: 'content', label: 'Content', type: 'input', value_type: 'text' }],
+    outputs: [],
+    resizable: false,
+  };
   private header!: HTMLElement;
   private body!: HTMLElement;
   private portsContainer!: HTMLElement;
@@ -166,3 +171,4 @@ export class TextViewNode extends EaselNode {
     this.body.remove();
   }
 }
+

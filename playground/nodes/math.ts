@@ -1,10 +1,17 @@
-import { EaselNode } from '@/index';
+import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import { update_widget_value } from '@/core/node_ops';
 
 import type { ExecuteContext } from '@/index';
 
 export class MathNode extends EaselNode {
+  static node_spec: NodeSpec = {
+    inputs: [
+      { id: 'a', label: 'A', type: 'input' },
+      { id: 'b', label: 'B', type: 'input' },
+    ],
+    outputs: [{ id: 'out', label: 'Result', type: 'output' }],
+  };
   async execute({ node, inputs, report_progress }: ExecuteContext) {
     report_progress(30);
     await new Promise((r) => setTimeout(r, 500));

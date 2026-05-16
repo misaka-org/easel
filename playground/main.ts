@@ -1,5 +1,5 @@
 import { effect } from "@vue/reactivity";
-import { Easel, register_node_type, EaselNode, type ExecuteContext } from "@/index";
+import { Easel, register_node_type, register_node_ns, EaselNode, type ExecuteContext, type NodeSpec } from "@/index";
 import { add_node, update_node_data } from "@/core/node_ops";
 import { create_initial_state } from "@/core/state";
 import { serialize_state, deserialize_state } from "@/core/serialization";
@@ -15,7 +15,7 @@ import { executor_plugin } from "@/plugins/executor_plugin";
 import { node_picker_plugin } from "@/plugins/node_picker";
 import { DefaultNode } from "@/index";
 import type { ContextMenuContext, ContextMenuItem } from "@/plugins/context_menu/types";
-import { register_node_ns } from "@/index";
+
 
 import { MathNode } from "./nodes/math";
 import { load_math_scene, evaluate_math_graph } from "./scenes/scene_math";
@@ -35,6 +35,7 @@ import { load_ip_api_scene } from "./scenes/scene_ip_api";
 import { load_context_menu_scene } from "./scenes/scene_context_menu";
 
 class ExecutableDefaultNode extends DefaultNode {
+  static node_spec: NodeSpec = {};
   async execute({ node, inputs, report_progress }: ExecuteContext) {
     report_progress(50);
     await new Promise((r) => setTimeout(r, 500));
@@ -44,6 +45,14 @@ class ExecutableDefaultNode extends DefaultNode {
 }
 
 class TextGenNode extends DefaultNode {
+  static node_spec: NodeSpec = {
+    inputs: [{ id: 'prompt', label: 'Prompt', type: 'input', value_type: 'text', required: true }],
+    outputs: [{ id: 'out_list', label: 'List [ ]', type: 'output', value_type: 'text' }],
+    widgets: [
+      { id: 'min_len', type: 'number', label: 'Minimum list length', value: 6, value_type: 'number' },
+      { id: 'max_len', type: 'number', label: 'Maximum list length', value: 8, value_type: 'number' },
+    ],
+  };
   async execute({ node, inputs, report_progress, signal }: ExecuteContext) {
     report_progress(30);
     await new Promise((r) => setTimeout(r, 400));
@@ -57,6 +66,14 @@ class TextGenNode extends DefaultNode {
 }
 
 class ImageGenNode extends DefaultNode {
+  static node_spec: NodeSpec = {
+    inputs: [
+      { id: 'prompt', label: '[ ] Prompt', type: 'input', value_type: 'image' },
+      { id: 'ref', label: 'Reference Image', type: 'input', value_type: 'image' },
+    ],
+    outputs: [{ id: 'out_img', label: 'Image [ ]', type: 'output', value_type: 'image' }],
+    widgets: [{ id: 'model', type: 'text', label: 'Model', value: 'Flux Dev', value_type: 'text' }],
+  };
   async execute({ node, inputs, report_progress, signal }: ExecuteContext) {
     report_progress(10);
     await new Promise((r) => setTimeout(r, 300));
@@ -83,7 +100,7 @@ register_node_type("css_preview", CSSPreviewNode);
 register_node_type("counter", CounterNode);
 
 // -------------------------------------------------------------------
-// Namespace registration �?organizes the "Add Node" submenu
+// Namespace registration 锟?organizes the "Add Node" submenu
 // into hierarchical submenus. Nodes without ns appear under "Other".
 // -------------------------------------------------------------------
 register_node_ns("image_generation", ["生成", "图像"]);
@@ -91,15 +108,14 @@ register_node_ns("text_generation", ["生成", "文本"]);
 register_node_ns("audio_generation", ["生成", "音频"]);
 register_node_ns("video_concatenation", ["生成", "视频"]);
 register_node_ns("ip_api", ["网络"]);
-register_node_ns("math", ["数值"]);
-register_node_ns("counter", ["数值"]);
+register_node_ns("math", ["数学"]);
+register_node_ns("counter", ["数学"]);
 register_node_ns("image_preview", ["预览"]);
 register_node_ns("text_view", ["预览"]);
 register_node_ns("css_preview", ["预览"]);
 register_node_ns("css_builder", ["预览"]);
 register_node_ns("text_input", ["输入"]);
 register_node_ns("color_source", ["输入"]);
-
 const init = () => {
   const canvas_el = document.getElementById("canvas");
   if (!canvas_el) return;
@@ -331,7 +347,7 @@ const init = () => {
     }
   });
 
-  // HUD 閫昏�?
+  // HUD 闁槒锟?
   const stats_el = document.getElementById("hud-stats");
   if (stats_el) {
     effect(() => {
@@ -501,7 +517,7 @@ const init = () => {
   });
 
   // -------------------------------------------------------------------
-  // Context menu demo �?plugin-level provider.
+  // Context menu demo 锟?plugin-level provider.
   // This registers extra items on every node to show how plugins
   // can augment the context menu without modifying node code.
   // -------------------------------------------------------------------
@@ -514,12 +530,12 @@ const init = () => {
       get_items: (ctx: ContextMenuContext): readonly ContextMenuItem[] => {
         const items: ContextMenuItem[] = [];
 
-        // Node info label �?shown when right-clicking any node
+        // Node info label 锟?shown when right-clicking any node
         if (ctx.node_id) {
           items.push({
             id: 'demo_node_info',
             kind: 'label',
-            label: `Node: ${ctx.node_id} · ${ctx.node_type}`,
+            label: `Node: ${ctx.node_id} 路 ${ctx.node_type}`,
             icon: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
           });
         }
@@ -586,7 +602,3 @@ const init = () => {
 };
 
 init();
-
-
-
-

@@ -1,8 +1,19 @@
-import { EaselNode } from '@/index';
+import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 
 export class CSSBuilderNode extends EaselNode {
+  static node_spec: NodeSpec = {
+    inputs: [
+      { id: 'c1', label: 'Color 1', type: 'input', value_type: 'text' },
+      { id: 'c2', label: 'Color 2', type: 'input', value_type: 'text' },
+      { id: 'c3', label: 'Color 3', type: 'input', value_type: 'text' },
+      { id: 'c4', label: 'Color 4', type: 'input', value_type: 'text' },
+      { id: 'angle', label: 'Angle', type: 'input', value_type: 'number' },
+      { id: 'type_g', label: 'Type', type: 'input', value_type: 'text' },
+    ],
+    outputs: [{ id: 'css_out', label: 'CSS', type: 'output', value_type: 'text' }],
+  };
   private header!: HTMLElement;
   private body!: HTMLElement;
   private portsContainer!: HTMLElement;
@@ -78,3 +89,4 @@ export class CSSBuilderNode extends EaselNode {
 
   unmount(): void { this.header.remove(); this.portsContainer.remove(); this.body.remove(); }
 }
+

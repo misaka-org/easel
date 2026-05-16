@@ -1,8 +1,20 @@
-import { EaselNode } from '@/index';
+import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 
 export class IpApiNode extends EaselNode {
+  static node_spec: NodeSpec = {
+    inputs: [{ id: 'query', label: 'Query', type: 'input', value_type: 'text' }],
+    outputs: [
+      { id: 'result', label: 'Result', type: 'output', value_type: 'object' },
+      { id: 'country', label: 'Country', type: 'output', value_type: 'text' },
+      { id: 'city', label: 'City', type: 'output', value_type: 'text' },
+      { id: 'isp', label: 'ISP', type: 'output', value_type: 'text' },
+      { id: 'lat', label: 'Lat', type: 'output', value_type: 'number' },
+      { id: 'lon', label: 'Lon', type: 'output', value_type: 'number' },
+      { id: 'query_ip', label: 'Queried', type: 'output', value_type: 'text' },
+    ],
+  };
   private header!: HTMLElement;
   private body!: HTMLElement;
   private portsContainer!: HTMLElement;
@@ -137,11 +149,11 @@ export class IpApiNode extends EaselNode {
     if (result) {
       if (result.status === 'success') {
         this.statusEl.innerHTML = `
-          <div style="color:#4ade80;font-weight:600;">鉁?${query || result.query}</div>
+          <div style="color:#4ade80;font-weight:600;">✔ ${query || result.query}</div>
           <div style="color:#aaa;margin-top:2px;">${result.country} / ${result.city || 'N/A'} &middot; ${result.isp || 'N/A'}</div>
         `;
       } else {
-        this.statusEl.innerHTML = `<div style="color:#f87171;">鉁?${result.message || 'Request failed'}</div>`;
+        this.statusEl.innerHTML = `<div style="color:#f87171;">✘ ${result.message || 'Request failed'}</div>`;
       }
     } else {
       this.statusEl.textContent = 'Awaiting execution...';
@@ -154,3 +166,4 @@ export class IpApiNode extends EaselNode {
     this.body.remove();
   }
 }
+

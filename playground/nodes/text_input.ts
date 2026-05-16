@@ -1,9 +1,14 @@
-import { EaselNode } from '@/index';
+import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 import { update_widget_value } from '@/core/node_ops';
 
 export class TextInputNode extends EaselNode {
+  static node_spec: NodeSpec = {
+    inputs: [],
+    outputs: [{ id: 'query', label: 'Query', type: 'output', value_type: 'text' }],
+    widgets: [{ id: 'value', type: 'text', label: 'Value', value: '', value_type: 'text' }],
+  };
   private header!: HTMLElement;
   private body!: HTMLElement;
   private portsContainer!: HTMLElement;
@@ -123,7 +128,7 @@ export class TextInputNode extends EaselNode {
       this.widgetsContainer.innerHTML = widgets_html;
       this.widgetsContainer.dataset['schema'] = widgets_schema;
     } else {
-      // Schema unchanged — update values in-place without destroying focus
+      // Schema unchanged – update values in-place without destroying focus
       node_data.widgets?.forEach(w => {
         const input = this.widgetsContainer.querySelector(
           `[data-widget-id="${w.id}"]`
@@ -146,3 +151,4 @@ export class TextInputNode extends EaselNode {
     this.body.remove();
   }
 }
+

@@ -1,7 +1,7 @@
 import type { EaselPlugin } from '@/runtime/easel';
-import { get_registered_types, get_node_ns } from '@/runtime/registry';
-import { add_node } from '@/core/node_ops';
+import { get_registered_types, get_node_ns, create_node_data } from '@/runtime/registry';
 import { vec2_create } from '@/core/math';
+import { add_node } from '@/core/node_ops';
 
 // ---------------------------------------------------------------------------
 // CSS (injected once)
@@ -274,18 +274,9 @@ export const node_picker_plugin: EaselPlugin = (easel) => {
     if (!entry) return;
     do_close();
 
-    const id = entry.type + '_' + Date.now();
-    const node_data: any = {
-      id,
-      type: entry.type,
+    const node_data = create_node_data(entry.type, {
       position: vec2_create(world_pos.x, world_pos.y),
-      size: vec2_create(180, 100),
-      title: entry.label,
-      inputs: [],
-      outputs: [],
-      widgets: [],
-      custom_data: {},
-    };
+    });
     easel.dispatch((st: any) => add_node(st, node_data));
   };
 

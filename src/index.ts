@@ -9,6 +9,7 @@ export * from "./core/types";
 // Runtime exports
 export { Easel, type EaselEvents } from "./runtime/easel";
 export { EaselNode, register_node_type, get_node_constructor, get_registered_types, type Dispatch, type ExecuteContext } from "./runtime/registry";
+export { register_node_spec, create_node_data, resolve_node_spec, type NodeSpec } from "./runtime/registry";
 export { register_node_ns, get_node_ns } from "./runtime/registry";
 export { DefaultNode } from "./runtime/default_node";
 export { default_theme, light_theme, apply_theme, type Theme } from "./runtime/theme";

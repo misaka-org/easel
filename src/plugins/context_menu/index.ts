@@ -4,8 +4,7 @@ import type { ContextMenuContext, ContextMenuItem, ContextMenuProvider } from '.
 import { remove_node } from '@/core/node_ops';
 import { add_node } from '@/core/node_ops';
 import { vec2_create } from '@/core/math';
-import { get_registered_types } from '@/runtime/registry';
-import { get_node_ns } from '@/runtime/registry';
+import { get_registered_types, get_node_ns, create_node_data } from '@/runtime/registry';
 
 export { ContextMenuService } from './service';
 export type { ContextMenuContext, ContextMenuItem, ContextMenuProvider } from './types';
@@ -278,20 +277,9 @@ function add_node_provider(easel: any): ContextMenuProvider {
         type: type_name,
         label: type_name.replace(/_/g, ' '),
         action: () => {
-          const id = `${type_name}_${Date.now()}`;
-          const node_data: any = {
-            id,
-            type: type_name === 'default' ? 'default' : type_name,
+          const node_data = create_node_data(type_name, {
             position: vec2_create(ctx.world_pos.x, ctx.world_pos.y),
-            size: vec2_create(180, 100),
-            title: type_name
-              .replace(/_/g, ' ')
-              .replace(/\b\w/g, (l) => l.toUpperCase()),
-            inputs: [],
-            outputs: [],
-            widgets: [],
-            custom_data: {},
-          };
+          });
           easel.dispatch((st: any) => add_node(st, node_data));
         },
       }));

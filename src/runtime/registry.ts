@@ -1,5 +1,7 @@
  import type { GraphNode, State } from '../core/types';
 import type { ContextMenuContext, ContextMenuItem } from '@/plugins/context_menu/types';
+import { vec2_create, type Vec2 } from '../core/math';
+import type { Port, Widget } from '../core/types';
  
 export type Dispatch = (updater: (state: State) => State) => void;
 
@@ -19,6 +21,21 @@ export abstract class EaselNode {
   abstract mount(node_data: GraphNode): void;
   abstract update(node_data: GraphNode, state: State): void;
   abstract unmount(): void;
+
+  /**
+   * Optional static port/widget definitions. When set, nodes created via the
+   * picker or context menu will automatically include these ports.
+   *
+   * @example
+   * class MyNode extends EaselNode {
+   *   static node_spec: NodeSpec = {
+   *     inputs: [{ id: "in", label: "Input", type: "input", value_type: "text" }],
+   *     outputs: [{ id: "out", label: "Output", type: "output", value_type: "text" }],
+   *   };
+   * }
+   */
+  static node_spec?: NodeSpec;
+
   /**
    * Optional: return context menu items when this node is right-clicked.
    * Only invoked when the context_menu_plugin is loaded; it is checked at
@@ -81,10 +98,33 @@ export type EaselNodeConstructor = new (
 
 const registry = new Map<string, EaselNodeConstructor>();
 const node_ns_registry = new Map<string, string[]>();
+const node_spec_registry = new Map<string, NodeSpec>();
 
-export const register_node_type = (type: string, constructor: EaselNodeConstructor): void => {
-  registry.set(type, constructor);
+/** Optional port/widget/size definitions for a node type.
+ *  Accepted via `register_node_type(..., spec)` or as `static node_spec` on the class. */
+export type NodeSpec = {
+  readonly inputs?: readonly Port[];
+  readonly outputs?: readonly Port[];
+  readonly widgets?: readonly Widget[];
+  readonly size?: Vec2;
+  readonly title?: string;
+  readonly resizable?: boolean;
+  readonly collapsed?: boolean;
+  readonly style_mode?: 'default' | 'borderless';
 };
+
+/** Register a node type, optionally with its default port/widget definitions.
+ *  When a spec is provided, nodes created via the picker or context menu will
+ *  automatically include these ports. */
+export const register_node_type = (
+  type: string,
+  constructor: EaselNodeConstructor,
+  spec?: NodeSpec,
+): void => {
+  registry.set(type, constructor);
+  if (spec) node_spec_registry.set(type, spec);
+};
+
 /**
  * Register a namespace path for a node type.
  * The context menu plugin uses this to organize the "Add Node" submenu
@@ -104,4 +144,46 @@ export const get_node_constructor = (type: string): EaselNodeConstructor | undef
 
 export const get_registered_types = (): string[] => {
   return Array.from(registry.keys());
+};
+
+/** Resolve the NodeSpec for a type:
+ *  1. explicit `register_node_type(..., spec)` or `register_node_spec()`
+ *  2. static `node_spec` on the constructor class
+ *  3. undefined (caller decides fallback)
+ */
+export const resolve_node_spec = (type: string): NodeSpec | undefined => {
+  const Constructor = registry.get(type);
+  return node_spec_registry.get(type) ?? (Constructor as any)?.node_spec;
+};
+
+/** Register default port/widget definitions for a node type.
+ *  Alternative to providing `spec` in `register_node_type()`. */
+export const register_node_spec = (type: string, spec: NodeSpec): void => {
+  node_spec_registry.set(type, spec);
+};
+
+/** Create a full GraphNode for the given type, including its spec-defined ports. */
+export const create_node_data = (
+  type: string,
+  overrides?: Partial<Pick<GraphNode, 'id' | 'position' | 'title' | 'custom_data'>>,
+): GraphNode => {
+  const spec = resolve_node_spec(type);
+  const title = type
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (l) => l.toUpperCase());
+  return {
+    id: `${type}_${Date.now()}`,
+    type,
+    position: vec2_create(0, 0),
+    size: spec?.size ?? vec2_create(180, 100),
+    title: spec?.title ?? title,
+    inputs: spec?.inputs ?? [],
+    outputs: spec?.outputs ?? [],
+    widgets: spec?.widgets ?? [],
+    custom_data: {},
+    ...(spec?.resizable !== undefined ? { resizable: spec.resizable } : {}),
+    ...(spec?.collapsed !== undefined ? { collapsed: spec.collapsed } : {}),
+    ...(spec?.style_mode !== undefined ? { style_mode: spec.style_mode } : {}),
+    ...overrides,
+  } as GraphNode;
 };
