@@ -29,13 +29,32 @@ export const history_plugin: EaselPlugin = (easel) => {
 
   const header = document.createElement('div');
   header.textContent = 'History';
+  let collapsed = false;
+
   apply_styles(header, {
     padding: '8px',
     fontWeight: 'bold',
     background: 'var(--node-header-bg)',
     borderBottom: '1px solid var(--node-border)',
     fontSize: '12px',
+    cursor: 'pointer',
+    userSelect: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   });
+
+  const toggle_btn = document.createElement('span');
+  toggle_btn.textContent = '▲';
+  toggle_btn.style.fontSize = '10px';
+  header.appendChild(toggle_btn);
+
+  header.addEventListener('click', () => {
+    collapsed = !collapsed;
+    list_container.style.display = collapsed ? 'none' : 'flex';
+    toggle_btn.textContent = collapsed ? '▼' : '▲';
+  });
+
   panel.appendChild(header);
 
   const list_container = document.createElement('div');
@@ -147,7 +166,7 @@ export const history_plugin: EaselPlugin = (easel) => {
   });
 
   // -----------------------------------------------------------------------
-  // Context menu provider �?register a "History" submenu
+  // Context menu provider — register a "History" submenu
   // -----------------------------------------------------------------------
   const cm = (easel as any).context_menu;
   if (cm) {
