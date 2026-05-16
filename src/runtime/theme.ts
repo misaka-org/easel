@@ -214,6 +214,8 @@ export const get_base_css = () => css`
   }
   .node-action-btn svg {
     display: block;
+    width: 14px;
+    height: 14px;
   }
 
   .node-header:active {
