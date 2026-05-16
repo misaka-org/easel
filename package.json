@@ -15,7 +15,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc && tsup",
+     "build": "tsup",
     "build:lib": "tsup",
     "build:playground": "vite build",
     "test": "vitest run"

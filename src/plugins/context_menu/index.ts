@@ -135,6 +135,8 @@ function node_ops_provider(easel: any): ContextMenuProvider {
     get_items: (ctx) => {
       if (!ctx.node_id) return [];
       const node_id: string = ctx.node_id;
+      const node_type: string | undefined = ctx.node_type;
+      if (node_type === 'subgraph_input' || node_type === 'subgraph_output') return [];
       return [
         {
           id: 'delete_node',

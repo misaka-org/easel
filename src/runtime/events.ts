@@ -118,8 +118,12 @@ export const setup_events = (container: HTMLElement, dispatch: Dispatch, app_eve
     app_events.emit('pointerdown', e);
     const target = (e.composedPath()[0] || e.target) as HTMLElement;
     const action_el = target.closest('[data-action]');
-    // 只阻止非 resize 操作的 data-action 元素，避免影响 resize 手柄
-    if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName) || (action_el && (action_el as HTMLElement).dataset['action'] !== 'resize')) {
+    // 一劳永逸：如果点击落在 plugin UI、交互元素或非 resize 的 data-action 内，不触发画布事件
+    if (
+      target.closest('button, input, textarea, select') ||
+      target.closest('.easel-controls, .easel-history-panel, .easel-minimap, .easel-node-picker-overlay, .easel-context-menu, .easel-executor-panel, .executor-overlays') ||
+      (action_el && (action_el as HTMLElement).dataset['action'] !== 'resize')
+    ) {
       return;
     }
     container.setPointerCapture(e.pointerId);

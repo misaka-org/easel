@@ -184,6 +184,7 @@ export const controls_plugin: EaselPlugin = (easel) => {
     // 阻止事件冒泡到画布    btn.addEventListener('pointerdown', (e) => e.stopPropagation());
     bar.appendChild(btn);
   });
+  bar.addEventListener('pointerdown', e => e.stopPropagation());
 
   easel.container.appendChild(bar);
 

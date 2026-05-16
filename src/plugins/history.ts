@@ -1,5 +1,6 @@
 import type { EaselPlugin } from '../runtime/easel';
 import type { State } from '../core/types';
+import { create_initial_state } from '../core/state';
 import { apply_styles } from '@/utils/css';
 import type { ContextMenuItem, ContextMenuProvider, ContextMenuContext } from '@/plugins/context_menu/types';
 import { ICON_CLOCK, ICON_UNDO, ICON_REDO } from '@/icons';
@@ -8,6 +9,7 @@ export const history_plugin: EaselPlugin = (easel) => {
   const history: State[] = [easel.state.value];
   let current_index = 0;
   let is_undoing = false;
+  const MAX_HISTORY = 30;
 
   const panel = document.createElement('div');
   panel.className = 'easel-history-panel';
@@ -113,7 +115,7 @@ export const history_plugin: EaselPlugin = (easel) => {
   const jump_to = (index: number) => {
     is_undoing = true;
     current_index = index;
-    original_dispatch(s => ({ ...history[current_index]!, camera: s.camera }));
+    original_dispatch(s => ({ ...history[current_index]!, camera: s.camera, interaction: { mode: 'idle' } }));
     is_undoing = false;
     render_list();
   };
@@ -137,8 +139,10 @@ export const history_plugin: EaselPlugin = (easel) => {
         
         if (state_changed) {
            history.splice(current_index + 1);
-           history.push(next_state);
-           if (history.length > 50) {
+           // 存储快照时排除 transient 字段以减小内存
+           const snapshot: State = { ...create_initial_state(), ...next_state, interaction: { mode: 'idle' } as const };
+           history.push(snapshot);
+           if (history.length > MAX_HISTORY) {
              history.shift();
            } else {
              current_index = history.length - 1;

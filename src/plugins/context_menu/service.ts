@@ -42,8 +42,6 @@ export class ContextMenuService {
     const items = this.collect(ctx);
 
     this.menu_el.innerHTML = '';
-    this.menu_el.style.left = `${screen_pos.x}px`;
-    this.menu_el.style.top = `${screen_pos.y}px`;
     this.menu_el.style.display = 'flex';
 
     let last_group: string | undefined;
@@ -58,6 +56,14 @@ export class ContextMenuService {
 
       this.menu_el.appendChild(this.create_item_element(item));
     }
+
+    // 防溢出容器边界
+    const menu_w = this.menu_el.offsetWidth;
+    const menu_h = this.menu_el.offsetHeight;
+    const max_x = this.container.clientWidth - menu_w;
+    const max_y = this.container.clientHeight - menu_h;
+    this.menu_el.style.left = `${Math.max(0, Math.min(screen_pos.x, max_x))}px`;
+    this.menu_el.style.top = `${Math.max(0, Math.min(screen_pos.y, max_y))}px`;
   }
 
   /** Hide / close the menu */
@@ -200,8 +206,33 @@ export class ContextMenuService {
     // Position relative to the parent menu's coordinate space
     const menu_rect = parent_menu.getBoundingClientRect();
     const item_rect = parent_item.getBoundingClientRect();
-    sub.style.left = `${item_rect.right - menu_rect.left}px`;
-    sub.style.top = `${item_rect.top - menu_rect.top}px`;
+    let sub_left = item_rect.right - menu_rect.left;
+    let sub_top = item_rect.top - menu_rect.top;
+    sub.style.left = `${sub_left}px`;
+    sub.style.top = `${sub_top}px`;
+
+    // 防溢出视口
+    const sub_rect = sub.getBoundingClientRect();
+    const crect = this.container.getBoundingClientRect();
+
+    // 水平溢出：翻转到父项左侧
+    if (sub_rect.right > crect.right) {
+      sub_left = item_rect.left - menu_rect.left - sub_rect.width;
+    }
+    // 左右空间都不足时，推入视口内
+    {
+      const min_left = 4 - menu_rect.left;
+      const max_left = crect.right - menu_rect.left - sub_rect.width;
+      sub_left = Math.max(min_left, Math.min(max_left, sub_left));
+      sub.style.left = `${sub_left}px`;
+    }
+
+    // 垂直溢出：往上推
+    if (sub_rect.bottom > crect.bottom) {
+      sub_top = crect.bottom - menu_rect.top - sub_rect.height;
+      sub_top = Math.max(4 - menu_rect.top, sub_top);
+      sub.style.top = `${sub_top}px`;
+    }
 
     sub.addEventListener('mouseenter', () => {
       if (this.submenu_timer) clearTimeout(this.submenu_timer);

@@ -305,6 +305,8 @@ const init = () => {
       load_ip_api_scene(dispatch);
     } else if (name === "context_menu") {
       load_context_menu_scene(dispatch);
+    } else if (name === 'perf') {
+      load_perf_scene(dispatch);
     }
   };
 

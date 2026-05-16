@@ -33,10 +33,11 @@ export { node_picker_plugin } from "./plugins/node_picker";
 import { SubgraphNode, SubgraphInputNode, SubgraphOutputNode } from "./nodes/subgraph";
 import { GroupNode } from "./nodes/group";
 import { register_node_type } from "./runtime/registry";
+import { vec2_create } from "./core/math";
 
 export function register_builtin_nodes() {
  register_node_type("subgraph", SubgraphNode);
  register_node_type("group", GroupNode);
-  register_node_type("subgraph_input", SubgraphInputNode, { resizable: false });
-  register_node_type("subgraph_output", SubgraphOutputNode, { resizable: false });
+  register_node_type("subgraph_input", SubgraphInputNode, { resizable: false, size: vec2_create(20, 20) });
+  register_node_type("subgraph_output", SubgraphOutputNode, { resizable: false, size: vec2_create(20, 20) });
 }

@@ -7,13 +7,14 @@ export const auto_pan_plugin: EaselPlugin = (easel) => {
   let mouse_x = 0;
   let mouse_y = 0;
   let is_pointer_down = false;
+  let raf_id: number | null = null;
   
   easel.app_events.on('pointerdown', () => {
-    is_pointer_down = true;
+    is_pointer_down = true; start_loop();
   });
 
   easel.app_events.on('pointerup', () => {
-    is_pointer_down = false;
+    is_pointer_down = false; stop_loop();
   });
 
   easel.app_events.on('pointermove', (e: PointerEvent) => {
@@ -21,6 +22,9 @@ export const auto_pan_plugin: EaselPlugin = (easel) => {
     mouse_x = e.clientX - rect.left;
     mouse_y = e.clientY - rect.top;
   });
+
+  const start_loop = () => { if (raf_id === null) raf_id = requestAnimationFrame(loop); };
+  const stop_loop = () => { if (raf_id !== null) { cancelAnimationFrame(raf_id); raf_id = null; } };
 
   const loop = () => {
     if (is_pointer_down) {
@@ -65,8 +69,7 @@ export const auto_pan_plugin: EaselPlugin = (easel) => {
         }
       }
     }
-    requestAnimationFrame(loop);
+    if (is_pointer_down) { raf_id = requestAnimationFrame(loop); } else { raf_id = null; }
   };
   
-  requestAnimationFrame(loop);
 };

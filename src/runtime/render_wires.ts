@@ -20,6 +20,10 @@ export const render_wires = (
 
   const wire_elements = new Map<string, SVGPathElement>();
 
+  // Port 位置缓存（相对 node 的偏移），避免每帧 getBoundingClientRect 导致 layout thrash
+  const port_rel_positions = new Map<string, Map<string, { x: number; y: number }>>();
+  const node_layout_versions = new Map<string, string>();
+
   const get_port_position = (
     node_id: string,
     port_id: string,
@@ -29,10 +33,19 @@ export const render_wires = (
     const node = state.nodes[node_id];
     if (!node) return undefined;
 
+    const layout_key = `${node_id}_${node.type}_${node.size.x.toFixed(1)}_${node.size.y.toFixed(1)}_${node.inputs.length}_${node.outputs.length}_${!!node.collapsed}`;
+    const cached_version = node_layout_versions.get(node_id);
+    if (cached_version !== layout_key) {
+      port_rel_positions.delete(node_id);
+      node_layout_versions.set(node_id, layout_key);
+    }
+
     // 如果节点处于折叠状态，统一使用节点边框中点（假设 header 高度为 40px）
     if (node.collapsed) {
-      // 约定折叠时 header 高度约为 40px，连线点位于垂直中点（20px 偏移）
-      const header_mid_y = node.position.y + 20;
+      // 动态测量 header 高度，避免硬编码
+      const node_el = container.querySelector(`.node[data-id="${node_id}"]`) as HTMLElement;
+      const header_h = node_el ? (node_el.querySelector('.node-header') as HTMLElement)?.offsetHeight || 36 : 36;
+      const header_mid_y = node.position.y + header_h / 2;
       if (type === "input") {
         return {
           x: node.position.x,
@@ -42,6 +55,18 @@ export const render_wires = (
         return {
           x: node.position.x + node.size.x,
           y: header_mid_y,
+        };
+      }
+    }
+
+    // 检查缓存
+    const node_cache = port_rel_positions.get(node_id);
+    if (node_cache) {
+      const rel = node_cache.get(port_id);
+      if (rel) {
+        return {
+          x: node.position.x + rel.x,
+          y: node.position.y + rel.y,
         };
       }
     }
@@ -73,9 +98,17 @@ export const render_wires = (
     const center_x = port_rect.left + port_rect.width / 2 - node_rect.left;
     const center_y = port_rect.top + port_rect.height / 2 - node_rect.top;
 
+    // 写入缓存（相对 node 的偏移，与 zoom 无关）
+    const rel_x = center_x / state.camera.zoom;
+    const rel_y = center_y / state.camera.zoom;
+    if (!port_rel_positions.has(node_id)) {
+      port_rel_positions.set(node_id, new Map());
+    }
+    port_rel_positions.get(node_id)!.set(port_id, { x: rel_x, y: rel_y });
+
     return {
-      x: node.position.x + center_x / state.camera.zoom,
-      y: node.position.y + center_y / state.camera.zoom,
+      x: node.position.x + rel_x,
+      y: node.position.y + rel_y,
     };
   };
 

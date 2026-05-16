@@ -14,11 +14,15 @@ class FrameScheduler {
     if (this.rafId !== null) return;
     this.rafId = requestAnimationFrame(() => {
       this.rafId = null;
-      // 取出当前所有任务，清空队列后再执行（避免执行过程中新加入的任务干扰）
-      const tasks = Array.from(this.tasks);
-      this.tasks.clear();
-      for (const runner of tasks) {
-        if (runner.effect.dirty) runner.effect.run();
+      // 循环处理，直到所有 dirty effect 收敛（最多 5 轮防死循环）
+      let safety = 0;
+      while (this.tasks.size > 0 && safety < 5) {
+        safety++;
+        const tasks = Array.from(this.tasks);
+        this.tasks.clear();
+        for (const runner of tasks) {
+          if (runner.effect.dirty) runner.effect.run();
+        }
       }
     });
   }

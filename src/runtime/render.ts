@@ -11,6 +11,9 @@ import { frame_effect } from "./frame_effect";
 
 import type { Easel } from "./easel";
 
+// 存储每个 node 的 ResizeObserver 以便 unmount 时 disconnect
+const node_observers = new Map<string, ResizeObserver>();
+
 export const render_nodes = (easel: Easel): void => {
   const container = easel.container;
   const state_ref = easel.state;
@@ -48,6 +51,8 @@ export const render_nodes = (easel: Easel): void => {
       if (!current_ids.has(id)) {
         stop(cache.runner);
         cache.inst.unmount();
+        node_observers.get(id)?.disconnect();
+        node_observers.delete(id);
         container_element.removeChild(cache.el);
         node_instances.delete(id);
       }
@@ -110,6 +115,8 @@ export const render_nodes = (easel: Easel): void => {
           }
         });
         node_resize_observer.observe(el);
+
+        node_observers.set(id, node_resize_observer);
 
         const runner = frame_effect(() => {
           const st = state_ref.value;
