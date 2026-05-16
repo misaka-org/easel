@@ -1,6 +1,7 @@
 import type { EaselPlugin } from '../runtime/easel';
 import { vec2_create } from '../core/math';
 import { apply_styles } from '@/utils/css';
+import { auto_layout } from '@/runtime/auto_layout';
 import type { ContextMenuItem, ContextMenuProvider, ContextMenuContext } from '@/plugins/context_menu/types';
 import {
   ICON_PLUS,
@@ -56,22 +57,18 @@ export const controls_plugin: EaselPlugin = (easel) => {
     }));
   };
   const do_layout = () => {
-    easel.dispatch(s => {
-      const nodes = Object.values(s.nodes);
-      let x = 0, y = 0, max_h = 0;
-      const new_nodes = { ...s.nodes };
-      for (const n of nodes) {
-        new_nodes[n.id] = { ...n, position: vec2_create(x, y) };
-        x += n.size.x + 40;
-        max_h = Math.max(max_h, n.size.y);
-        if (x > 800) {
-          x = 0;
-          y += max_h + 40;
-          max_h = 0;
-        }
-      }
-      return { ...s, nodes: new_nodes };
-    });
+    const vp = easel.container.getBoundingClientRect();
+    const s = easel.state.value;
+    const result = auto_layout(s.nodes, s.wires, vp.width, vp.height);
+    const new_nodes = { ...s.nodes };
+    for (const [id, pos] of Object.entries(result.positions)) {
+      new_nodes[id] = { ...new_nodes[id], position: pos };
+    }
+    easel.dispatch(() => ({
+      ...s,
+      nodes: new_nodes,
+      camera: { zoom: result.zoom, position: result.camera_pos },
+    }));
   };
   const do_fullscreen = () => {
     const host = (easel.container.getRootNode() as ShadowRoot).host as HTMLElement;
