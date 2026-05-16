@@ -129,29 +129,52 @@ export const get_base_css = () => css`
 
   .node.subgraph-input-stub,
   .node.subgraph-output-stub {
+    position: absolute;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    border-radius: 0;
-    min-width: 0;
-    min-height: 0;
     padding: 0;
     display: flex;
-    align-items: center;
+    contain: none;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0;
+    min-height: 0;
   }
   .node.subgraph-input-stub {
     justify-content: flex-end;
+    border-right: 1px solid var(--node-border) !important;
+    padding: 10px 12px 10px 6px;
+    border-radius: 0 !important;
+    cursor: grab;
+  }
+  .node.subgraph-input-stub.selected {
+    border-right-color: var(--primary-color) !important;
+  }
+  .node.subgraph-input-stub:active {
+    cursor: grabbing;
   }
   .node.subgraph-output-stub {
     justify-content: flex-start;
+    border-left: 1px solid var(--node-border) !important;
+    padding: 10px 6px 10px 12px;
+    border-radius: 0 !important;
+    cursor: grab;
+  }
+  .node.subgraph-output-stub.selected {
+    border-left-color: var(--primary-color) !important;
+  }
+  .node.subgraph-output-stub:active {
+    cursor: grabbing;
   }
   .node.subgraph-input-stub .node-body,
   .node.subgraph-output-stub .node-body {
     display: flex;
     flex-direction: column;
     padding: 0;
-    gap: 4px;
+    gap: 6px;
     background: transparent;
+    flex: none;
   }
   .node.subgraph-input-stub .node-body {
     align-items: flex-end;
@@ -163,6 +186,15 @@ export const get_base_css = () => css`
   .node.subgraph-output-stub .port-dot {
     width: 10px;
     height: 10px;
+  }
+  .node.subgraph-input-stub .port,
+  .node.subgraph-output-stub .port {
+    gap: 8px;
+  }
+  .node.subgraph-input-stub .port-label,
+  .node.subgraph-output-stub .port-label {
+    font-size: 11px;
+    white-space: nowrap;
   }
 
   .node-header {

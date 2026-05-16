@@ -55,7 +55,11 @@ export const setup_events = (container: HTMLElement, dispatch: Dispatch, app_eve
     if (!is_input && (e.key === 'Delete' || e.key === 'Backspace')) {
       dispatch(state => {
         if (state.selected_node_ids.length > 0) {
-          return state.selected_node_ids.reduce((acc, id) => remove_node(acc, id), state);
+          return state.selected_node_ids.reduce((acc, id) => {
+            const node = acc.nodes[id];
+            if (node && (node.type === "subgraph_input" || node.type === "subgraph_output")) return acc;
+            return remove_node(acc, id);
+          }, state);
         }
         return state;
       });

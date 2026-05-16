@@ -98,7 +98,7 @@ export class SubgraphInputNode extends EaselNode {
   update(node_data: GraphNode, _state: State): void {
     const html = node_data.outputs.map(p => `
       <div class="port" data-port-id="${p.id}" data-port-type="output">
-        <div class="port-dot"></div><span class="port-label">${p.label}</span>
+        <span class="port-label">${p.label}</span><div class="port-dot"></div>
       </div>
     `).join('');
     if (this.body.innerHTML !== html) {

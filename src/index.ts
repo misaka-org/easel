@@ -35,8 +35,8 @@ import { GroupNode } from "./nodes/group";
 import { register_node_type } from "./runtime/registry";
 
 export function register_builtin_nodes() {
-  register_node_type("subgraph", SubgraphNode);
-  register_node_type("subgraph_input", SubgraphInputNode);
-  register_node_type("subgraph_output", SubgraphOutputNode);
-  register_node_type("group", GroupNode);
+ register_node_type("subgraph", SubgraphNode);
+ register_node_type("group", GroupNode);
+  register_node_type("subgraph_input", SubgraphInputNode, { resizable: false });
+  register_node_type("subgraph_output", SubgraphOutputNode, { resizable: false });
 }

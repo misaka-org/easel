@@ -1,4 +1,4 @@
-import { effect } from "@vue/reactivity";
+﻿import { effect } from "@vue/reactivity";
 import { Easel, register_node_type, register_node_ns, EaselNode, type ExecuteContext, type NodeSpec } from "@/index";
 import { add_node, update_node_data } from "@/core/node_ops";
 import { create_initial_state } from "@/core/state";
@@ -271,20 +271,22 @@ const init = () => {
                   id: "in_1",
                   type: "subgraph_input",
                   position: vec2_create(100, 100),
-                  size: vec2_create(150, 100),
+                  size: vec2_create(20, 20),
                   title: "Input",
                   inputs: [],
                   outputs: [{ id: "out_1", label: "In", type: "output" }],
+                  resizable: false,
                   custom_data: {},
                 },
                 out_1: {
                   id: "out_1",
                   type: "subgraph_output",
                   position: vec2_create(400, 100),
-                  size: vec2_create(150, 100),
+                  size: vec2_create(20, 20),
                   title: "Output",
                   inputs: [{ id: "in_1", label: "Out", type: "input" }],
                   outputs: [],
+                  resizable: false,
                   custom_data: {},
                 },
               },
@@ -293,8 +295,6 @@ const init = () => {
           },
         })
       );
-    } else if (name === "perf") {
-      load_perf_scene(dispatch);
     } else if (name === "math") {
       load_math_scene(dispatch);
     } else if (name === "executor") {
