@@ -172,7 +172,7 @@ export const history_plugin: EaselPlugin = (easel) => {
   // -----------------------------------------------------------------------
   // Context menu provider — register a "History" submenu
   // -----------------------------------------------------------------------
-  const cm = (easel as any).context_menu;
+  const cm = easel.plugin_data.context_menu;
   if (cm) {
     cm.register({
       id: 'history',

@@ -5,7 +5,7 @@
 ## 注册 Provider
 
 ```ts
-const service = (easel as any).context_menu;
+const service = easel.plugin_data.context_menu!;
 
 service.register({
   id: "my_provider",

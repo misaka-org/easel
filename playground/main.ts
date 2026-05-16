@@ -523,8 +523,8 @@ const init = () => {
   // This registers extra items on every node to show how plugins
   // can augment the context menu without modifying node code.
   // -------------------------------------------------------------------
-  if ((easel as any).context_menu) {
-    const service = (easel as any).context_menu;
+  if (easel.plugin_data.context_menu) {
+    const service = easel.plugin_data.context_menu;
 
     service.register({
       id: 'playground_demo',

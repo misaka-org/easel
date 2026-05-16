@@ -10,6 +10,23 @@ import type { ShallowRef, ReactiveEffectRunner } from '@vue/reactivity';
 import { register_builtin_nodes } from '@/index';
 import type { EaselNode, Dispatch } from './registry';
 
+/**
+ * 插件扩展数据命名空间。
+ * 插件通过 declaration merging 向此接口添加字段，
+ * 消费者直接通过 easel.plugin_data.xxx 访问，全程类型安全。
+ *
+ * @example
+ * // context_menu/index.ts
+ * declare module '../runtime/easel' {
+ *   interface EaselPluginData {
+ *     context_menu?: ContextMenuService;
+ *   }
+ * }
+ * // 消费者
+ * easel.plugin_data.context_menu?.register(...)
+ */
+export interface EaselPluginData {}
+
 export interface EaselEvents {
   state_changed: (payload: { prev: State; next: State }) => void;
   pointerdown: (e: PointerEvent) => void;
@@ -38,6 +55,8 @@ export class Easel {
   dispatch: Dispatch;
   app_events: EventEmitter<EaselEvents>;
   node_instances = new Map<string, { el: HTMLElement; inst: EaselNode; runner: ReactiveEffectRunner }>();
+  /** 插件扩展数据 —— 通过 declaration merging 添加类型，零 cast 访问 */
+  plugin_data: EaselPluginData = {} as EaselPluginData;
   theme: Theme;
 
   constructor(container: HTMLElement, options: MountOptions = {}) {

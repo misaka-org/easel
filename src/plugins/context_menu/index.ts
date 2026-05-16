@@ -6,6 +6,13 @@ import { add_node } from '@/core/node_ops';
 import { vec2_create } from '@/core/math';
 import { get_registered_types, get_node_ns, create_node_data } from '@/runtime/registry';
 
+// 将 context_menu 服务注册到 EaselPluginData，其他插件可直接从 easel.plugin_data 获取
+declare module '../../runtime/easel' {
+  interface EaselPluginData {
+    context_menu?: import('./service').ContextMenuService;
+  }
+}
+
 export { ContextMenuService } from './service';
 export type { ContextMenuContext, ContextMenuItem, ContextMenuProvider } from './types';
 
@@ -359,7 +366,7 @@ export const context_menu_plugin: EaselPlugin = (easel) => {
   const service = new ContextMenuService(easel.container);
 
   // Expose for other plugins / code
-  (easel as any).context_menu = service;
+  easel.plugin_data.context_menu = service;
 
   // Register built-in providers
   service.register(node_ops_provider(easel));
