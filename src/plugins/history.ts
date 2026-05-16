@@ -155,19 +155,9 @@ export const history_plugin: EaselPlugin = (easel) => {
 
   render_list();
 
-  easel.app_events.on('keydown', (e: KeyboardEvent) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-      e.preventDefault();
-      if (e.shiftKey) {
-        if (current_index < history.length - 1) jump_to(current_index + 1);
-      } else {
-        if (current_index > 0) jump_to(current_index - 1);
-      }
-    } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-       e.preventDefault();
-       if (current_index < history.length - 1) jump_to(current_index + 1);
-    }
-  });
+  easel.keybindings.register({ id: 'history.undo', key: 'z', ctrl: true, handler: () => { if (current_index > 0) jump_to(current_index - 1); }, description: 'Undo (Ctrl+Z)' });
+  easel.keybindings.register({ id: 'history.redo_shift', key: 'z', ctrl: true, shift: true, handler: () => { if (current_index < history.length - 1) jump_to(current_index + 1); }, description: 'Redo (Ctrl+Shift+Z)' });
+  easel.keybindings.register({ id: 'history.redo_y', key: 'y', ctrl: true, handler: () => { if (current_index < history.length - 1) jump_to(current_index + 1); }, description: 'Redo (Ctrl+Y)' });
 
   // -----------------------------------------------------------------------
   // Context menu provider — register a "History" submenu

@@ -8,6 +8,7 @@ export * from "./core/types";
 
 // Runtime exports
 export { Easel, type EaselEvents } from "./runtime/easel";
+export { KeybindingManager, type KeybindingDef } from "./runtime/keybindings";
 export { EaselNode, register_node_type, get_node_constructor, get_registered_types, type Dispatch, type ExecuteContext } from "./runtime/registry";
 export { register_node_spec, create_node_data, resolve_node_spec, type NodeSpec } from "./runtime/registry";
 export { register_node_ns, get_node_ns } from "./runtime/registry";

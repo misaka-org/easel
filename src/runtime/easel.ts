@@ -9,6 +9,7 @@ import type { State } from '@/core/types';
 import type { ShallowRef, ReactiveEffectRunner } from '@vue/reactivity';
 import { register_builtin_nodes } from '@/index';
 import type { EaselNode, Dispatch } from './registry';
+import { KeybindingManager, register_core_keybindings } from './keybindings';
 
 /**
  * 插件扩展数据命名空间。
@@ -57,6 +58,8 @@ export class Easel {
   node_instances = new Map<string, { el: HTMLElement; inst: EaselNode; runner: ReactiveEffectRunner }>();
   /** 插件扩展数据 —— 通过 declaration merging 添加类型，零 cast 访问 */
   plugin_data: EaselPluginData = {} as EaselPluginData;
+  /** 键盘快捷键管理器 */
+  keybindings = new KeybindingManager();
   theme: Theme;
 
   constructor(container: HTMLElement, options: MountOptions = {}) {
@@ -92,9 +95,11 @@ export class Easel {
 
     options.plugins?.forEach(plugin => plugin(this));
 
+    register_core_keybindings(this.keybindings, this.dispatch);
+
     render_nodes(this);
     render_wires(this.container, this.state);
-    setup_events(this.container, this.dispatch, this.app_events);
+    setup_events(this.container, this.dispatch, this.app_events, this.keybindings);
   }
 
   set_theme = (new_theme: Partial<Theme>) => {

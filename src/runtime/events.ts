@@ -1,12 +1,12 @@
 import { vec2_create } from '@/core/math';
 import { pointer_down, pointer_move, pointer_up, wheel_zoom, update_modifiers } from '@/core/interactions';
-import { remove_node, add_node } from '@/core/node_ops';
 import type { State, Modifiers } from '@/core/types';
 import * as O from 'fp-ts/Option';
+import type { KeybindingManager } from './keybindings';
 
 type Dispatch = (updater: (state: State) => State) => void;
 
-export const setup_events = (container: HTMLElement, dispatch: Dispatch, app_events: any): void => {
+export const setup_events = (container: HTMLElement, dispatch: Dispatch, app_events: any, keybindings?: KeybindingManager): void => {
   const forward = (name: string) => (e: Event) => app_events.emit(name, e);
   container.addEventListener('contextmenu', forward('contextmenu'));
   
@@ -51,60 +51,8 @@ export const setup_events = (container: HTMLElement, dispatch: Dispatch, app_eve
     const target = (e.composedPath()[0] || e.target) as HTMLElement;
     const is_input = target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
 
-    const is_ctrl = e.ctrlKey || e.metaKey;
-    if (!is_input && (e.key === 'Delete' || e.key === 'Backspace')) {
-      dispatch(state => {
-        if (state.selected_node_ids.length > 0) {
-          return state.selected_node_ids.reduce((acc, id) => {
-            const node = acc.nodes[id];
-            if (node && (node.type === "subgraph_input" || node.type === "subgraph_output")) return acc;
-            return remove_node(acc, id);
-          }, state);
-        }
-        return state;
-      });
-    }
-
-    if (!is_input && is_ctrl && e.key === 'g') {
-      e.preventDefault();
-      dispatch(state => {
-        const selected = state.selected_node_ids;
-        if (selected.length === 0) return state;
-
-        let min_x = Infinity, min_y = Infinity, max_x = -Infinity, max_y = -Infinity;
-        selected.forEach(id => {
-          const n = state.nodes[id];
-          if (n) {
-            min_x = Math.min(min_x, n.position.x);
-            min_y = Math.min(min_y, n.position.y);
-            max_x = Math.max(max_x, n.position.x + n.size.x);
-            max_y = Math.max(max_y, n.position.y + n.size.y);
-          }
-        });
-
-        const padding = 20;
-        const pos = vec2_create(min_x - padding, min_y - padding - 40);
-        const size = vec2_create(max_x - min_x + padding * 2, max_y - min_y + padding * 2 + 40);
-
-        const group_id = `group_${Date.now()}`;
-        const hues = [0, 30, 60, 120, 210, 270, 315];
-        const hue = hues[Math.floor(Math.random() * hues.length)];
-
-        const new_state = add_node(state, {
-          id: group_id,
-          type: 'group',
-          position: pos,
-          size: size,
-          title: 'Group',
-          inputs: [],
-          outputs: [],
-          custom_data: { children: selected, hue },
-          resizable: true
-        });
-
-        return { ...new_state, selected_node_ids: [group_id] };
-      });
-    }
+    // 通过 KeybindingManager 分派快捷键
+    keybindings?.dispatch(e, !!is_input);
 
     dispatch(state => update_modifiers(state, get_modifiers(e)));
   });
