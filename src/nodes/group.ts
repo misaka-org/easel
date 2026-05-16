@@ -1,7 +1,7 @@
 import { EaselNode } from '@/runtime/registry';
 import type { GraphNode, State } from '@/core/types';
 import { aabb_contains } from '@/core/math';
-import { update_node_data } from '@/core/node_ops';
+import { update_node_data, is_ancestor } from '@/core/node_ops';
 import { apply_styles } from '@/utils/css';
 
 export class GroupNode extends EaselNode {
@@ -79,28 +79,17 @@ export class GroupNode extends EaselNode {
       const group_rect = { pos: group.position, size: group.size };
       const children = new Set(group.custom_data['children'] as string[] || []);
 
-      const is_ancestor = (parent_id: string, child_id: string): boolean => {
-        const child = state.nodes[child_id];
-        if (!child) return false;
-        const child_children = child.custom_data?.['children'] as string[] | undefined;
-        if (child_children && child_children.includes(parent_id)) return true;
-        if (child_children) {
-          return child_children.some(c => is_ancestor(parent_id, c));
-        }
-        return false;
-      };
-
       let changed = false;
       for (const id of Object.keys(state.nodes)) {
         if (id === this.node_id) continue;
         const node = state.nodes[id];
         if (!node) continue;
 
-        const is_inside = aabb_contains(group_rect.pos, group_rect.size, node.position, node.size);
-        
-        if (is_inside && !children.has(id)) {
-          if (!is_ancestor(this.node_id, id)) {
-            children.add(id);
+          const is_inside = aabb_contains(group_rect.pos, group_rect.size, node.position, node.size);
+          
+          if (is_inside && !children.has(id)) {
+            if (!is_ancestor(state.nodes, this.node_id, id)) {
+              children.add(id);
             changed = true;
           }
         } else if (!is_inside && children.has(id) && (dropped_ids.includes(id) || dropped_ids.includes(this.node_id))) {

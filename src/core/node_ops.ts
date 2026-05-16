@@ -13,6 +13,26 @@ export const add_node = (state: State, node: GraphNode): State => ({
   nodes: { ...state.nodes, [node.id]: node }
 });
 
+/**
+ * 检查 parent_id 是否是 child_id 在组层次结构中的祖先。
+ * 用于防止循环嵌套（A -> B -> A）。
+ */
+export const is_ancestor = (
+  nodes: Record<string, GraphNode>,
+  parent_id: string,
+  child_id: string,
+  visited = new Set<string>()
+): boolean => {
+  if (visited.has(child_id)) return false;
+  visited.add(child_id);
+  const child = nodes[child_id];
+  if (!child) return false;
+  const children = child.custom_data?.['children'] as string[] | undefined;
+  if (!children) return false;
+  if (children.includes(parent_id)) return true;
+  return children.some(c => is_ancestor(nodes, parent_id, c, visited));
+};
+
 export const move_node = (state: State, node_id: string, delta: Vec2, visited = new Set<string>()): State => {
   if (visited.has(node_id)) return state;
   visited.add(node_id);
@@ -34,7 +54,10 @@ export const move_node = (state: State, node_id: string, delta: Vec2, visited = 
       const children = node.custom_data?.['children'] as string[] | undefined;
       if (children && Array.isArray(children)) {
         for (const child_id of children) {
-          next_state = move_node(next_state, child_id, delta, visited);
+          // 跳过会导致循环引用的 child（parent 是 child 的祖先）
+          if (!is_ancestor(state.nodes, node_id, child_id)) {
+            next_state = move_node(next_state, child_id, delta, visited);
+          }
         }
       }
       return next_state;
