@@ -1,4 +1,4 @@
-import { vec2_create } from '@/core/math';
+﻿import { vec2_create } from '@/core/math';
 import { pointer_down, pointer_move, pointer_up, wheel_zoom, update_modifiers } from '@/core/interactions';
 import { remove_node, add_node } from '@/core/node_ops';
 import type { State, Modifiers } from '@/core/types';
@@ -160,7 +160,27 @@ export const setup_events = (container: HTMLElement, dispatch: Dispatch, app_eve
     });
   });
   
+  /** True when the wheel event originated inside a scrollable element that has
+   *  overflow content.  Prevents the canvas from stealing scroll events from
+   *  plugin panels, pickers, and other overlay UIs. */
+  const is_over_scrollable = (e: WheelEvent): boolean => {
+    const path = e.composedPath();
+    for (const el of path) {
+      if (!(el instanceof HTMLElement)) continue;
+      if (el === container) break;
+      const style = getComputedStyle(el);
+      if ((style.overflowY === 'auto' || style.overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   container.addEventListener('wheel', (e) => {
+    // Don't zoom when the event targets a scrollable element inside a plugin
+    // panel — let native scroll happen instead.
+    if (is_over_scrollable(e)) return;
+
     e.preventDefault();
     dispatch((state) => wheel_zoom(state, {
       screen_position: get_pointer_params(e).screen_position,
