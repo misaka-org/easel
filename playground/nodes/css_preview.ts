@@ -1,6 +1,7 @@
 import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
+import { set_inner_html } from '@/utils/dom';
 
 export class CSSPreviewNode extends EaselNode {
   static node_spec: NodeSpec = {
@@ -72,7 +73,7 @@ export class CSSPreviewNode extends EaselNode {
       <span class="title-text">${node_data.title}</span>
       <div style="flex:1"></div>
     `;
-    if (this.header.innerHTML !== title_html) this.header.innerHTML = title_html;
+    set_inner_html(this.header, title_html);
 
     const is_connected = (p_id: string) => Object.values(state.wires).some(
       w => (w.target_node_id === this.node_id && w.target_port_id === p_id) ||
@@ -82,7 +83,7 @@ export class CSSPreviewNode extends EaselNode {
       const cc = is_connected(p.id) ? 'connected' : '';
       return `<div class="port-row"><div class="port" data-port-id="${p.id}" data-port-type="input"><div class="port-dot port-type-text ${cc}"></div><span class="port-label">${p.label}</span></div><div></div></div>`;
     }).join('');
-    if (this.portsContainer.innerHTML !== ports_html) this.portsContainer.innerHTML = ports_html;
+    set_inner_html(this.portsContainer, ports_html);
 
     const css = node_data.custom_data?.['display_css'] as string;
     if (css && css !== this.cachedCss) {

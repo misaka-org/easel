@@ -1,6 +1,7 @@
 import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
+import { set_inner_html } from '@/utils/dom';
 
 export class CSSBuilderNode extends EaselNode {
   static node_spec: NodeSpec = {
@@ -66,7 +67,7 @@ export class CSSBuilderNode extends EaselNode {
       <span class="title-text">${node_data.title}</span>
       <div style="flex:1"></div>
     `;
-    if (this.header.innerHTML !== title_html) this.header.innerHTML = title_html;
+    set_inner_html(this.header, title_html);
 
     const is_connected = (p_id: string) => Object.values(state.wires).some(
       w => (w.target_node_id === this.node_id && w.target_port_id === p_id) ||
@@ -84,7 +85,7 @@ export class CSSBuilderNode extends EaselNode {
       }
       return rows.join('');
     })();
-    if (this.portsContainer.innerHTML !== phtml) this.portsContainer.innerHTML = phtml;
+    set_inner_html(this.portsContainer, phtml);
   }
 
   unmount(): void { this.header.remove(); this.portsContainer.remove(); this.body.remove(); }

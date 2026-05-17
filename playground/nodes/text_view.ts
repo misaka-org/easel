@@ -1,6 +1,7 @@
 import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
+import { set_inner_html } from '@/utils/dom';
 
 export class TextViewNode extends EaselNode {
   static node_spec: NodeSpec = {
@@ -75,9 +76,7 @@ export class TextViewNode extends EaselNode {
       <span class="title-text">${node_data.title}</span>
       <div style="flex:1"></div>
     `;
-    if (this.header.innerHTML !== title_html) {
-      this.header.innerHTML = title_html;
-    }
+    set_inner_html(this.header, title_html);
 
     // Ports
     const is_port_connected = (p_id: string) =>
@@ -101,9 +100,7 @@ export class TextViewNode extends EaselNode {
       })
       .join('');
 
-    if (this.portsContainer.innerHTML !== ports_html) {
-      this.portsContainer.innerHTML = ports_html;
-    }
+    set_inner_html(this.portsContainer, ports_html);
 
     // Display content from custom_data
     const content = node_data.custom_data?.['display_content'] as Record<string, any> | string | undefined;

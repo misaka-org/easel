@@ -2,6 +2,7 @@ import { EaselNode } from '@/runtime/registry';
 import type { GraphNode, State } from '@/core/types';
 import { update_node_data, remove_node } from '@/core/node_ops';
 import { ICON_CHEVRON_RIGHT, ICON_X } from '@/icons';
+import { set_inner_html } from '@/utils/dom';
 
 export class SubgraphNode extends EaselNode {
   private header!: HTMLElement;
@@ -50,9 +51,7 @@ export class SubgraphNode extends EaselNode {
         ${ICON_X}
       </div>
     `;
-    if (this.header.innerHTML !== title_html) {
-      this.header.innerHTML = title_html;
-    }
+    set_inner_html(this.header, title_html);
 
     const ports_html = [
       ...node_data.inputs.map(p => `
@@ -73,9 +72,7 @@ export class SubgraphNode extends EaselNode {
       `)
     ].join('');
 
-    if (this.body.innerHTML !== ports_html) {
-      this.body.innerHTML = ports_html;
-    }
+    set_inner_html(this.body, ports_html);
   }
 
   unmount(): void {
@@ -101,9 +98,7 @@ export class SubgraphInputNode extends EaselNode {
         <span class="port-label">${p.label}</span><div class="port-dot"></div>
       </div>
     `).join('');
-    if (this.body.innerHTML !== html) {
-      this.body.innerHTML = html;
-    }
+    set_inner_html(this.body, html);
   }
 
   unmount(): void {
@@ -128,9 +123,7 @@ export class SubgraphOutputNode extends EaselNode {
         <div class="port-dot"></div><span class="port-label">${p.label}</span>
       </div>
     `).join('');
-    if (this.body.innerHTML !== html) {
-      this.body.innerHTML = html;
-    }
+    set_inner_html(this.body, html);
   }
 
   unmount(): void {

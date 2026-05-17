@@ -3,6 +3,7 @@ import type { GraphNode, State, Widget } from '@/core/types';
 import { update_node_data, update_widget_value, remove_node } from '@/core/node_ops';
 import { get_widget_type } from './register';
 import { ICON_X } from '@/icons';
+import { set_inner_html } from '@/utils/dom';
 
 export class DefaultNode extends EaselNode {
   private header!: HTMLElement;
@@ -86,9 +87,7 @@ export class DefaultNode extends EaselNode {
         ${ICON_X}
       </div>
     `;
-    if (this.header.innerHTML !== title_html) {
-      this.header.innerHTML = title_html;
-    }
+    set_inner_html(this.header, title_html);
   }
 
   protected update_ports(node_data: GraphNode, state: State): void {
@@ -122,9 +121,7 @@ export class DefaultNode extends EaselNode {
       `})
     ].join('');
 
-    if (this.ports_container.innerHTML !== ports_html) {
-      this.ports_container.innerHTML = ports_html;
-    }
+    set_inner_html(this.ports_container, ports_html);
   }
 
   protected update_widgets(node_data: GraphNode, state: State): void {

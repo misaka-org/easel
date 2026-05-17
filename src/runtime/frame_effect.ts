@@ -4,27 +4,58 @@ import {
   effect,
 } from "@vue/reactivity";
 
-// 帧级调度器 —— 收集所有待执行的runner，在下一帧一次性运行
+// 帧级调度器 —— 收集所有待执行的 runner，在下一帧批量运行，
+// 但通过帧预算控制避免霸占渲染线程导致丢帧。
 class FrameScheduler {
-  private tasks = new Set<ReactiveEffectRunner>();
-  private rafId: number | null = null;
+  // 每帧预算：60fps 下约 16ms 一帧，留 4ms 给浏览器 layout/paint
+  private static readonly BUDGET_MS = 12;
 
-  schedule(task: ReactiveEffectRunner) {
+  private tasks = new Set<ReactiveEffectRunner>();
+  private raf_id: number | null = null;
+
+  schedule(task: ReactiveEffectRunner): void {
     this.tasks.add(task);
-    if (this.rafId !== null) return;
-    this.rafId = requestAnimationFrame(() => {
-      this.rafId = null;
-      // 循环处理，直到所有 dirty effect 收敛（最多 5 轮防死循环）
-      let safety = 0;
-      while (this.tasks.size > 0 && safety < 5) {
-        safety++;
-        const current = this.tasks;
-        this.tasks = new Set();
-        for (const runner of current) {
-          if (runner.effect.dirty) runner.effect.run();
+    if (this.raf_id === null) {
+      this.raf_id = requestAnimationFrame(() => this.flush());
+    }
+  }
+
+  private flush(): void {
+    this.raf_id = null;
+    const deadline = performance.now() + FrameScheduler.BUDGET_MS;
+
+    // 最多 5 轮收敛（防止 effect 互相触发死循环）
+    for (let round = 0; round < 5; round++) {
+      // 没有待处理任务，或已经超帧预算 → 结束本轮
+      if (this.tasks.size === 0) return;
+      if (performance.now() >= deadline) break;
+
+      const batch = Array.from(this.tasks);
+      this.tasks.clear();
+
+      for (let i = 0; i < batch.length; i++) {
+        const runner = batch[i];
+        if (runner.effect.dirty) runner.effect.run();
+
+        // 每执行一个 effect 后检查预算——超过则将未执行的放回队列，下一帧继续
+        if (performance.now() >= deadline) {
+          for (let j = i + 1; j < batch.length; j++) {
+            this.tasks.add(batch[j]);
+          }
+          if (this.tasks.size > 0) this.schedule_next();
+          return;
         }
       }
-    });
+    }
+
+    // 预算内未完成，或 5 轮收敛仍未清空 → 安排下一帧继续
+    if (this.tasks.size > 0) this.schedule_next();
+  }
+
+  private schedule_next(): void {
+    if (this.raf_id === null) {
+      this.raf_id = requestAnimationFrame(() => this.flush());
+    }
   }
 }
 

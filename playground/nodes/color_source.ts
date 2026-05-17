@@ -2,6 +2,7 @@ import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 import { update_widget_value } from '@/core/node_ops';
+import { set_inner_html } from '@/utils/dom';
 
 export class ColorSourceNode extends EaselNode {
   static node_spec: NodeSpec = {
@@ -67,7 +68,7 @@ export class ColorSourceNode extends EaselNode {
       <span class="title-text">${node_data.title}</span>
       <div style="flex:1"></div>
     `;
-    if (this.header.innerHTML !== title_html) this.header.innerHTML = title_html;
+    set_inner_html(this.header, title_html);
 
     const is_port_connected = (p_id: string) => Object.values(state.wires).some(
       w => (w.target_node_id === this.node_id && w.target_port_id === p_id) ||
@@ -77,7 +78,7 @@ export class ColorSourceNode extends EaselNode {
       const cc = is_port_connected(p.id) ? 'connected' : '';
       return `<div class="port-row"><div></div><div class="port" data-port-id="${p.id}" data-port-type="output"><span class="port-label">${p.label}</span><div class="port-dot port-type-text ${cc}"></div></div></div>`;
     }).join('');
-    if (this.portsContainer.innerHTML !== ports_html) this.portsContainer.innerHTML = ports_html;
+    set_inner_html(this.portsContainer, ports_html);
 
     const widgets_schema = (node_data.widgets || []).map(w => `${w.id}:${w.type}`).join(',');
     if (this.widgetsContainer.dataset['schema'] !== widgets_schema) {

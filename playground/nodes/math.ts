@@ -3,6 +3,7 @@ import type { GraphNode, State } from '@/core/types';
 import { update_widget_value } from '@/core/node_ops';
 
 import type { ExecuteContext } from '@/index';
+import { set_inner_html } from '@/utils/dom';
 
 export class MathNode extends EaselNode {
   static node_spec: NodeSpec = {
@@ -68,9 +69,7 @@ export class MathNode extends EaselNode {
       </div>
     `;
 
-    if (this.body.innerHTML !== html) {
-      this.body.innerHTML = html;
-    }
+    set_inner_html(this.body, html);
   }
 
   unmount(): void {

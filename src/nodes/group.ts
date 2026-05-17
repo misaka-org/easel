@@ -3,6 +3,7 @@ import type { GraphNode, State } from '@/core/types';
 import { aabb_contains } from '@/core/math';
 import { update_node_data, is_ancestor } from '@/core/node_ops';
 import { apply_styles } from '@/utils/css';
+import { set_inner_html } from '@/utils/dom';
 
 export class GroupNode extends EaselNode {
   private header!: HTMLElement;
@@ -113,9 +114,7 @@ export class GroupNode extends EaselNode {
       const title_html = `
         <span class="title-text">${node_data.title}</span>
       `;
-      if (this.header.innerHTML !== title_html) {
-        this.header.innerHTML = title_html;
-      }
+    set_inner_html(this.header, title_html);
     }
 
     const hue = node_data.custom_data['hue'] ?? 210;

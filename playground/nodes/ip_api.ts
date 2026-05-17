@@ -1,6 +1,7 @@
 import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
+import { set_inner_html } from '@/utils/dom';
 
 export class IpApiNode extends EaselNode {
   static node_spec: NodeSpec = {
@@ -101,9 +102,7 @@ export class IpApiNode extends EaselNode {
       <span class="title-text">${node_data.title}</span>
       <div style="flex:1"></div>
     `;
-    if (this.header.innerHTML !== title_html) {
-      this.header.innerHTML = title_html;
-    }
+    set_inner_html(this.header, title_html);
 
     // Ports
     const is_port_connected = (p_id: string) =>
@@ -138,9 +137,7 @@ export class IpApiNode extends EaselNode {
       }),
     ].join('');
 
-    if (this.portsContainer.innerHTML !== ports_html) {
-      this.portsContainer.innerHTML = ports_html;
-    }
+    set_inner_html(this.portsContainer, ports_html);
 
     // Show result status if available
     const result = node_data.custom_data?.['api_result'] as Record<string, any> | undefined;

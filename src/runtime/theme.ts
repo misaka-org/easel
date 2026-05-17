@@ -55,7 +55,8 @@ export const apply_theme = (container: HTMLElement, theme: Theme) => {
 /**
  * 用于触发 vscode 语法高亮用的临时函数
  */
-const css = (x:TemplateStringsArray,...v:any[]) => x.map((s,i) => s + (v[i] || '')).join('');
+const css = (x: TemplateStringsArray, ...v: any[]) =>
+  x.map((s, i) => s + (v[i] || "")).join("");
 export const get_base_css = () => css`
   :host {
     display: block;
@@ -67,7 +68,7 @@ export const get_base_css = () => css`
     color: var(--text-color);
     font-family: sans-serif;
   }
-  
+
   * {
     box-sizing: border-box;
   }
@@ -101,7 +102,11 @@ export const get_base_css = () => css`
     user-select: none;
     display: flex;
     flex-direction: column;
+
     contain: layout style paint content;
+    content-visibility: auto;
+    text-rendering: optimizeSpeed;
+    -webkit-font-smoothing: none;
   }
 
   .node.selected {
@@ -212,6 +217,9 @@ export const get_base_css = () => css`
   .node-header .title-text {
     line-height: 20px;
     margin-right: 4px;
+
+    // 提升为单独的层
+    will-change: transform;
   }
 
   .type-indicator {
@@ -315,11 +323,26 @@ export const get_base_css = () => css`
     background: var(--text-color);
   }
 
-  .port-type-text { background: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; }
-  .port-type-image { background: #10b981; box-shadow: 0 0 0 1px #10b981; }
-  .port-type-video { background: #8b5cf6; box-shadow: 0 0 0 1px #8b5cf6; }
-  .port-type-audio { background: #f59e0b; box-shadow: 0 0 0 1px #f59e0b; }
-  .port-type-number { background: #0dcaf0; box-shadow: 0 0 0 1px #0dcaf0; }
+  .port-type-text {
+    background: #3b82f6;
+    box-shadow: 0 0 0 1px #3b82f6;
+  }
+  .port-type-image {
+    background: #10b981;
+    box-shadow: 0 0 0 1px #10b981;
+  }
+  .port-type-video {
+    background: #8b5cf6;
+    box-shadow: 0 0 0 1px #8b5cf6;
+  }
+  .port-type-audio {
+    background: #f59e0b;
+    box-shadow: 0 0 0 1px #f59e0b;
+  }
+  .port-type-number {
+    background: #0dcaf0;
+    box-shadow: 0 0 0 1px #0dcaf0;
+  }
 
   .widgets-container {
     margin-top: 2px;
@@ -357,7 +380,7 @@ export const get_base_css = () => css`
     box-sizing: border-box;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
-  
+
   .widget-row input[type="text"]:focus,
   .widget-row input[type="number"]:focus {
     outline: none;
@@ -444,7 +467,7 @@ export const get_base_css = () => css`
     transition: background 0.2s;
   }
   .widget-row .easel-switch-slider::before {
-    content: '';
+    content: "";
     position: absolute;
     width: 14px;
     height: 14px;
@@ -501,11 +524,21 @@ export const get_base_css = () => css`
     opacity: 0.8;
   }
 
-  .wire[data-value-type="text"] { stroke: #3b82f6; }
-  .wire[data-value-type="image"] { stroke: #10b981; }
-  .wire[data-value-type="video"] { stroke: #8b5cf6; }
-  .wire[data-value-type="audio"] { stroke: #f59e0b; }
-  .wire[data-value-type="number"] { stroke: #0dcaf0; }
+  .wire[data-value-type="text"] {
+    stroke: #3b82f6;
+  }
+  .wire[data-value-type="image"] {
+    stroke: #10b981;
+  }
+  .wire[data-value-type="video"] {
+    stroke: #8b5cf6;
+  }
+  .wire[data-value-type="audio"] {
+    stroke: #f59e0b;
+  }
+  .wire[data-value-type="number"] {
+    stroke: #0dcaf0;
+  }
 
   .wire:hover {
     opacity: 1;
@@ -528,8 +561,25 @@ export const get_base_css = () => css`
     --radius-lg: 0.5rem;
   }
 
+  .lod-min {
+    box-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    color: transparent;
+  }
+
+  .lod-min * {
+    box-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    color: transparent;
+  }
+
   .lod-min .node-body {
     display: none !important;
+  }
+  .lod-min.borderless {
+    background-color: var(--node-bg);
   }
 
   .group-node {
