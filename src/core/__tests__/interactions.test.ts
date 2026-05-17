@@ -87,7 +87,7 @@ describe('interactions', () => {
     let s = base();
     // Add second node with output
     s = add_node(s, { id: 'n2', type: 'default', position: vec2_create(300,0), size: vec2_create(100,100), title: 'N2', inputs: [], outputs: [{ id: 'out1', label: 'Out', type: 'output' }], widgets: [], custom_data: {} });
-    // Connect n1.in1 -> n2.out1 (wire direction: n2 source, n1 target)
+    // Connect n1.in1 <- n2.out1 (wire direction: n2 source, n1 target)
     s = { ...s, wires: { w1: { id: 'w1', source_node_id: 'n2', source_port_id: 'out1', target_node_id: 'n1', target_port_id: 'in1' } } };
     // Click on the connected input port -> should disconnect and start wiring from n2
     s = pointer_down(s, { screen_position: vec2_create(10,10), target_node_id: O.some('n1'), target_port_id: O.some('in1'), target_port_type: O.some('input'), target_action: O.none, modifiers: mod() });
@@ -127,5 +127,56 @@ describe('interactions', () => {
     s = pointer_up(s, { screen_position: vec2_create(200,200), target_node_id: O.none, target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
     expect(s.interaction.mode).toBe('idle');
     expect(Object.keys(s.wires).length).toBe(0);
+  });
+
+  it('auto-connects to compatible input port when no target port specified', () => {
+    let s = base();
+    s = add_node(s, { id: 'n2', type: 'default', position: vec2_create(300, 0), size: vec2_create(100, 100), title: 'N2', inputs: [{ id: 'in1', label: 'In', type: 'input', value_type: 'text' }], outputs: [], widgets: [], custom_data: {} });
+    s = { ...s, nodes: { ...s.nodes, n1: { ...s.nodes.n1, outputs: [{ id: 'out1', label: 'Out', type: 'output', value_type: 'text' }] } } };
+    s = pointer_down(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n1'), target_port_id: O.some('out1'), target_port_type: O.some('output'), target_action: O.none, modifiers: mod() });
+    s = pointer_up(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n2'), target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    expect(Object.keys(s.wires).length).toBe(1);
+    expect(Object.values(s.wires)[0].target_node_id).toBe('n2');
+    expect(Object.values(s.wires)[0].target_port_id).toBe('in1');
+  });
+
+  it('does not auto-connect to input with incompatible type', () => {
+    let s = base();
+    s = add_node(s, { id: 'n2', type: 'default', position: vec2_create(300, 0), size: vec2_create(100, 100), title: 'N2', inputs: [{ id: 'in1', label: 'In', type: 'input', value_type: 'number' }], outputs: [], widgets: [], custom_data: {} });
+    s = { ...s, nodes: { ...s.nodes, n1: { ...s.nodes.n1, outputs: [{ id: 'out1', label: 'Out', type: 'output', value_type: 'text' }] } } };
+    s = pointer_down(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n1'), target_port_id: O.some('out1'), target_port_type: O.some('output'), target_action: O.none, modifiers: mod() });
+    s = pointer_up(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n2'), target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    expect(Object.keys(s.wires).length).toBe(0);
+  });
+
+  it('auto-connect skips occupied port (replacement needs explicit target)', () => {
+    let s = base();
+    s = add_node(s, { id: 'n2', type: 'default', position: vec2_create(300, 0), size: vec2_create(100, 100), title: 'N2', inputs: [{ id: 'in1', label: 'In', type: 'input', value_type: 'text' }], outputs: [], widgets: [], custom_data: {} });
+    s = add_node(s, { id: 'n3', type: 'default', position: vec2_create(0, 200), size: vec2_create(100, 100), title: 'N3', outputs: [{ id: 'out1', label: 'Out', type: 'output', value_type: 'text' }], inputs: [], widgets: [], custom_data: {} });
+    s = { ...s, wires: { w1: { id: 'w1', source_node_id: 'n3', source_port_id: 'out1', target_node_id: 'n2', target_port_id: 'in1' } } };
+    s = { ...s, nodes: { ...s.nodes, n1: { ...s.nodes.n1, outputs: [{ id: 'out1', label: 'Out', type: 'output', value_type: 'text' }] } } };
+    s = pointer_down(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n1'), target_port_id: O.some('out1'), target_port_type: O.some('output'), target_action: O.none, modifiers: mod() });
+    s = pointer_up(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n2'), target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    // Auto-find only targets free ports; occupied port stays unchanged
+    expect(Object.keys(s.wires).length).toBe(1);
+    expect(Object.values(s.wires)[0].source_node_id).toBe('n3');
+  });
+
+  it('auto-connects to widget when input port unavailable', () => {
+    let s = base();
+    s = add_node(s, { id: 'n2', type: 'default', position: vec2_create(300, 0), size: vec2_create(100, 100), title: 'N2', inputs: [], outputs: [], widgets: [{ id: 'w1', label: 'Widget In', type: 'widget', value_type: 'text' }], custom_data: {} });
+    s = { ...s, nodes: { ...s.nodes, n1: { ...s.nodes.n1, outputs: [{ id: 'out1', label: 'Out', type: 'output', value_type: 'text' }] } } };
+    s = pointer_down(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n1'), target_port_id: O.some('out1'), target_port_type: O.some('output'), target_action: O.none, modifiers: mod() });
+    s = pointer_up(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n2'), target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    expect(Object.keys(s.wires).length).toBe(1);
+    expect(Object.values(s.wires)[0].target_port_id).toBe('w1');
+  });
+
+  it('clamps resize to minimum size', () => {
+    let s = base();
+    s = pointer_down(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n1'), target_port_id: O.none, target_port_type: O.none, target_action: O.some('resize'), modifiers: mod() });
+    s = pointer_move(s, { screen_position: vec2_create(-200, -200), target_node_id: O.some('n1'), target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    expect(s.nodes.n1.size.x).toBe(50);
+    expect(s.nodes.n1.size.y).toBe(30);
   });
 });

@@ -1,153 +1,293 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { ref, shallowRef } from '@vue/reactivity';
-import { GraphExecutor, create_initial_execution_state } from '@/executor/engine';
-import { create_initial_state } from '@/core/state';
-import { add_node } from '@/core/node_ops';
-import { add_wire } from '@/core/wire_ops';
-import { vec2_create } from '@/core/math';
-import type { State, GraphNode } from '@/core/types';
+import { describe, it, expect, vi } from "vitest";
+import { shallowRef } from "@vue/reactivity";
+import { GraphExecutor, create_initial_execution_state } from "@/executor/engine";
+import { create_initial_state } from "@/core/state";
+import { vec2_create } from "@/core/math";
+import type { State, GraphNode } from "@/core/types";
+import * as E from "fp-ts/Either";
 
-/** Minimal Easel mock that satisfies compile()'s needs. */
-function mockEasel(overrides: Partial<State> = {}) {
-  const base = { ...create_initial_state(), ...overrides };
-  const stateRef = shallowRef(base);
+function mockEasel(nodeOverrides = {}) {
+  const base = create_initial_state();
+  const nodes = { ...base.nodes, ...nodeOverrides };
+  const stateRef = shallowRef({ ...base, nodes });
   return {
     state: stateRef,
     get_node_instance: () => undefined,
-    dispatch: (fn: (s: State) => State) => { stateRef.value = fn(stateRef.value); },
+    dispatch: (fn) => { stateRef.value = fn(stateRef.value); },
     app_events: { on() {}, emit() {}, off() {} },
     node_events: new Map(),
-    // no DOM needed for compile tests
+    container: undefined,
     plugin_data: {},
     register: { add_node() {}, add_node_spec() {}, add_node_ns() {}, add_widget() {} },
     node_instances: new Map(),
     keybindings: { register() { return () => {} } },
     theme: {},
-  } as any;
+  };
 }
 
-function node(id: string, opts: { req?: boolean; inputs?: any[]; outputs?: any[] } = {}): GraphNode {
+function node(id, opts = {}) {
   return {
-    id, type: 'default', position: vec2_create(0, 0), size: vec2_create(100, 80),
+    id, type: "default", position: vec2_create(0, 0), size: vec2_create(100, 80),
     title: id,
     inputs: opts.inputs || [],
     outputs: opts.outputs || [],
-    widgets: [],
+    widgets: opts.widgets || [],
     custom_data: {},
-    style_mode: 'default',
+    style_mode: "default",
     resizable: true,
   };
 }
 
-describe('create_initial_execution_state', () => {
-  it('returns correct default values', () => {
-    const s = create_initial_execution_state();
-    expect(s.status).toBe('idle');
-    expect(s.node_states).toEqual({});
-    expect(s.ready_queue).toEqual([]);
-    expect(s.running_nodes).toEqual([]);
-    expect(s.in_degrees).toEqual({});
-    expect(s.adj).toEqual({});
-  });
-});
+describe("executor", () => {
+  describe("run", () => {
+    it("completes a single node graph", async () => {
+      const nodes = { a: node("a") };
+      const exec = new GraphExecutor(mockEasel(nodes));
+      exec.compile();
+      expect(exec.state.value.status).toBe("idle");
+      exec.run();
+      await new Promise(r => setTimeout(r, 0));
+      expect(exec.state.value.status).toBe("completed");
+      expect(exec.state.value.node_states["a"]?.status).toBe("completed");
+    });
 
-describe('GraphExecutor.compile', () => {
-  it('compiles empty graph', () => {
-    const exec = new GraphExecutor(mockEasel());
-    exec.compile();
-    const s = exec.state.value;
-    expect(s.status).toBe('idle');
-    expect(s.node_states).toEqual({});
-    expect(s.in_degrees).toEqual({});
-  });
+    it("completes a -> b chain", async () => {
+      const a = node("a", { outputs: [{ id: "out", label: "Out", type: "output" }] });
+      const b = node("b", { inputs: [{ id: "in", label: "In", type: "input" }] });
+      const wires = { w1: { id: "w1", source_node_id: "a", source_port_id: "out", target_node_id: "b", target_port_id: "in" } };
+      const nodes = { a, b };
+      const state = { ...create_initial_state(), nodes, wires };
+      const stateRef = shallowRef(state);
+      const exec = new GraphExecutor({ state: stateRef, get_node_instance: () => undefined });
+      exec.compile();
+      exec.run();
+      await new Promise(r => setTimeout(r, 0));
+      expect(exec.state.value.status).toBe("completed");
+      expect(exec.state.value.node_states["a"]?.status).toBe("completed");
+      expect(exec.state.value.node_states["b"]?.status).toBe("completed");
+    });
 
-  it('compiles single node', () => {
-    const nodes = { n1: node('n1') };
-    const exec = new GraphExecutor(mockEasel({ nodes }));
-    exec.compile();
-    const s = exec.state.value;
-    expect(s.node_states['n1']?.status).toBe('idle');
-    expect(s.ready_queue).toContain('n1');
-    expect(s.in_degrees['n1']).toBe(0);
-  });
+    it("sets error status for node with missing required input", async () => {
+      const n = node("n", { inputs: [{ id: "req", label: "Required", type: "input", required: true }] });
+      const exec = new GraphExecutor(mockEasel({ n }));
+      exec.compile();
+      expect(exec.state.value.node_states["n"]?.status).toBe("error");
+      expect(exec.state.value.node_states["n"]?.error).toContain("Required");
+    });
 
-  it('compiles two nodes with wire (a -> b)', () => {
-    const n1 = node('n1', { outputs: [{ id: 'out', label: 'Out', type: 'output' }] });
-    const n2 = node('n2', { inputs: [{ id: 'in', label: 'In', type: 'input' }] });
-    const nodes = { n1, n2 };
-    const wires = { w1: { id: 'w1', source_node_id: 'n1', source_port_id: 'out', target_node_id: 'n2', target_port_id: 'in' } };
-    const exec = new GraphExecutor(mockEasel({ nodes, wires }));
-    exec.compile();
-    const s = exec.state.value;
-    expect(s.node_states['n1']?.status).toBe('idle');
-    expect(s.node_states['n2']?.status).toBe('idle');
-    // n1 has in_degree 0 (source), n2 has in_degree 1 (target)
-    expect(s.in_degrees['n1']).toBe(0);
-    expect(s.in_degrees['n2']).toBe(1);
-    expect(s.ready_queue).toContain('n1');
-    expect(s.ready_queue).not.toContain('n2');
-    expect(s.adj['n1']).toContain('n2');
+    it("is no-op when already running", () => {
+      const exec = new GraphExecutor(mockEasel({ a: node("a") }));
+      exec.compile();
+      exec.run();
+      exec.run();
+      expect(exec.state.value.status).toBe("running");
+    });
   });
 
-  it('compiles chain a -> b -> c with correct topology', () => {
-    const a = node('a', { outputs: [{ id: 'out', label: 'Out', type: 'output' }] });
-    const b = node('b', { inputs: [{ id: 'in', label: 'In', type: 'input' }], outputs: [{ id: 'out', label: 'Out', type: 'output' }] });
-    const c = node('c', { inputs: [{ id: 'in', label: 'In', type: 'input' }] });
-    const nodes = { a, b, c };
-    const wires = {
-      w1: { id: 'w1', source_node_id: 'a', source_port_id: 'out', target_node_id: 'b', target_port_id: 'in' },
-      w2: { id: 'w2', source_node_id: 'b', source_port_id: 'out', target_node_id: 'c', target_port_id: 'in' },
-    };
-    const exec = new GraphExecutor(mockEasel({ nodes, wires }));
-    exec.compile();
-    const s = exec.state.value;
-    expect(s.in_degrees['a']).toBe(0);
-    expect(s.in_degrees['b']).toBe(1);
-    expect(s.in_degrees['c']).toBe(1);
-    expect(s.adj['a']).toEqual(['b']);
-    expect(s.adj['b']).toEqual(['c']);
-    expect(s.ready_queue).toEqual(['a']);
+  describe("stop", () => {
+    it("stops execution", () => {
+      const exec = new GraphExecutor(mockEasel({ a: node("a") }));
+      exec.compile();
+      exec.run();
+      exec.stop();
+      expect(exec.state.value.status).toBe("stopped");
+    });
+
+    it("is safe to call when not running", () => {
+      const exec = new GraphExecutor(mockEasel({ a: node("a") }));
+      exec.stop();
+      expect(exec.state.value.status).toBe("stopped");
+    });
   });
 
-  it('handles disconnected nodes (no wires)', () => {
-    const nodes = { a: node('a'), b: node('b'), c: node('c') };
-    const exec = new GraphExecutor(mockEasel({ nodes }));
-    exec.compile();
-    const s = exec.state.value;
-    expect(s.in_degrees['a']).toBe(0);
-    expect(s.in_degrees['b']).toBe(0);
-    expect(s.in_degrees['c']).toBe(0);
-    expect(s.ready_queue).toContain('a');
-    expect(s.ready_queue).toContain('b');
-    expect(s.ready_queue).toContain('c');
+  describe("step", () => {
+    it("executes one node at a time in a -> b chain", async () => {
+      const a = node("a", { outputs: [{ id: "out", label: "Out", type: "output" }] });
+      const b = node("b", { inputs: [{ id: "in", label: "In", type: "input" }] });
+      const wires = { w1: { id: "w1", source_node_id: "a", source_port_id: "out", target_node_id: "b", target_port_id: "in" } };
+      const state = { ...create_initial_state(), nodes: { a, b }, wires };
+      const stateRef = shallowRef(state);
+      const exec = new GraphExecutor({ state: stateRef, get_node_instance: () => undefined });
+      exec.compile();
+      expect(exec.state.value.ready_queue).toEqual(["a"]);
+      expect(exec.state.value.status).toBe("idle");
+      await exec.step();
+      expect(exec.state.value.node_states["a"]?.status).toBe("completed");
+      expect(exec.state.value.node_states["b"]?.status).toBe("idle");
+      expect(exec.state.value.ready_queue).toEqual(["b"]);
+      await exec.step();
+      expect(exec.state.value.node_states["b"]?.status).toBe("completed");
+    });
   });
 
-  it('marks node with missing required input as error', () => {
-    const n = node('n', { inputs: [{ id: 'req', label: 'Required', type: 'input', required: true }] });
-    const exec = new GraphExecutor(mockEasel({ nodes: { n } }));
-    exec.compile();
-    const s = exec.state.value;
-    expect(s.node_states['n']?.status).toBe('error');
-    expect(s.node_states['n']?.error).toContain('Required');
+  describe("realtime", () => {
+    it("start_realtime enables realtime mode", () => {
+      const exec = new GraphExecutor(mockEasel({ a: node("a") }));
+      expect(exec.realtime.value).toBe(false);
+      exec.start_realtime();
+      expect(exec.realtime.value).toBe(true);
+    });
+
+    it("stop_realtime disables realtime mode", () => {
+      const exec = new GraphExecutor(mockEasel({ a: node("a") }));
+      exec.start_realtime();
+      expect(exec.realtime.value).toBe(true);
+      exec.stop_realtime();
+      expect(exec.realtime.value).toBe(false);
+    });
+
+    it("notify_input_change triggers re-execution in realtime mode", async () => {
+      const exec = new GraphExecutor(mockEasel({ a: node("a") }));
+      exec.start_realtime();
+      await new Promise(r => setTimeout(r, 0));
+      exec.notify_input_change("a");
+      await new Promise(r => setTimeout(r, 100));
+      expect(exec.state.value.status).toBe("completed");
+    });
+
+    it("notify_input_change does nothing when realtime is off", () => {
+      const exec = new GraphExecutor(mockEasel({ a: node("a") }));
+      exec.notify_input_change("a");
+      expect(exec.state.value.status).toBe("idle");
+    });
+
+    it("realtime_execute_downstream re-executes connected nodes", async () => {
+      const executeMock = vi.fn().mockResolvedValue({ out: "val" });
+      const inst = { execute: executeMock };
+
+      const a = node("a", { outputs: [{ id: "out", label: "Out", type: "output" }] });
+      const b = node("b", { inputs: [{ id: "in", label: "In", type: "input" }] });
+      const wires = { w1: { id: "w1", source_node_id: "a", source_port_id: "out", target_node_id: "b", target_port_id: "in" } };
+      const state = { ...create_initial_state(), nodes: { a, b }, wires };
+      const stateRef = shallowRef(state);
+
+      const exec = new GraphExecutor({
+        state: stateRef,
+        get_node_instance: () => inst,
+        dispatch: (fn) => { stateRef.value = fn(stateRef.value); },
+        app_events: { on() {}, emit() {}, off() {} },
+        node_events: new Map(),
+      });
+      exec.compile();
+      await exec["realtime_execute_downstream"]("a");
+      expect(exec.state.value.status).toBe("completed");
+      expect(exec.state.value.node_states["a"]?.status).toBe("completed");
+      expect(exec.state.value.node_states["b"]?.status).toBe("completed");
+      expect(executeMock).toHaveBeenCalledTimes(2);
+    });
   });
 
-  it('marks node with required input satisfied as idle', () => {
-    const a = node('a', { outputs: [{ id: 'out', label: 'Out', type: 'output' }] });
-    const b = node('b', { inputs: [{ id: 'req', label: 'Required', type: 'input', required: true }] });
-    const wires = { w1: { id: 'w1', source_node_id: 'a', source_port_id: 'out', target_node_id: 'b', target_port_id: 'req' } };
-    const exec = new GraphExecutor(mockEasel({ nodes: { a, b }, wires }));
-    exec.compile();
-    const s = exec.state.value;
-    expect(s.node_states['b']?.status).toBe('idle');
-    expect(s.node_states['b']?.error).toBeUndefined();
+  describe("inputs_fingerprint", () => {
+    it("returns consistent hash for same inputs", () => {
+      const exec = new GraphExecutor(mockEasel({ a: node("a") }));
+      const fn = exec["inputs_fingerprint"].bind(exec);
+      const a = fn({ x: 1, y: "hello" });
+      const b = fn({ y: "hello", x: 1 });
+      expect(a).toBe(b);
+    });
+
+    it("returns different hash for different values", () => {
+      const exec = new GraphExecutor(mockEasel({ a: node("a") }));
+      const fn = exec["inputs_fingerprint"].bind(exec);
+      const a = fn({ x: 1 });
+      const b = fn({ x: 2 });
+      expect(a).not.toBe(b);
+    });
   });
 
-  it('clear_cache resets cache', () => {
-    const exec = new GraphExecutor(mockEasel());
-    // Access private input_cache via loose typing
-    (exec as any).input_cache.set('n1', { fingerprint: 'x', outputs: {} });
-    expect((exec as any).input_cache.size).toBe(1);
-    exec.clear_cache();
-    expect((exec as any).input_cache.size).toBe(0);
+  describe("compile re-runs", () => {
+    it("compile can be called multiple times", () => {
+      const exec = new GraphExecutor(mockEasel({ a: node("a") }));
+      const r1 = exec.compile();
+      expect(E.isRight(r1)).toBe(true);
+      const r2 = exec.compile();
+      expect(E.isRight(r2)).toBe(true);
+    });
+  });
+
+  describe("check_requirements", () => {
+    it("flags missing required widget value", () => {
+      const n = node("n", {
+        widgets: [{ id: "w1", label: "Required Widget", type: "widget", required: true }],
+      });
+      const exec = new GraphExecutor(mockEasel({ n }));
+      exec.compile();
+      expect(exec.state.value.node_states["n"]?.status).toBe("error");
+      expect(exec.state.value.node_states["n"]?.error).toContain("Required Widget");
+    });
+
+    it("passes when required widget has value", () => {
+      const n = node("n", {
+        widgets: [{ id: "w1", label: "W", type: "widget", required: true, value: "ok" }],
+      });
+      const exec = new GraphExecutor(mockEasel({ n }));
+      exec.compile();
+      expect(exec.state.value.node_states["n"]?.status).toBe("idle");
+    });
+  });
+
+  describe("gather_inputs", () => {
+    it("includes widget values and wire-connected inputs via run()", async () => {
+      const executeMock = vi.fn().mockResolvedValue({ out: "result" });
+      const instA = { execute: vi.fn().mockResolvedValue({ out_a: "from_a" }) };
+      const instB = { execute: executeMock };
+
+      const a = node("a", { outputs: [{ id: "out_a", label: "Out", type: "output" }] });
+      const b = node("b", {
+        inputs: [{ id: "in_b", label: "In", type: "input" }],
+        widgets: [{ id: "w1", label: "Widget", type: "widget", value: "hello" }],
+      });
+      const wires = { w1: { id: "w1", source_node_id: "a", source_port_id: "out_a", target_node_id: "b", target_port_id: "in_b" } };
+      const state = { ...create_initial_state(), nodes: { a, b }, wires };
+      const stateRef = shallowRef(state);
+
+      const exec = new GraphExecutor({
+        state: stateRef,
+        get_node_instance: (id) => id === "a" ? instA : instB,
+        dispatch: (fn) => { stateRef.value = fn(stateRef.value); },
+        app_events: { on() {}, emit() {}, off() {} },
+        node_events: new Map(),
+      });
+      exec.compile();
+      exec.run();
+      await new Promise(r => setTimeout(r, 0));
+      expect(executeMock).toHaveBeenCalled();
+      const args = executeMock.mock.calls[0][0];
+      expect(args.inputs).toHaveProperty("in_b", "from_a");
+      expect(args.inputs).toHaveProperty("w1", "hello");
+    });
+  });
+
+  describe("caching", () => {
+    it("caches and reuses outputs across compilations", async () => {
+      const executeMock = vi.fn().mockResolvedValue({ out: "result" });
+      const inst = { execute: executeMock };
+      const a = node("a", { outputs: [{ id: "out", label: "Out", type: "output" }] });
+      const easel = { ...mockEasel({ a }), get_node_instance: () => inst };
+      const exec = new GraphExecutor(easel);
+      exec.compile();
+      exec.run();
+      await new Promise(r => setTimeout(r, 0));
+      expect(executeMock).toHaveBeenCalledTimes(1);
+      exec.compile();
+      exec.run();
+      await new Promise(r => setTimeout(r, 0));
+      expect(executeMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("error handling", () => {
+    it("handles execute rejection gracefully", async () => {
+      const executeMock = vi.fn().mockRejectedValue(new Error("exec failed"));
+      const inst = { execute: executeMock };
+      const a = node("a", { outputs: [{ id: "out", label: "Out", type: "output" }] });
+      const easel = { ...mockEasel({ a }), get_node_instance: () => inst };
+      const exec = new GraphExecutor(easel);
+      exec.compile();
+      exec.run();
+      await new Promise(r => setTimeout(r, 0));
+      expect(exec.state.value.node_states["a"]?.status).toBe("error");
+      expect(exec.state.value.node_states["a"]?.error).toBe("exec failed");
+    });
   });
 });

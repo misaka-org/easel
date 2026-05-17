@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { KeybindingManager } from '@/runtime/keybindings';
+import { KeybindingManager, register_core_keybindings } from '@/runtime/keybindings';
+import { create_initial_state } from '@/core/state';
+import { add_node } from '@/core/node_ops';
+import { vec2_create } from '@/core/math';
 
 function mockKey(key: string, opts: { ctrl?: boolean; shift?: boolean; alt?: boolean; meta?: boolean } = {}): KeyboardEvent {
   return {
@@ -123,5 +126,91 @@ describe('KeybindingManager', () => {
     const e = mockKey('a');
     kb.dispatch(e, false);
     expect(e.preventDefault).toHaveBeenCalled();
+  });
+});
+
+describe('register_core_keybindings', () => {
+  it('registers Delete, Backspace, and Ctrl+G bindings', () => {
+    const kb = new KeybindingManager();
+    const dispatch = vi.fn();
+    register_core_keybindings(kb, dispatch);
+    expect(kb.dispatch(mockKey('Delete'), false)).toBe(true);
+    expect(kb.dispatch(mockKey('Backspace'), false)).toBe(true);
+    expect(kb.dispatch(mockKey('g', { ctrl: true }), false)).toBe(true);
+  });
+
+  it('Delete dispatches remove_node for selected nodes', () => {
+    const kb = new KeybindingManager();
+    let state = add_node(create_initial_state(), {
+      id: 'n1', type: 'default', position: vec2_create(0, 0), size: vec2_create(100, 80),
+      title: 'N1', inputs: [], outputs: [], widgets: [], custom_data: {}
+    });
+    state = { ...state, selected_node_ids: ['n1'] };
+
+    let capturedState: any = null;
+    const dispatch = (fn: any) => { capturedState = fn(state); };
+
+    register_core_keybindings(kb, dispatch);
+    const e = mockKey('Delete');
+    kb.dispatch(e, false);
+
+    expect(capturedState).not.toBeNull();
+    expect(capturedState.nodes['n1']).toBeUndefined();
+  });
+
+  it('Delete handler skips subgraph_input and subgraph_output nodes', () => {
+    const kb = new KeybindingManager();
+    let state = add_node(create_initial_state(), {
+      id: 'sub_in', type: 'subgraph_input', position: vec2_create(0, 0), size: vec2_create(100, 80),
+      title: 'Sub In', inputs: [], outputs: [], widgets: [], custom_data: {}
+    });
+    state = { ...state, selected_node_ids: ['sub_in'] };
+
+    let capturedState: any = null;
+    const dispatch = (fn: any) => { capturedState = fn(state); };
+
+    register_core_keybindings(kb, dispatch);
+    kb.dispatch(mockKey('Delete'), false);
+
+    expect(capturedState.nodes['sub_in']).toBeDefined();
+  });
+
+  it('Ctrl+G no-op when nothing selected', () => {
+    const kb = new KeybindingManager();
+    const state = create_initial_state();
+
+    let capturedState: any = null;
+    const dispatch = (fn: any) => { capturedState = fn(state); };
+
+    register_core_keybindings(kb, dispatch);
+    kb.dispatch(mockKey('g', { ctrl: true }), false);
+
+    expect(capturedState).toBe(state);
+  });
+
+  it('Ctrl+G creates a group node from selected nodes', () => {
+    const kb = new KeybindingManager();
+    let state = add_node(create_initial_state(), {
+      id: 'n1', type: 'default', position: vec2_create(100, 100), size: vec2_create(100, 80),
+      title: 'N1', inputs: [], outputs: [], widgets: [], custom_data: {}
+    });
+    state = add_node(state, {
+      id: 'n2', type: 'default', position: vec2_create(300, 200), size: vec2_create(100, 80),
+      title: 'N2', inputs: [], outputs: [], widgets: [], custom_data: {}
+    });
+    state = { ...state, selected_node_ids: ['n1', 'n2'] };
+
+    let capturedState: any = null;
+    const dispatch = (fn: any) => { capturedState = fn(state); };
+
+    register_core_keybindings(kb, dispatch);
+    kb.dispatch(mockKey('g', { ctrl: true }), false);
+
+    expect(capturedState).not.toBeNull();
+    const groupNode = Object.values(capturedState.nodes).find((n: any) => n.type === 'group');
+    expect(groupNode).toBeDefined();
+    expect((groupNode as any).custom_data.children).toContain('n1');
+    expect((groupNode as any).custom_data.children).toContain('n2');
+    expect(capturedState.selected_node_ids.length).toBe(1);
   });
 });

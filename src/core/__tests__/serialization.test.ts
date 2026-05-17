@@ -27,7 +27,6 @@ describe('serialization', () => {
 
     const json = serialize_state(s);
     const restored = deserialize_state(json);
-
     expect(restored.nodes['n1']?.title).toBe('Test');
     expect(restored.nodes['n1']?.position).toEqual(vec2_create(100, 100));
     expect(restored.nodes['n1']?.widgets?.[0]?.value).toBe(42);
@@ -37,5 +36,12 @@ describe('serialization', () => {
   it('returns initial state on invalid JSON', () => {
     const restored = deserialize_state('{{{invalid');
     expect(restored.interaction.mode).toBe('idle');
+  });
+
+  it('handles missing nodes/wires/camera fields', () => {
+    const restored = deserialize_state(JSON.stringify({}));
+    expect(Object.keys(restored.nodes).length).toBe(0);
+    expect(Object.keys(restored.wires).length).toBe(0);
+    expect(restored.camera).toEqual({ position: { x: 0, y: 0 }, zoom: 1 });
   });
 });
