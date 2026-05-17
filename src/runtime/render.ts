@@ -19,7 +19,9 @@ export const render_nodes = (easel: Easel): void => {
   const state_ref = easel.state;
   const dispatch = easel.dispatch;
   const node_instances = easel.node_instances;
-  const context = { app_events: easel.app_events };
+  const context = { app_events: easel.app_events, node_events: easel.node_events };
+  // Track previous node data for granular change detection
+  const prev_node_data = new Map<string, any>();
 
   const container_element = document.createElement("div");
   container_element.className = "nodes-container";
@@ -49,6 +51,10 @@ export const render_nodes = (easel: Easel): void => {
 
     Array.from(node_instances.entries()).forEach(([id, cache]) => {
       if (!current_ids.has(id)) {
+        // Emit 'removed' before cleanup so React/Vue components can unmount
+        easel.node_events.get(id)?.emit('removed');
+        easel.node_events.delete(id);
+        prev_node_data.delete(id);
         stop(cache.runner);
         cache.inst.unmount();
         node_observers.get(id)?.disconnect();
@@ -124,6 +130,15 @@ export const render_nodes = (easel: Easel): void => {
           if (!node) {
             runner.effect.stop(); // node was removed
             return;
+          }
+
+          // Emit 'data' when node content changes
+          const prev = prev_node_data.get(id);
+          if (prev !== node) {
+            if (prev) {
+              easel.node_events.get(id)?.emit('data', { prev, next: node });
+            }
+            prev_node_data.set(id, node);
           }
 
           if (node.style_mode === 'borderless') el.classList.add('borderless');

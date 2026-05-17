@@ -34,6 +34,7 @@ pnpm dev
 - [运行时层 (Runtime)](./docs/runtime.md) — Easel 类、节点注册、事件、主题
 - [内置节点](./docs/nodes.md) — DefaultNode、GroupNode、SubgraphNode
 - [图执行引擎](./docs/executor.md) — GraphExecutor：拓扑排序、缓存、实时模式
+- [React 对接](./docs/react.md) — 用 React 开发自定义节点
 - [插件列表](./docs/plugins-list.md) — 插件概览与各插件文档入口
 
 ## 插件一览

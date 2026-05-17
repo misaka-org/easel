@@ -5,7 +5,7 @@ import { render_wires } from './render_wires';
 import { with_guidelines } from '@/plugins/guidelines';
 import { get_base_css, apply_theme, default_theme, type Theme } from './theme';
 import EventEmitter from 'eventemitter3';
-import type { State } from '@/core/types';
+import type { State, GraphNode } from '@/core/types';
 import type { ShallowRef, ReactiveEffectRunner } from '@vue/reactivity';
 import type { EaselNode, Dispatch } from './registry';
 import { KeybindingManager, register_core_keybindings } from './keybindings';
@@ -29,6 +29,12 @@ export interface EaselEvents {
   enter_subgraph: (payload: { node_id: string }) => void;
 }
 
+/** Per-node event payloads. Each node instance gets its own EventEmitter. */
+export type NodeEventPayloads = {
+  data: { prev: GraphNode; next: GraphNode };
+  removed: void;
+};
+
 export type EaselPlugin = (easel: Easel) => void;
 
 export type MountOptions = {
@@ -43,6 +49,8 @@ export class Easel {
   state: ShallowRef<State>;
   dispatch: Dispatch;
   app_events: EventEmitter<EaselEvents>;
+  /** Per-node event bus — subscribers get granular per-node change notifications. */
+  node_events = new Map<string, EventEmitter<NodeEventPayloads>>();
   register: Register;
   node_instances = new Map<string, { el: HTMLElement; inst: EaselNode; runner: ReactiveEffectRunner }>();
   plugin_data: EaselPluginData = {} as EaselPluginData;
