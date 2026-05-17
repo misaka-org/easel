@@ -1,6 +1,6 @@
-import type { State, GraphNode, Wire } from './types';
+import type { State, GraphNode } from './types';
 import type { Vec2 } from './math';
-import { vec2_add, vec2_create } from './math';
+import { vec2_add } from './math';
 import * as O from 'fp-ts/Option';
 import { pipe } from 'fp-ts/function';
 

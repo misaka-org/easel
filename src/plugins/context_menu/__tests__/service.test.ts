@@ -1,7 +1,7 @@
-// @vitest-environment jsdom
+﻿// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ContextMenuService } from '@/plugins/context_menu/service';
-import type { ContextMenuItem, ContextMenuContext, ContextMenuProvider } from '@/plugins/context_menu/types';
+import type { ContextMenuContext } from '@/plugins/context_menu/types';
 import { vec2_create } from '@/core/math';
 
 function makeCtx(overrides: Partial<ContextMenuContext> = {}): ContextMenuContext {

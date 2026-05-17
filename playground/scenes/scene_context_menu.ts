@@ -1,4 +1,4 @@
-import type { Dispatch } from '@/runtime/registry';
+﻿import type { Dispatch } from '@/runtime/registry';
 import { add_node } from '@/core/node_ops';
 import { vec2_create } from '@/core/math';
 
@@ -115,6 +115,6 @@ export function load_context_menu_scene(dispatch: Dispatch) {
   }));
 
   console.log(
-    '[ContextMenu Demo] Right-click canvas 鈫?Add Node to see ns-organized submenus. Right-click a node for icons \+ info label.',
+    '[ContextMenu Demo] Right-click canvas 鈫?Add Node to see ns-organized submenus. Right-click a node for icons + info label.',
   );
 }

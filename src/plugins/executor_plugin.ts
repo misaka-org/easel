@@ -4,7 +4,7 @@ import { frame_effect } from '@/runtime/frame_effect';
 import { effect } from '@vue/reactivity';
 import * as E from 'fp-ts/Either';
 import { apply_styles } from '@/utils/css';
-import type { ContextMenuItem, ContextMenuProvider, ContextMenuContext } from '@/plugins/context_menu/types';
+import type { ContextMenuItem, ContextMenuContext } from '@/plugins/context_menu/types';
 import {
   ICON_PLAY,
   ICON_CHECK,
@@ -279,7 +279,7 @@ export const executor_plugin: EaselPlugin = (easel) => {
     cm.register({
       id: 'executor',
       priority: 40,
-      get_items: (ctx: ContextMenuContext): readonly ContextMenuItem[] => {
+      get_items: (_ctx: ContextMenuContext): readonly ContextMenuItem[] => {
         const st = exec_state.value;
         const is_running = st.status === 'running';
         return [{

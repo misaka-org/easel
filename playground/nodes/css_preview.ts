@@ -1,4 +1,4 @@
-import { EaselNode, type NodeSpec } from '@/index';
+﻿import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 import { set_inner_html } from '@/utils/dom';
@@ -10,11 +10,11 @@ export class CSSPreviewNode extends EaselNode {
   };
   private header!: HTMLElement;
   private body!: HTMLElement;
-  private portsContainer!: HTMLElement;
-  private previewEl!: HTMLElement;
-  private cachedCss = '';
+  private ports_container!: HTMLElement;
+  private preview_el!: HTMLElement;
+  private cached_css = '';
 
-  async execute({ node, inputs }: ExecuteContext) {
+  async execute({ node: _node, inputs }: ExecuteContext) {
     const css = (inputs['css_in'] as string) || '';
     this.dispatch(state => ({
       ...state,
@@ -45,21 +45,21 @@ export class CSSPreviewNode extends EaselNode {
     this.body.style.flexDirection = 'column';
     this.body.style.flex = '1';
 
-    this.portsContainer = document.createElement('div');
-    this.portsContainer.className = 'ports-container';
+    this.ports_container = document.createElement('div');
+    this.ports_container.className = 'ports-container';
 
-    this.previewEl = document.createElement('div');
-    this.previewEl.style.cssText = `
+    this.preview_el = document.createElement('div');
+    this.preview_el.style.cssText = `
       flex:1; min-height:160px; border-radius:8px; margin:6px;
       border:1px solid rgba(255,255,255,0.1);
       transition: background 0.15s ease;
       display:flex; align-items:center; justify-content:center;
       color:rgba(255,255,255,0.4); font-size:12px;
     `;
-    this.previewEl.textContent = 'Connect and run to preview...';
+    this.preview_el.textContent = 'Connect and run to preview...';
 
-    this.body.appendChild(this.portsContainer);
-    this.body.appendChild(this.previewEl);
+    this.body.appendChild(this.ports_container);
+    this.body.appendChild(this.preview_el);
     this.container.appendChild(this.header);
     this.container.appendChild(this.body);
 
@@ -83,19 +83,19 @@ export class CSSPreviewNode extends EaselNode {
       const cc = is_connected(p.id) ? 'connected' : '';
       return `<div class="port-row"><div class="port" data-port-id="${p.id}" data-port-type="input"><div class="port-dot port-type-text ${cc}"></div><span class="port-label">${p.label}</span></div><div></div></div>`;
     }).join('');
-    set_inner_html(this.portsContainer, ports_html);
+    set_inner_html(this.ports_container, ports_html);
 
     const css = node_data.custom_data?.['display_css'] as string;
-    if (css && css !== this.cachedCss) {
-      this.cachedCss = css;
-      this.previewEl.style.background = css;
-      this.previewEl.textContent = '';
-    } else if (!css && this.cachedCss !== '') {
-      this.cachedCss = '';
-      this.previewEl.textContent = 'Connect and run to preview...';
+    if (css && css !== this.cached_css) {
+      this.cached_css = css;
+      this.preview_el.style.background = css;
+      this.preview_el.textContent = '';
+    } else if (!css && this.cached_css !== '') {
+      this.cached_css = '';
+      this.preview_el.textContent = 'Connect and run to preview...';
     }
   }
 
-  unmount(): void { this.header.remove(); this.portsContainer.remove(); this.body.remove(); }
+  unmount(): void { this.header.remove(); this.ports_container.remove(); this.body.remove(); }
 }
 

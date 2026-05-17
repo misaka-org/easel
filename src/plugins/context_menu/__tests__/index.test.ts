@@ -1,7 +1,7 @@
-// @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿// @vitest-environment jsdom
+import { describe, it, expect, vi } from 'vitest';
 import { build_ns_menu, context_menu_plugin } from '@/plugins/context_menu';
-import { register_node_ns, register_node_type, get_node_ns, EaselNode } from '@/runtime/registry';
+import { register_node_ns, register_node_type, EaselNode } from '@/runtime/registry';
 
 class StubNode extends EaselNode {
   mount() {}

@@ -1,4 +1,4 @@
-import { EaselNode, type NodeSpec } from '@/index';
+﻿import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 import { set_inner_html } from '@/utils/dom';
@@ -11,11 +11,11 @@ export class TextViewNode extends EaselNode {
   };
   private header!: HTMLElement;
   private body!: HTMLElement;
-  private portsContainer!: HTMLElement;
-  private contentEl!: HTMLElement;
-  private cachedContent = '';
+  private ports_container!: HTMLElement;
+  private content_el!: HTMLElement;
+  private cached_content = '';
 
-  async execute({ node, inputs }: ExecuteContext) {
+  async execute({ node: _node, inputs }: ExecuteContext) {
     const content = inputs['content'];
     // Store into custom_data so update() picks it up via reactivity
     this.dispatch(state => ({
@@ -47,21 +47,21 @@ export class TextViewNode extends EaselNode {
     this.body.style.flexDirection = 'column';
     this.body.style.flex = '1';
 
-    this.portsContainer = document.createElement('div');
-    this.portsContainer.className = 'ports-container';
+    this.ports_container = document.createElement('div');
+    this.ports_container.className = 'ports-container';
 
     // Scrollable content area
-    this.contentEl = document.createElement('div');
-    this.contentEl.style.cssText = `
+    this.content_el = document.createElement('div');
+    this.content_el.style.cssText = `
       flex:1; overflow:auto; font-family:monospace; font-size:11px;
       line-height:1.6; white-space:pre-wrap; word-break:break-word;
       background:rgba(0,0,0,0.2); border-radius:4px; padding:8px;
       min-height:120px;
     `;
-    this.contentEl.textContent = 'Awaiting data...';
+    this.content_el.textContent = 'Awaiting data...';
 
-    this.body.appendChild(this.portsContainer);
-    this.body.appendChild(this.contentEl);
+    this.body.appendChild(this.ports_container);
+    this.body.appendChild(this.content_el);
     this.container.appendChild(this.header);
     this.container.appendChild(this.body);
 
@@ -100,35 +100,35 @@ export class TextViewNode extends EaselNode {
       })
       .join('');
 
-    set_inner_html(this.portsContainer, ports_html);
+    set_inner_html(this.ports_container, ports_html);
 
     // Display content from custom_data
     const content = node_data.custom_data?.['display_content'] as Record<string, any> | string | undefined;
 
     if (content === undefined || content === null) {
-      if (this.cachedContent !== '') {
-        this.contentEl.textContent = 'Awaiting data...';
-        this.cachedContent = '';
+      if (this.cached_content !== '') {
+        this.content_el.textContent = 'Awaiting data...';
+        this.cached_content = '';
       }
       return;
     }
 
     // Format display
-    let displayText: string;
-    let isFormatted = false;
+    let display_text: string;
+    let is_formatted = false;
 
     if (typeof content === 'object') {
-      displayText = JSON.stringify(content, null, 2);
-      isFormatted = true;
+      display_text = JSON.stringify(content, null, 2);
+      is_formatted = true;
     } else {
-      displayText = String(content);
+      display_text = String(content);
     }
 
-    if (displayText !== this.cachedContent) {
-      this.cachedContent = displayText;
-      this.contentEl.innerHTML = '';
+    if (display_text !== this.cached_content) {
+      this.cached_content = display_text;
+      this.content_el.innerHTML = '';
 
-      if (isFormatted && (content as Record<string, any>).status === 'success') {
+      if (is_formatted && (content as Record<string, any>).status === 'success') {
         // Rich display for IP API result
         const d = content as Record<string, any>;
         const rows = [
@@ -154,17 +154,17 @@ export class TextViewNode extends EaselNode {
           )
           .join('');
 
-        this.contentEl.innerHTML = `<div style="padding:4px;">${table}</div>`;
+        this.content_el.innerHTML = `<div style="padding:4px;">${table}</div>`;
       } else {
         // Plain text or generic JSON
-        this.contentEl.textContent = displayText;
+        this.content_el.textContent = display_text;
       }
     }
   }
 
   unmount(): void {
     this.header.remove();
-    this.portsContainer.remove();
+    this.ports_container.remove();
     this.body.remove();
   }
 }

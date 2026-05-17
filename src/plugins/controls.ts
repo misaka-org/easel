@@ -2,7 +2,7 @@ import type { EaselPlugin } from '@/runtime/easel';
 import { vec2_create } from '@/core/math';
 import { apply_styles } from '@/utils/css';
 import { auto_layout } from '@/runtime/auto_layout';
-import type { ContextMenuItem, ContextMenuProvider, ContextMenuContext } from '@/plugins/context_menu/types';
+import type { ContextMenuItem, ContextMenuContext } from '@/plugins/context_menu/types';
 import {
   ICON_PLUS,
   ICON_MINUS,
@@ -193,7 +193,7 @@ export const controls_plugin: EaselPlugin = (easel) => {
     cm.register({
       id: 'controls',
       priority: 30,
-      get_items: (ctx: ContextMenuContext): readonly ContextMenuItem[] => [{
+      get_items: (_ctx: ContextMenuContext): readonly ContextMenuItem[] => [{
         id: 'controls_submenu',
         label: 'Controls',
         icon: ICON_TABLE,

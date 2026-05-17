@@ -20,12 +20,10 @@ export default tseslint.config(
   {
     rules: {
       // snake_case 为主，类型用 PascalCase
-     '@typescript-eslint/naming-convention': [
-       'error',
-        // 常量（export const / const）允许 snake_case 或 SCREAMING_SNAKE_CASE
-        { selector: 'variable', modifiers: ['const'], format: ['snake_case', 'UPPER_CASE'], leadingUnderscore: 'allow' },
-        // 默认 snake_case，允许前导下划线
-        { selector: 'default', format: ['snake_case'], leadingUnderscore: 'allow' },
+    '@typescript-eslint/naming-convention': [
+      'error',
+        // 默认 snake_case/UPPER_CASE（编码规范允许任选），前导下划线 for 私有
+        { selector: 'default', format: ['snake_case', 'UPPER_CASE'], leadingUnderscore: 'allow' },
         // 类型 PascalCase
         { selector: 'typeLike', format: ['PascalCase'] },
         // 枚举值 snake_case

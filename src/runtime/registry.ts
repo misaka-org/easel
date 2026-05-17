@@ -152,8 +152,8 @@ export const get_registered_types = (): string[] => {
  *  3. undefined (caller decides fallback)
  */
 export const resolve_node_spec = (type: string): NodeSpec | undefined => {
-  const Constructor = registry.get(type);
-  return node_spec_registry.get(type) ?? (Constructor as any)?.node_spec;
+  const node_ctor = registry.get(type);
+  return node_spec_registry.get(type) ?? (node_ctor as any)?.node_spec;
 };
 
 /** Register default port/widget definitions for a node type.

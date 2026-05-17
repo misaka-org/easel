@@ -1,4 +1,4 @@
-import { EaselNode, type NodeSpec } from '@/runtime/registry';
+﻿import { EaselNode, type NodeSpec } from '@/runtime/registry';
 import { update_widget_value } from '@/core/node_ops';
 import type { ContextMenuContext, ContextMenuItem } from '@/plugins/context_menu/types';
 import { ICON_CLOCK, ICON_UNDO, ICON_PLUS, ICON_MINUS, ICON_REFRESH } from '@/icons';
@@ -21,7 +21,7 @@ export class CounterNode extends EaselNode {
   private body!: HTMLElement;
   private display!: HTMLElement;
 
-  mount(node_data: GraphNode): void {
+  mount(_node_data: GraphNode): void {
     this.body = document.createElement('div');
     this.body.className = 'node-body';
     this.body.style.cssText = 'display:flex;flex-direction:column;gap:8px;padding:12px;';

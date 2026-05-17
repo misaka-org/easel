@@ -14,6 +14,7 @@ import { vec2_create } from '@/core/math';
 import { SubgraphNode, SubgraphInputNode, SubgraphOutputNode } from '@/nodes/subgraph';
 import { GroupNode } from '@/nodes/group';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- 空接口用于 declaration merging，插件通过扩充该接口添加自定义数据
 export interface EaselPluginData {}
 
 export interface EaselEvents {
@@ -85,7 +86,7 @@ export class Easel {
     this.state = store.state;
     this.app_events = new EventEmitter<EaselEvents>();
 
-    let current_dispatch = with_guidelines(canvas_el, this.state, store.dispatch);
+    const current_dispatch = with_guidelines(canvas_el, this.state, store.dispatch);
     this.dispatch = (updater) => {
       const prev = this.state.value;
       current_dispatch(updater);

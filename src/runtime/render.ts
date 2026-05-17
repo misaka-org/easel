@@ -1,11 +1,6 @@
-import { effect, stop, type ReactiveEffectRunner } from "@vue/reactivity";
-import type { State } from "@/core/types";
+import { stop } from "@vue/reactivity";
 import { aabb_intersect, vec2_create } from "@/core/math";
-import {
-  get_node_constructor,
-  type EaselNode,
-  type Dispatch,
-} from "./registry";
+import { get_node_constructor } from "./registry";
 import { DefaultNode } from "./default_node";
 import { frame_effect } from "./frame_effect";
 
@@ -96,9 +91,9 @@ export const render_nodes = (easel: Easel): void => {
         el.dataset["id"] = id;
 
         const node_data = state.nodes[id];
-        const Constructor =
+        const node_ctor =
           get_node_constructor(node_data!.type) || DefaultNode;
-        const inst = new Constructor(el, dispatch, id, context);
+        const inst = new node_ctor(el, dispatch, id, context);
         inst.mount(node_data!);
 
         container_element.appendChild(el);

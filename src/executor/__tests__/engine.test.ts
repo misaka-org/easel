@@ -1,9 +1,9 @@
-import { describe, it, expect, vi } from "vitest";
+﻿import { describe, it, expect, vi } from "vitest";
 import { shallowRef } from "@vue/reactivity";
-import { GraphExecutor, create_initial_execution_state } from "@/executor/engine";
+import { GraphExecutor } from "@/executor/engine";
 import { create_initial_state } from "@/core/state";
 import { vec2_create } from "@/core/math";
-import type { State, GraphNode } from "@/core/types";
+import * as E from "fp-ts/Either";
 import * as E from "fp-ts/Either";
 
 function mockEasel(nodeOverrides = {}) {

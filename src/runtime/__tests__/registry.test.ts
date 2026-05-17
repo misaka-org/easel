@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import { EaselNode, register_node_type, get_node_constructor, get_registered_types, register_node_ns, get_node_ns, register_node_spec, resolve_node_spec, create_node_data } from '@/runtime/registry';
 import { vec2_create } from '@/core/math';
 
@@ -86,7 +86,7 @@ describe('registry', () => {
   it('create_node_data generates id with type prefix', () => {
     register_node_type('test_create_c', TestNode);
     const n1 = create_node_data('test_create_c');
-    const n2 = create_node_data('test_create_c');
+    create_node_data('test_create_c');
     expect(n1.id).toMatch(/^test_create_c_/);
   });
 });

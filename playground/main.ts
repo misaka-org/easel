@@ -1,5 +1,5 @@
-import { effect } from "@vue/reactivity";
-import { Easel, EaselNode, type ExecuteContext, type NodeSpec } from "@/index";
+﻿import { effect } from "@vue/reactivity";
+import { type NodeSpec } from '@/index';
 import { add_node, update_node_data } from "@/core/node_ops";
 import { create_initial_state } from "@/core/state";
 import { serialize_state, deserialize_state } from "@/core/serialization";
@@ -36,7 +36,7 @@ import { load_context_menu_scene } from "./scenes/scene_context_menu";
 
 class ExecutableDefaultNode extends DefaultNode {
   static node_spec: NodeSpec = {};
-  async execute({ node, inputs, report_progress }: ExecuteContext) {
+  async execute({ node: _node, inputs, report_progress }: ExecuteContext) {
     report_progress(50);
     await new Promise((r) => setTimeout(r, 500));
     report_progress(100);
@@ -53,7 +53,7 @@ class TextGenNode extends DefaultNode {
       { id: 'max_len', type: 'number', label: 'Maximum list length', value: 8, value_type: 'number' },
     ],
   };
-  async execute({ node, inputs, report_progress, signal }: ExecuteContext) {
+  async execute({ node: _node, inputs, report_progress, signal }: ExecuteContext) {
     report_progress(30);
     await new Promise((r) => setTimeout(r, 400));
     if (signal?.aborted) throw new Error("Aborted");
@@ -74,7 +74,7 @@ class ImageGenNode extends DefaultNode {
     outputs: [{ id: 'out_img', label: 'Image [ ]', type: 'output', value_type: 'image' }],
     widgets: [{ id: 'model', type: 'text', label: 'Model', value: 'Flux Dev', value_type: 'text' }],
   };
-  async execute({ node, inputs, report_progress, signal }: ExecuteContext) {
+  async execute({ node: _node, inputs, report_progress, signal }: ExecuteContext) {
     report_progress(10);
     await new Promise((r) => setTimeout(r, 300));
     if (signal?.aborted) throw new Error("Aborted");
@@ -353,7 +353,7 @@ const init = () => {
   if (stats_el) {
     effect(() => {
       const s = state.value;
-      const textContent = [
+      const text_content = [
         `Nodes: ${Object.keys(s.nodes).length}`,
         `Wires: ${Object.keys(s.wires).length}`,
         `Camera: [${s.camera.position.x.toFixed(
@@ -367,8 +367,8 @@ const init = () => {
         `Interaction: ${s.interaction.mode}`,
         `Stack Depth: ${graph_stack.length}`,
       ].join("\n");
-      if (stats_el.textContent !== textContent) {
-        stats_el.textContent = textContent;
+      if (stats_el.textContent !== text_content) {
+        stats_el.textContent = text_content;
       }
 
       const btn_exit = document.getElementById("btn-exit-subgraph");

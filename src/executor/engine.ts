@@ -53,10 +53,7 @@ export class GraphExecutor {
     const node_states: Record<string, ExecutionNodeState> = {};
     const ready_queue: string[] = [];
 
-    const prev_states = this.state.value?.node_states || {};
-
     for (const id of Object.keys(nodes)) {
-      const prev = prev_states[id];
       if (missing_reqs[id]) {
         node_states[id] = { status: 'error', progress: 0, error: missing_reqs[id], outputs: {} };
       } else {
@@ -443,7 +440,7 @@ export class GraphExecutor {
   }
 
   private finish_node(id: string, is_error = false) {
-    let new_ready: string[] = [];
+    const new_ready: string[] = [];
     const new_in_degrees = { ...this.state.value.in_degrees };
 
     if (!is_error) {

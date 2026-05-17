@@ -1,4 +1,4 @@
-import { vec2_create } from "@/core/math";
+﻿import { vec2_create } from "@/core/math";
 import { add_node } from "@/core/node_ops";
 import type { State } from "@/core/types";
 import type { Dispatch } from "@/runtime/registry";
@@ -59,7 +59,7 @@ export const evaluate_math_graph = (state: State): State => {
   const new_nodes = { ...state.nodes };
   let changed = false;
 
-  const get_port_value = (node_id: string, port_id: string): number => {
+  const get_port_value = (node_id: string, _port_id: string): number => {
     const node = state.nodes[node_id];
     if (!node) return 0;
     if (node.type === "default") {

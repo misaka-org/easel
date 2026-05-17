@@ -1,10 +1,7 @@
-import { EaselNode, type NodeSpec } from '@/index';
+﻿import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
-import { update_widget_value } from '@/core/node_ops';
-
 import type { ExecuteContext } from '@/index';
 import { set_inner_html } from '@/utils/dom';
-
 export class MathNode extends EaselNode {
   static node_spec: NodeSpec = {
     inputs: [
@@ -28,10 +25,8 @@ export class MathNode extends EaselNode {
     report_progress(100);
     return { out: res };
   }
-
   private body!: HTMLElement;
   private header!: HTMLElement;
-
   mount(node_data: GraphNode): void {
     this.header = document.createElement('div');
     this.header.className = 'node-header';
@@ -42,12 +37,10 @@ export class MathNode extends EaselNode {
     this.container.appendChild(this.body);
     this.update(node_data, { wires: {} } as State);
   }
-
-  update(node_data: GraphNode, state: State): void {
+  update(node_data: GraphNode, _state: State): void {
     if (this.header.textContent !== node_data.title) {
       this.header.textContent = node_data.title;
     }
-
     const html = `
       ${node_data.inputs.map(p => `
         <div class="port-row">
@@ -68,10 +61,8 @@ export class MathNode extends EaselNode {
         Val: ${node_data.custom_data['result'] ?? '?'}
       </div>
     `;
-
     set_inner_html(this.body, html);
   }
-
   unmount(): void {
     this.header.remove();
     this.body.remove();

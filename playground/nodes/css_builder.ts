@@ -1,4 +1,4 @@
-import { EaselNode, type NodeSpec } from '@/index';
+﻿import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 import { set_inner_html } from '@/utils/dom';
@@ -17,9 +17,9 @@ export class CSSBuilderNode extends EaselNode {
   };
   private header!: HTMLElement;
   private body!: HTMLElement;
-  private portsContainer!: HTMLElement;
+  private ports_container!: HTMLElement;
 
-  async execute({ node, inputs }: ExecuteContext) {
+  async execute({ node: _node, inputs }: ExecuteContext) {
     const c1 = (inputs['c1'] as string) || '';
     const c2 = (inputs['c2'] as string) || '';
     const c3 = (inputs['c3'] as string) || '';
@@ -50,10 +50,10 @@ export class CSSBuilderNode extends EaselNode {
     this.body = document.createElement('div');
     this.body.className = 'node-body';
 
-    this.portsContainer = document.createElement('div');
-    this.portsContainer.className = 'ports-container';
+    this.ports_container = document.createElement('div');
+    this.ports_container.className = 'ports-container';
 
-    this.body.appendChild(this.portsContainer);
+    this.body.appendChild(this.ports_container);
     this.container.appendChild(this.header);
     this.container.appendChild(this.body);
 
@@ -85,9 +85,9 @@ export class CSSBuilderNode extends EaselNode {
       }
       return rows.join('');
     })();
-    set_inner_html(this.portsContainer, phtml);
+    set_inner_html(this.ports_container, phtml);
   }
 
-  unmount(): void { this.header.remove(); this.portsContainer.remove(); this.body.remove(); }
+  unmount(): void { this.header.remove(); this.ports_container.remove(); this.body.remove(); }
 }
 

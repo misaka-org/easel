@@ -1,4 +1,4 @@
-import { EaselNode, type NodeSpec } from '@/index';
+﻿import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 import { update_widget_value } from '@/core/node_ops';
@@ -12,8 +12,8 @@ export class TextInputNode extends EaselNode {
   };
   private header!: HTMLElement;
   private body!: HTMLElement;
-  private portsContainer!: HTMLElement;
-  private widgetsContainer!: HTMLElement;
+  private ports_container!: HTMLElement;
+  private widgets_container!: HTMLElement;
 
   async execute({ node }: ExecuteContext) {
     const value = (node.widgets?.find(w => w.id === 'value')?.value as string) || '';
@@ -29,14 +29,14 @@ export class TextInputNode extends EaselNode {
     this.body = document.createElement('div');
     this.body.className = 'node-body';
 
-    this.portsContainer = document.createElement('div');
-    this.portsContainer.className = 'ports-container';
+    this.ports_container = document.createElement('div');
+    this.ports_container.className = 'ports-container';
 
-    this.widgetsContainer = document.createElement('div');
-    this.widgetsContainer.className = 'widgets-container';
+    this.widgets_container = document.createElement('div');
+    this.widgets_container.className = 'widgets-container';
 
-    this.body.appendChild(this.portsContainer);
-    this.body.appendChild(this.widgetsContainer);
+    this.body.appendChild(this.ports_container);
+    this.body.appendChild(this.widgets_container);
     this.container.appendChild(this.header);
     this.container.appendChild(this.body);
 
@@ -47,7 +47,7 @@ export class TextInputNode extends EaselNode {
       }
     });
 
-    this.widgetsContainer.addEventListener('input', (e) => {
+    this.widgets_container.addEventListener('input', (e) => {
       const target = e.target as HTMLInputElement;
       const widget_id = target.dataset['widgetId'];
       if (widget_id) {
@@ -90,7 +90,7 @@ export class TextInputNode extends EaselNode {
       })
       .join('');
 
-    set_inner_html(this.portsContainer, ports_html);
+    set_inner_html(this.ports_container, ports_html);
 
     // Widgets
     const widgets_html = (node_data.widgets || [])
@@ -120,14 +120,14 @@ export class TextInputNode extends EaselNode {
       })
       .join(',');
 
-    if (this.widgetsContainer.dataset['schema'] !== widgets_schema) {
+    if (this.widgets_container.dataset['schema'] !== widgets_schema) {
       // Rebuild DOM only when schema changes (structure / port connections)
-      this.widgetsContainer.innerHTML = widgets_html;
-      this.widgetsContainer.dataset['schema'] = widgets_schema;
+      this.widgets_container.innerHTML = widgets_html;
+      this.widgets_container.dataset['schema'] = widgets_schema;
     } else {
       // Schema unchanged – update values in-place without destroying focus
       node_data.widgets?.forEach(w => {
-        const input = this.widgetsContainer.querySelector(
+        const input = this.widgets_container.querySelector(
           `[data-widget-id="${w.id}"]`
         ) as HTMLInputElement;
         if (input) {
@@ -143,8 +143,8 @@ export class TextInputNode extends EaselNode {
 
   unmount(): void {
     this.header.remove();
-    this.portsContainer.remove();
-    this.widgetsContainer.remove();
+    this.ports_container.remove();
+    this.widgets_container.remove();
     this.body.remove();
   }
 }

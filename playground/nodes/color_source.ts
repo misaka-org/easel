@@ -1,4 +1,4 @@
-import { EaselNode, type NodeSpec } from '@/index';
+﻿import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 import { update_widget_value } from '@/core/node_ops';
@@ -12,8 +12,8 @@ export class ColorSourceNode extends EaselNode {
   };
   private header!: HTMLElement;
   private body!: HTMLElement;
-  private portsContainer!: HTMLElement;
-  private widgetsContainer!: HTMLElement;
+  private ports_container!: HTMLElement;
+  private widgets_container!: HTMLElement;
 
   async execute({ node }: ExecuteContext) {
     const color = (node.widgets?.find(w => w.id === 'color')?.value as string) || '#ff0000';
@@ -29,17 +29,17 @@ export class ColorSourceNode extends EaselNode {
     this.body = document.createElement('div');
     this.body.className = 'node-body';
 
-    this.portsContainer = document.createElement('div');
-    this.portsContainer.className = 'ports-container';
+    this.ports_container = document.createElement('div');
+    this.ports_container.className = 'ports-container';
 
-    this.widgetsContainer = document.createElement('div');
-    this.widgetsContainer.className = 'widgets-container';
-    this.widgetsContainer.style.display = 'flex';
-    this.widgetsContainer.style.flexDirection = 'column';
-    this.widgetsContainer.style.gap = '4px';
+    this.widgets_container = document.createElement('div');
+    this.widgets_container.className = 'widgets-container';
+    this.widgets_container.style.display = 'flex';
+    this.widgets_container.style.flexDirection = 'column';
+    this.widgets_container.style.gap = '4px';
 
-    this.body.appendChild(this.portsContainer);
-    this.body.appendChild(this.widgetsContainer);
+    this.body.appendChild(this.ports_container);
+    this.body.appendChild(this.widgets_container);
     this.container.appendChild(this.header);
     this.container.appendChild(this.body);
 
@@ -50,7 +50,7 @@ export class ColorSourceNode extends EaselNode {
       }
     });
 
-    this.widgetsContainer.addEventListener('input', (e) => {
+    this.widgets_container.addEventListener('input', (e) => {
       const target = e.target as HTMLInputElement;
       const widget_id = target.dataset['widgetId'];
       if (widget_id) {
@@ -78,28 +78,28 @@ export class ColorSourceNode extends EaselNode {
       const cc = is_port_connected(p.id) ? 'connected' : '';
       return `<div class="port-row"><div></div><div class="port" data-port-id="${p.id}" data-port-type="output"><span class="port-label">${p.label}</span><div class="port-dot port-type-text ${cc}"></div></div></div>`;
     }).join('');
-    set_inner_html(this.portsContainer, ports_html);
+    set_inner_html(this.ports_container, ports_html);
 
     const widgets_schema = (node_data.widgets || []).map(w => `${w.id}:${w.type}`).join(',');
-    if (this.widgetsContainer.dataset['schema'] !== widgets_schema) {
+    if (this.widgets_container.dataset['schema'] !== widgets_schema) {
       const whtml = (node_data.widgets || []).map(w =>
         `<div class="widget-row" style="display:flex;align-items:center;gap:8px;padding:4px 8px;">
           <span style="font-size:11px;min-width:36px;">${w.label}</span>
           <input type="color" data-widget-id="${w.id}" value="${w.value}" style="width:100%;height:32px;border:none;cursor:pointer;" />
         </div>`
       ).join('');
-      this.widgetsContainer.innerHTML = whtml;
-      this.widgetsContainer.dataset['schema'] = widgets_schema;
+      this.widgets_container.innerHTML = whtml;
+      this.widgets_container.dataset['schema'] = widgets_schema;
     } else {
       (node_data.widgets || []).forEach(w => {
-        const inp = this.widgetsContainer.querySelector(`[data-widget-id="${w.id}"]`) as HTMLInputElement;
+        const inp = this.widgets_container.querySelector(`[data-widget-id="${w.id}"]`) as HTMLInputElement;
         if (inp && inp.value !== String(w.value)) inp.value = String(w.value);
       });
     }
   }
 
   unmount(): void {
-    this.header.remove(); this.portsContainer.remove(); this.widgetsContainer.remove(); this.body.remove();
+    this.header.remove(); this.ports_container.remove(); this.widgets_container.remove(); this.body.remove();
   }
 }
 

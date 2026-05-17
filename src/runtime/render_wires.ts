@@ -1,5 +1,5 @@
-import type { State, GraphNode } from "@/core/types";
-import { vec2_sub, vec2_scale, vec2_create } from "@/core/math";
+﻿import type { State, GraphNode } from "@/core/types";
+import { vec2_sub, vec2_scale } from "@/core/math";
 import { frame_effect } from "./frame_effect";
 
 // Layout constants matching CSS defaults for DefaultNode / SubgraphNode
@@ -40,7 +40,6 @@ const LAYOUT = {
 const LAYOUT_DEFAULT = LAYOUT.default;
 
 // Widget-area layout constants (default node only)
-const WIDGET_START_OFFSET_Y = LAYOUT_DEFAULT.header_h; // space for header + port rows computed dynamically
 const WIDGET_BODY_GAP = 8;     // node-body gap between ports-container and widgets-container
 const WIDGET_CONTAINER_MARGIN_TOP = 2;
 const WIDGET_CONTAINER_PADDING_TOP = 8;

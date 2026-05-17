@@ -1,4 +1,4 @@
-import { EaselNode, type NodeSpec } from '@/index';
+﻿import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 import { set_inner_html } from '@/utils/dom';
@@ -18,10 +18,10 @@ export class IpApiNode extends EaselNode {
   };
   private header!: HTMLElement;
   private body!: HTMLElement;
-  private portsContainer!: HTMLElement;
-  private statusEl!: HTMLElement;
+  private ports_container!: HTMLElement;
+  private status_el!: HTMLElement;
 
-  async execute({ node, inputs, report_progress, signal }: ExecuteContext) {
+  async execute({ node: _node, inputs, report_progress, signal }: ExecuteContext) {
     const query = (inputs['query'] as string) || '';
     if (!query) throw new Error('No query input');
 
@@ -78,16 +78,16 @@ export class IpApiNode extends EaselNode {
     this.body = document.createElement('div');
     this.body.className = 'node-body';
 
-    this.portsContainer = document.createElement('div');
-    this.portsContainer.className = 'ports-container';
+    this.ports_container = document.createElement('div');
+    this.ports_container.className = 'ports-container';
 
-    this.statusEl = document.createElement('div');
-    this.statusEl.style.cssText =
+    this.status_el = document.createElement('div');
+    this.status_el.style.cssText =
       'font-size:11px;color:#888;margin-top:4px;text-align:center;padding:4px;';
-    this.statusEl.textContent = 'Awaiting execution...';
+    this.status_el.textContent = 'Awaiting execution...';
 
-    this.body.appendChild(this.portsContainer);
-    this.body.appendChild(this.statusEl);
+    this.body.appendChild(this.ports_container);
+    this.body.appendChild(this.status_el);
     this.container.appendChild(this.header);
     this.container.appendChild(this.body);
 
@@ -137,7 +137,7 @@ export class IpApiNode extends EaselNode {
       }),
     ].join('');
 
-    set_inner_html(this.portsContainer, ports_html);
+    set_inner_html(this.ports_container, ports_html);
 
     // Show result status if available
     const result = node_data.custom_data?.['api_result'] as Record<string, any> | undefined;
@@ -145,21 +145,21 @@ export class IpApiNode extends EaselNode {
 
     if (result) {
       if (result.status === 'success') {
-        this.statusEl.innerHTML = `
+        this.status_el.innerHTML = `
           <div style="color:#4ade80;font-weight:600;">✔ ${query || result.query}</div>
           <div style="color:#aaa;margin-top:2px;">${result.country} / ${result.city || 'N/A'} &middot; ${result.isp || 'N/A'}</div>
         `;
       } else {
-        this.statusEl.innerHTML = `<div style="color:#f87171;">✘ ${result.message || 'Request failed'}</div>`;
+        this.status_el.innerHTML = `<div style="color:#f87171;">✘ ${result.message || 'Request failed'}</div>`;
       }
     } else {
-      this.statusEl.textContent = 'Awaiting execution...';
+      this.status_el.textContent = 'Awaiting execution...';
     }
   }
 
   unmount(): void {
     this.header.remove();
-    this.portsContainer.remove();
+    this.ports_container.remove();
     this.body.remove();
   }
 }

@@ -1,5 +1,5 @@
 import { EaselNode } from './registry';
-import type { GraphNode, State, Widget } from '@/core/types';
+import type { GraphNode, State } from '@/core/types';
 import { update_node_data, update_widget_value, remove_node } from '@/core/node_ops';
 import { get_widget_type } from './register';
 import { ICON_X } from '@/icons';
@@ -13,7 +13,7 @@ export class DefaultNode extends EaselNode {
   private widget_elements = new Map<string, HTMLElement>();
   private last_widget_schema = '';
 
-  mount(node_data: GraphNode): void {
+  mount(_node_data: GraphNode): void {
     this.header = document.createElement('div');
     this.header.className = 'node-header';
 

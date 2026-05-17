@@ -11,7 +11,7 @@ export class GroupNode extends EaselNode {
   private is_editing = false;
   private current_title = '';
 
-  mount(node_data: GraphNode): void {
+  mount(_node_data: GraphNode): void {
     this.container.classList.add('group-node');
     
     this.header = document.createElement('div');
@@ -108,7 +108,7 @@ export class GroupNode extends EaselNode {
     });
   }
 
-  update(node_data: GraphNode, state: State): void {
+  update(node_data: GraphNode, _state: State): void {
     this.current_title = node_data.title;
     if (!this.is_editing) {
       const title_html = `

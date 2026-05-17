@@ -71,7 +71,7 @@ describe('node_ops', () => {
   });
 
   it('update_widget_value returns node unchanged when node has no widgets', () => {
-    const s = update_widget_value(add_node(create_initial_state(), node_a()), 'a', 'no_widget', 42);
+    update_widget_value(add_node(create_initial_state(), node_a()), 'a', 'no_widget', 42);
     // node_a has widgets: [], update_widget_value finds no match, node unchanged
   });
 

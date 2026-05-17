@@ -1,6 +1,6 @@
 import { EaselNode } from '@/runtime/registry';
 import type { GraphNode, State } from '@/core/types';
-import { update_node_data, remove_node } from '@/core/node_ops';
+import { remove_node } from '@/core/node_ops';
 import { ICON_CHEVRON_RIGHT, ICON_X } from '@/icons';
 import { set_inner_html } from '@/utils/dom';
 

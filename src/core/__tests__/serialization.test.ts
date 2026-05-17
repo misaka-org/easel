@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { create_initial_state } from '@/core/state';
 import { serialize_state, deserialize_state } from '@/core/serialization';
-import { add_node, remove_node } from '@/core/node_ops';
+import { add_node } from '@/core/node_ops';
 import { add_wire } from '@/core/wire_ops';
 import { vec2_create } from '@/core/math';
 

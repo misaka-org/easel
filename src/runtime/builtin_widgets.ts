@@ -85,16 +85,16 @@ const builtin_widgets: WidgetTypeDef[] = [
       const el = document.createElement('select');
       el.dataset.widgetId = w.id;
       const opts = w.options || [];
-      for (const opt of opts) {
-        const optEl = document.createElement('option');
+    for (const opt of opts) {
+        const opt_el = document.createElement('option');
         if (typeof opt === 'string') {
-          optEl.value = opt;
-          optEl.textContent = opt;
+          opt_el.value = opt;
+          opt_el.textContent = opt;
         } else {
-          optEl.value = opt.value;
-          optEl.textContent = opt.label;
+          opt_el.value = opt.value;
+          opt_el.textContent = opt.label;
         }
-        el.appendChild(optEl);
+        el.appendChild(opt_el);
       }
       return el;
     },
