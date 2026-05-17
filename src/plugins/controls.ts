@@ -1,4 +1,5 @@
 import type { EaselPlugin } from '@/runtime/easel';
+import type { State } from '@/core/types';
 import { vec2_create } from '@/core/math';
 import { apply_styles } from '@/utils/css';
 import { auto_layout } from '@/runtime/auto_layout';
@@ -18,23 +19,31 @@ export const controls_plugin: EaselPlugin = easel => {
   // -----------------------------------------------------------------------
   // Action functions —shared by both UI buttons and context menu
   // -----------------------------------------------------------------------
-  const do_zoom_in = () => {
-    easel.dispatch(s => ({
+  const zoom_center = (s: State, zoom: number): State => {
+    const vp = easel.container.getBoundingClientRect();
+    const cx = vp.width / 2;
+    const cy = vp.height / 2;
+    const old_zoom = s.camera.zoom;
+    const old_pos = s.camera.position;
+    return {
       ...s,
-      camera: { ...s.camera, zoom: Math.min(10, s.camera.zoom * 1.2) },
-    }));
+      camera: {
+        position: vec2_create(
+          cx - (cx - old_pos.x) * (zoom / old_zoom),
+          cy - (cy - old_pos.y) * (zoom / old_zoom),
+        ),
+        zoom,
+      },
+    };
+  };
+  const do_zoom_in = () => {
+    easel.dispatch(s => zoom_center(s, Math.min(10, s.camera.zoom * 1.2)));
   };
   const do_zoom_out = () => {
-    easel.dispatch(s => ({
-      ...s,
-      camera: { ...s.camera, zoom: Math.max(0.1, s.camera.zoom / 1.2) },
-    }));
+    easel.dispatch(s => zoom_center(s, Math.max(0.1, s.camera.zoom / 1.2)));
   };
   const do_zoom_reset = () => {
-    easel.dispatch(s => ({
-      ...s,
-      camera: { ...s.camera, zoom: 1 },
-    }));
+    easel.dispatch(s => zoom_center(s, 1));
   };
   const do_fit = () => {
     const s = easel.state.value;
