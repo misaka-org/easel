@@ -1,6 +1,4 @@
-import type { EaselPlugin } from '@/runtime/easel';
-import type { State } from '@/core/types';
-import { vec2_create } from '@/core/math';
+﻿import type { EaselPlugin } from '@/runtime/easel';
 import { apply_styles } from '@/utils/css';
 import { auto_layout } from '@/runtime/auto_layout';
 import type { ContextMenuItem, ContextMenuContext } from '@/plugins/context_menu/types';
@@ -19,61 +17,10 @@ export const controls_plugin: EaselPlugin = easel => {
   // -----------------------------------------------------------------------
   // Action functions —shared by both UI buttons and context menu
   // -----------------------------------------------------------------------
-  const zoom_center = (s: State, zoom: number): State => {
-    const vp = easel.container.getBoundingClientRect();
-    const cx = vp.width / 2;
-    const cy = vp.height / 2;
-    const old_zoom = s.camera.zoom;
-    const old_pos = s.camera.position;
-    return {
-      ...s,
-      camera: {
-        position: vec2_create(
-          cx - (cx - old_pos.x) * (zoom / old_zoom),
-          cy - (cy - old_pos.y) * (zoom / old_zoom),
-        ),
-        zoom,
-      },
-    };
-  };
-  const do_zoom_in = () => {
-    easel.dispatch(s => zoom_center(s, Math.min(10, s.camera.zoom * 1.2)));
-  };
-  const do_zoom_out = () => {
-    easel.dispatch(s => zoom_center(s, Math.max(0.1, s.camera.zoom / 1.2)));
-  };
-  const do_zoom_reset = () => {
-    easel.dispatch(s => zoom_center(s, 1));
-  };
-  const do_fit = () => {
-    const s = easel.state.value;
-    const nodes = Object.values(s.nodes);
-    if (nodes.length === 0) return;
-    let min_x = Infinity,
-      min_y = Infinity,
-      max_x = -Infinity,
-      max_y = -Infinity;
-    for (const n of nodes) {
-      min_x = Math.min(min_x, n.position.x);
-      min_y = Math.min(min_y, n.position.y);
-      max_x = Math.max(max_x, n.position.x + n.size.x);
-      max_y = Math.max(max_y, n.position.y + n.size.y);
-    }
-    const vp = easel.container.getBoundingClientRect();
-    const padding = 60;
-    const w = max_x - min_x + padding * 2;
-    const h = max_y - min_y + padding * 2;
-    const zoom = Math.min(vp.width / w, vp.height / h, 2);
-    const center_x = (min_x + max_x) / 2;
-    const center_y = (min_y + max_y) / 2;
-    easel.dispatch(s => ({
-      ...s,
-      camera: {
-        zoom,
-        position: vec2_create(vp.width / 2 - center_x * zoom, vp.height / 2 - center_y * zoom),
-      },
-    }));
-  };
+  const do_zoom_in = () => easel.camera.zoomIn();
+  const do_zoom_out = () => easel.camera.zoomOut();
+  const do_zoom_reset = () => easel.camera.zoomReset();
+  const do_fit = () => easel.camera.fitToView();
   const do_layout = () => {
     const vp = easel.container.getBoundingClientRect();
     const s = easel.state.value;

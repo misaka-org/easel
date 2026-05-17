@@ -4,6 +4,7 @@ import { render_nodes } from './render';
 import { render_wires } from './render_wires';
 import { with_guidelines } from '@/plugins/guidelines';
 import { get_base_css, apply_theme, default_theme, type Theme } from './theme';
+import { CameraController } from './camera';
 import EventEmitter from 'eventemitter3';
 import type { State, GraphNode } from '@/core/types';
 import type { ShallowRef, ReactiveEffectRunner } from '@vue/reactivity';
@@ -57,6 +58,7 @@ export class Easel {
     string,
     { el: HTMLElement; inst: EaselNode; runner: ReactiveEffectRunner }
   >();
+  camera: CameraController;
   plugin_data: EaselPluginData = {} as EaselPluginData;
   keybindings = new KeybindingManager();
   theme: Theme;
@@ -104,6 +106,10 @@ export class Easel {
         this.app_events.emit('state_changed', { prev, next });
       }
     };
+    this.camera = new CameraController(
+      () => this.state.value,
+      this.dispatch,
+    );
     this.container = canvas_el;
 
     options.plugins?.forEach(plugin => plugin(this));
