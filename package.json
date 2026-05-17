@@ -18,7 +18,11 @@
     "build": "tsup",
     "build:lib": "tsup",
     "build:playground": "vite build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"playground/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"playground/**/*.ts\""
   },
   "keywords": [],
   "author": "",
@@ -28,11 +32,15 @@
     "esbuild"
   ],
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^25.6.2",
     "@vitest/coverage-v8": "^4.1.6",
+    "eslint": "^10.4.0",
     "jsdom": "^29.1.1",
+    "prettier": "^3.8.3",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.3",
     "vite": "^8.0.11",
     "vitest": "^4.1.5"
   },

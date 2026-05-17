@@ -8,7 +8,7 @@ import {
 // 但通过帧预算控制避免霸占渲染线程导致丢帧。
 class FrameScheduler {
   // 每帧预算：60fps 下约 16ms 一帧，留 4ms 给浏览器 layout/paint
-  private static readonly BUDGET_MS = 12;
+  private static readonly budget_ms = 12;
 
   private tasks = new Set<ReactiveEffectRunner>();
   private raf_id: number | null = null;
@@ -22,7 +22,7 @@ class FrameScheduler {
 
   private flush(): void {
     this.raf_id = null;
-    const deadline = performance.now() + FrameScheduler.BUDGET_MS;
+    const deadline = performance.now() + FrameScheduler.budget_ms;
 
     // 最多 5 轮收敛（防止 effect 互相触发死循环）
     for (let round = 0; round < 5; round++) {
