@@ -30,6 +30,12 @@ export const controls_plugin: EaselPlugin = easel => {
       camera: { ...s.camera, zoom: Math.max(0.1, s.camera.zoom / 1.2) },
     }));
   };
+  const do_zoom_reset = () => {
+    easel.dispatch(s => ({
+      ...s,
+      camera: { ...s.camera, zoom: 1 },
+    }));
+  };
   const do_fit = () => {
     const s = easel.state.value;
     const nodes = Object.values(s.nodes);
@@ -116,6 +122,15 @@ export const controls_plugin: EaselPlugin = easel => {
   btn_zoom_out.title = 'Zoom Out';
   btn_zoom_out.addEventListener('click', do_zoom_out);
 
+  const btn_zoom_display = document.createElement('button');
+  btn_zoom_display.className = 'easel-zoom-display';
+  btn_zoom_display.textContent = '100%';
+  btn_zoom_display.title = 'Reset Zoom';
+  btn_zoom_display.style.fontSize = '12px';
+  btn_zoom_display.style.fontFamily = 'monospace';
+  btn_zoom_display.style.pointerEvents = 'auto';
+  btn_zoom_display.addEventListener('click', do_zoom_reset);
+
   const btn_fit = document.createElement('button');
   btn_fit.innerHTML = ICON_MAXIMIZE;
   btn_fit.title = 'Fit to view';
@@ -173,17 +188,34 @@ export const controls_plugin: EaselPlugin = easel => {
         height: 18px;
         display: block;
       }
+      .easel-controls .easel-zoom-display {
+        border-left: 1px solid rgba(255,255,255,0.08);
+        border-right: 1px solid rgba(255,255,255,0.08);
+        cursor: pointer;
+        letter-spacing: 0.5px;
+        font-weight: 500;
+      }
+      .easel-controls .easel-zoom-display:hover {
+        background: rgba(255,255,255,0.08);
+      }
     `;
     (root_node === document ? document.head : root_node).appendChild(style_el);
   }
 
-  const buttons = [btn_zoom_in, btn_zoom_out, btn_fit, btn_layout, btn_fullscreen];
+  const buttons = [btn_zoom_in, btn_zoom_out, btn_zoom_display, btn_fit, btn_layout, btn_fullscreen];
 
   buttons.forEach(btn => {
     // 阻止事件冒泡到画布    btn.addEventListener('pointerdown', (e) => e.stopPropagation());
     bar.appendChild(btn);
   });
   bar.addEventListener('pointerdown', e => e.stopPropagation());
+
+  // 监听缩放变化更新百分比显示
+  const update_zoom_display = () => {
+    const zoom = easel.state.value.camera.zoom;
+    btn_zoom_display.textContent = `${Math.round(zoom * 100)}%`;
+  };
+  easel.app_events.on('state_changed', update_zoom_display);
 
   easel.container.appendChild(bar);
 
