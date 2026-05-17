@@ -180,7 +180,7 @@ function node_ops_provider(easel: any): ContextMenuProvider {
  * organized by their registered namespace (ns). Types without ns are
  * grouped under "Other" when categorized types exist.
  */
-function build_ns_menu(
+export function build_ns_menu(
   entries: ReadonlyArray<{ readonly type: string; readonly label: string; readonly action: () => void }>,
 ): ContextMenuItem[] {
   const with_ns: Array<{ type: string; label: string; ns: string[]; action: () => void }> = [];
