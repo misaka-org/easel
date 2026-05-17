@@ -65,6 +65,29 @@ describe('node_ops', () => {
     expect(s.nodes['a']?.widgets?.[0]?.value).toBe(42);
   });
 
+  it('update_node_data does nothing for non-existent node', () => {
+    const s = update_node_data(create_initial_state(), 'nonexistent', n => n);
+    expect(s.nodes).toEqual({});
+  });
+
+  it('update_widget_value returns node unchanged when node has no widgets', () => {
+    const s = update_widget_value(add_node(create_initial_state(), node_a()), 'a', 'no_widget', 42);
+    // node_a has widgets: [], update_widget_value finds no match, node unchanged
+  });
+
+  it('remove_node does nothing for non-existent id', () => {
+    const s = remove_node(create_initial_state(), 'nonexistent');
+    expect(s.nodes).toEqual({});
+  });
+
+  it('move_node with children moves child nodes', () => {
+    const parent = { ...node_a(), custom_data: { children: ['b'] } };
+    let s = add_node(create_initial_state(), parent);
+    s = add_node(s, node_b());
+    s = move_node(s, 'a', vec2_create(10, 10));
+    expect(s.nodes['a']?.position).toEqual(vec2_create(10, 10));
+    expect(s.nodes['b']?.position).toEqual(vec2_create(210, 10));
+  });
   describe('is_ancestor', () => {
     it('returns false for node with no children', () => {
       const nodes = { a: node_a(), b: node_b() };

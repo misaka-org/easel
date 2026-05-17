@@ -82,4 +82,50 @@ describe('interactions', () => {
     expect(s.interaction.mode).toBe('idle');
     expect(s.selected_node_ids).toContain('n1');
   });
+
+  it('starts wiring on connected input by disconnecting existing wire', () => {
+    let s = base();
+    // Add second node with output
+    s = add_node(s, { id: 'n2', type: 'default', position: vec2_create(300,0), size: vec2_create(100,100), title: 'N2', inputs: [], outputs: [{ id: 'out1', label: 'Out', type: 'output' }], widgets: [], custom_data: {} });
+    // Connect n1.in1 -> n2.out1 (wire direction: n2 source, n1 target)
+    s = { ...s, wires: { w1: { id: 'w1', source_node_id: 'n2', source_port_id: 'out1', target_node_id: 'n1', target_port_id: 'in1' } } };
+    // Click on the connected input port -> should disconnect and start wiring from n2
+    s = pointer_down(s, { screen_position: vec2_create(10,10), target_node_id: O.some('n1'), target_port_id: O.some('in1'), target_port_type: O.some('input'), target_action: O.none, modifiers: mod() });
+    expect(s.interaction.mode).toBe('wiring');
+    expect(Object.keys(s.wires).length).toBe(0);
+  });
+
+  it('does not connect wire to same node', () => {
+    let s = base();
+    // Start wiring from n1 output
+    s = pointer_down(s, { screen_position: vec2_create(10,10), target_node_id: O.some('n1'), target_port_id: O.some('out1'), target_port_type: O.some('output'), target_action: O.none, modifiers: mod() });
+    // Drop on same node input
+    s = pointer_up(s, { screen_position: vec2_create(10,10), target_node_id: O.some('n1'), target_port_id: O.some('in1'), target_port_type: O.some('input'), target_action: O.none, modifiers: mod() });
+    expect(Object.keys(s.wires).length).toBe(0);
+  });
+
+  it('completes box selection with shift modifier (additive)', () => {
+    let s = base();
+    // Add a second node
+    s = add_node(s, { id: 'n2', type: 'default', position: vec2_create(300,0), size: vec2_create(100,100), title: 'N2', inputs: [], outputs: [], widgets: [], custom_data: {} });
+    // First select n1
+    s = pointer_down(s, { screen_position: vec2_create(10,10), target_node_id: O.some('n1'), target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    s = pointer_up(s, { screen_position: vec2_create(10,10), target_node_id: O.some('n1'), target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    expect(s.selected_node_ids).toEqual(['n1']);
+    // Then box-select n2 with shift
+    s = pointer_down(s, { screen_position: vec2_create(250, -50), target_node_id: O.none, target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: { ...mod(), shift: true } });
+    s = pointer_move(s, { screen_position: vec2_create(450, 150), target_node_id: O.none, target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: { ...mod(), shift: true } });
+    s = pointer_up(s, { screen_position: vec2_create(450, 150), target_node_id: O.none, target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: { ...mod(), shift: true } });
+    expect(s.interaction.mode).toBe('idle');
+    expect(s.selected_node_ids).toContain('n1');
+    expect(s.selected_node_ids).toContain('n2');
+  });
+
+  it('wiring is cancelled on pointer up without hitting a port', () => {
+    let s = base();
+    s = pointer_down(s, { screen_position: vec2_create(10,10), target_node_id: O.some('n1'), target_port_id: O.some('out1'), target_port_type: O.some('output'), target_action: O.none, modifiers: mod() });
+    s = pointer_up(s, { screen_position: vec2_create(200,200), target_node_id: O.none, target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    expect(s.interaction.mode).toBe('idle');
+    expect(Object.keys(s.wires).length).toBe(0);
+  });
 });

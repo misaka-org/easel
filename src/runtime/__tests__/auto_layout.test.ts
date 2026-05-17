@@ -68,6 +68,17 @@ describe('auto_layout', () => {
     expect(Object.keys(r.positions).length).toBe(3);
   });
 
+  it('handles single node with large viewport', () => {
+    const r = auto_layout({ a: node('a', 0, 0, 50, 30) }, {}, 1920, 1080);
+    expect(r.positions['a']).toBeDefined();
+    expect(r.zoom).toBeGreaterThan(0);
+  });
+
+  it('preserves node positions as Vec2 objects', () => {
+    const r = auto_layout({ a: node('a', 0, 0) }, {}, 800, 600);
+    expect(typeof r.positions['a']!.x).toBe('number');
+    expect(typeof r.positions['a']!.y).toBe('number');
+  });
   it('computes reasonable zoom', () => {
     const r = auto_layout({ a: node('a', 0, 0) }, {}, 800, 600);
     expect(r.zoom).toBeGreaterThan(0);
