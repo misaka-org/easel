@@ -136,6 +136,9 @@ export const render_wires = (
 
   const wire_elements = new Map<string, SVGPathElement>();
 
+  // Track last-drawn wire positions so we can skip unchanged wires.
+  const last_wire_pos = new Map<string, string>();
+
   // Port position cache: relative offsets from node position.
   // Populated via calc_rel_pos() which avoids DOM reads entirely.
   const port_rel_positions = new Map<string, Map<string, { x: number; y: number }>>();
@@ -245,8 +248,13 @@ export const render_wires = (
       );
 
       if (p1 && p2) {
+        // Skip draw_bezier + setAttribute when neither endpoint moved
+        const pos_key = `${p1.x.toFixed(1)},${p1.y.toFixed(1)},${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+        if (last_wire_pos.get(id) === pos_key) return;
+        last_wire_pos.set(id, pos_key);
         el.setAttribute("d", draw_bezier(p1.x, p1.y, p2.x, p2.y));
       } else {
+        if (last_wire_pos.has(id)) last_wire_pos.delete(id);
         el.setAttribute("d", "");
       }
     });

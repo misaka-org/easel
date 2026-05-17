@@ -18,9 +18,9 @@ class FrameScheduler {
       let safety = 0;
       while (this.tasks.size > 0 && safety < 5) {
         safety++;
-        const tasks = Array.from(this.tasks);
-        this.tasks.clear();
-        for (const runner of tasks) {
+        const current = this.tasks;
+        this.tasks = new Set();
+        for (const runner of current) {
           if (runner.effect.dirty) runner.effect.run();
         }
       }

@@ -78,9 +78,30 @@ export const setup_events = (container: HTMLElement, dispatch: Dispatch, app_eve
     dispatch((state) => pointer_down(state, get_pointer_params(e)));
   });
 
+  // rAF-gate: first pointermove in a frame dispatches immediately,
+  // subsequent moves within the same frame coalesce into one dispatch.
+  let move_raf = 0;
+  let pending_move_params: ReturnType<typeof get_pointer_params> | null = null;
+
   container.addEventListener('pointermove', (e) => {
     app_events.emit('pointermove', e);
-    dispatch((state) => pointer_move(state, get_pointer_params(e)));
+    const params = get_pointer_params(e);
+
+    if (move_raf) {
+      pending_move_params = params;
+      return;
+    }
+
+    // First move in frame: immediate dispatch for responsive feel
+    dispatch((state) => pointer_move(state, params));
+
+    move_raf = requestAnimationFrame(() => {
+      move_raf = 0;
+      if (pending_move_params) {
+        dispatch((state) => pointer_move(state, pending_move_params!));
+        pending_move_params = null;
+      }
+    });
   });
 
   container.addEventListener('dblclick', (e) => {
