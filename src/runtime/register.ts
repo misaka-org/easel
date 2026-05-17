@@ -16,19 +16,19 @@ import builtin_widgets from './builtin_widgets';
 // -------------------------------------------------------------------
 
 export type WidgetUpdateOptions = {
-  connected: boolean
-  disabled: boolean
-}
+  connected: boolean;
+  disabled: boolean;
+};
 
 export type WidgetTypeDef = {
-  type: string
+  type: string;
   /** Create the widget's DOM element. Called once on mount/schema-change. */
-  create: (widget: Widget) => HTMLElement
+  create: (widget: Widget) => HTMLElement;
   /** Update the widget element with current value/state. Called every frame. */
-  update: (el: HTMLElement, widget: Widget, options: WidgetUpdateOptions) => void
+  update: (el: HTMLElement, widget: Widget, options: WidgetUpdateOptions) => void;
   /** Parse input value from the element. Called on input event. */
-  parse?: (el: HTMLElement) => string | number | boolean
-}
+  parse?: (el: HTMLElement) => string | number | boolean;
+};
 
 const widget_registry = new Map<string, WidgetTypeDef>();
 
@@ -61,11 +61,11 @@ export class Register {
   }
 
   // --- Read-only accessors (delegate to existing registry functions) ---
-  get_node_ctor = get_node_constructor
-  get_node_ns = _get_ns
-  get_registered_types = get_registered_types
-  get_node_spec = resolve_node_spec
-  get_widget = get_widget_type
+  get_node_ctor = get_node_constructor;
+  get_node_ns = _get_ns;
+  get_registered_types = get_registered_types;
+  get_node_spec = resolve_node_spec;
+  get_widget = get_widget_type;
 }
 
 /** Seed built-in widget types into the registry. Called once at startup. */

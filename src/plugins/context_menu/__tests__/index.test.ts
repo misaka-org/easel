@@ -74,10 +74,22 @@ describe('built-in providers', () => {
       plugin_data: {},
       dispatch: vi.fn(),
       app_events: { on: vi.fn(), emit: vi.fn(), off: vi.fn() },
-      state: { value: { nodes: {}, wires: {}, camera: { position: { x: 0, y: 0 }, zoom: 1 }, selected_node_ids: [] } },
+      state: {
+        value: {
+          nodes: {},
+          wires: {},
+          camera: { position: { x: 0, y: 0 }, zoom: 1 },
+          selected_node_ids: [],
+        },
+      },
       node_instances: new Map(),
       get_node_instance: vi.fn(),
-      register: { add_node: vi.fn(), add_node_spec: vi.fn(), add_node_ns: vi.fn(), add_widget: vi.fn() },
+      register: {
+        add_node: vi.fn(),
+        add_node_spec: vi.fn(),
+        add_node_ns: vi.fn(),
+        add_widget: vi.fn(),
+      },
       keybindings: { register: vi.fn() },
       theme: {},
       ...extra,
@@ -96,8 +108,10 @@ describe('built-in providers', () => {
     context_menu_plugin(easel);
     const service = easel.plugin_data.context_menu;
     const items = service.collect({
-      node_id: 'test_node', node_type: 'custom',
-      screen_pos: { x: 0, y: 0 }, world_pos: { x: 0, y: 0 },
+      node_id: 'test_node',
+      node_type: 'custom',
+      screen_pos: { x: 0, y: 0 },
+      world_pos: { x: 0, y: 0 },
       container: easel.container,
     });
     expect(items.some(i => i.id === 'delete_node')).toBe(true);
@@ -109,8 +123,10 @@ describe('built-in providers', () => {
     context_menu_plugin(easel);
     const service = easel.plugin_data.context_menu;
     const items = service.collect({
-      node_id: 'sub_in', node_type: 'subgraph_input',
-      screen_pos: { x: 0, y: 0 }, world_pos: { x: 0, y: 0 },
+      node_id: 'sub_in',
+      node_type: 'subgraph_input',
+      screen_pos: { x: 0, y: 0 },
+      world_pos: { x: 0, y: 0 },
       container: easel.container,
     });
     expect(items.some(i => i.id === 'delete_node')).toBe(false);
@@ -122,7 +138,8 @@ describe('built-in providers', () => {
     const service = easel.plugin_data.context_menu;
     const items = service.collect({
       node_id: undefined,
-      screen_pos: { x: 0, y: 0 }, world_pos: { x: 0, y: 0 },
+      screen_pos: { x: 0, y: 0 },
+      world_pos: { x: 0, y: 0 },
       container: easel.container,
     });
     expect(items.some(i => i.id === 'reset_camera')).toBe(true);
@@ -134,8 +151,10 @@ describe('built-in providers', () => {
     context_menu_plugin(easel);
     const service = easel.plugin_data.context_menu;
     const items = service.collect({
-      node_id: 'some_node', node_type: 'test',
-      screen_pos: { x: 0, y: 0 }, world_pos: { x: 0, y: 0 },
+      node_id: 'some_node',
+      node_type: 'test',
+      screen_pos: { x: 0, y: 0 },
+      world_pos: { x: 0, y: 0 },
       container: easel.container,
     });
     expect(items.some(i => i.id === 'reset_camera')).toBe(false);
@@ -143,7 +162,9 @@ describe('built-in providers', () => {
   });
 
   it('node_instance_provider delegates to get_context_menu_items', () => {
-    const getContextItems = vi.fn().mockReturnValue([{ id: 'custom_item', label: 'Custom', action: vi.fn() }]);
+    const getContextItems = vi
+      .fn()
+      .mockReturnValue([{ id: 'custom_item', label: 'Custom', action: vi.fn() }]);
     const nodeInstances = new Map();
     nodeInstances.set('test_node', { inst: { get_context_menu_items: getContextItems } });
 
@@ -151,8 +172,10 @@ describe('built-in providers', () => {
     context_menu_plugin(easel);
     const service = easel.plugin_data.context_menu;
     const items = service.collect({
-      node_id: 'test_node', node_type: 'custom',
-      screen_pos: { x: 0, y: 0 }, world_pos: { x: 0, y: 0 },
+      node_id: 'test_node',
+      node_type: 'custom',
+      screen_pos: { x: 0, y: 0 },
+      world_pos: { x: 0, y: 0 },
       container: easel.container,
     });
     expect(getContextItems).toHaveBeenCalled();
@@ -165,7 +188,8 @@ describe('built-in providers', () => {
     const service = easel.plugin_data.context_menu;
     const items = service.collect({
       node_id: undefined,
-      screen_pos: { x: 0, y: 0 }, world_pos: { x: 0, y: 0 },
+      screen_pos: { x: 0, y: 0 },
+      world_pos: { x: 0, y: 0 },
       container: easel.container,
     });
     const addNode = items.find(i => i.id === 'add_node');

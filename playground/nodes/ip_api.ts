@@ -163,4 +163,3 @@ export class IpApiNode extends EaselNode {
     this.body.remove();
   }
 }
-

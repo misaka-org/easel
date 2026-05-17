@@ -69,25 +69,35 @@ export class CSSBuilderNode extends EaselNode {
     `;
     set_inner_html(this.header, title_html);
 
-    const is_connected = (p_id: string) => Object.values(state.wires).some(
-      w => (w.target_node_id === this.node_id && w.target_port_id === p_id) ||
-           (w.source_node_id === this.node_id && w.source_port_id === p_id));
+    const is_connected = (p_id: string) =>
+      Object.values(state.wires).some(
+        w =>
+          (w.target_node_id === this.node_id && w.target_port_id === p_id) ||
+          (w.source_node_id === this.node_id && w.source_port_id === p_id),
+      );
 
     const phtml = (() => {
       const rows: string[] = [];
       for (const p of node_data.inputs) {
         const cc = is_connected(p.id) ? 'connected' : '';
-        rows.push(`<div class="port-row"><div class="port" data-port-id="${p.id}" data-port-type="input"><div class="port-dot port-type-text ${cc}"></div><span class="port-label">${p.label}</span></div><div></div></div>`);
+        rows.push(
+          `<div class="port-row"><div class="port" data-port-id="${p.id}" data-port-type="input"><div class="port-dot port-type-text ${cc}"></div><span class="port-label">${p.label}</span></div><div></div></div>`,
+        );
       }
       for (const p of node_data.outputs) {
         const cc = is_connected(p.id) ? 'connected' : '';
-        rows.push(`<div class="port-row"><div></div><div class="port" data-port-id="${p.id}" data-port-type="output"><span class="port-label">${p.label}</span><div class="port-dot port-type-text ${cc}"></div></div></div>`);
+        rows.push(
+          `<div class="port-row"><div></div><div class="port" data-port-id="${p.id}" data-port-type="output"><span class="port-label">${p.label}</span><div class="port-dot port-type-text ${cc}"></div></div></div>`,
+        );
       }
       return rows.join('');
     })();
     set_inner_html(this.ports_container, phtml);
   }
 
-  unmount(): void { this.header.remove(); this.ports_container.remove(); this.body.remove(); }
+  unmount(): void {
+    this.header.remove();
+    this.ports_container.remove();
+    this.body.remove();
+  }
 }
-

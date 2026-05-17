@@ -1,8 +1,4 @@
-import {
-  ReactiveEffectRunner,
-  ReactiveEffectOptions,
-  effect,
-} from "@vue/reactivity";
+import { ReactiveEffectRunner, ReactiveEffectOptions, effect } from '@vue/reactivity';
 
 // 帧级调度器 —— 收集所有待执行的 runner，在下一帧批量运行，
 // 但通过帧预算控制避免霸占渲染线程导致丢帧。
@@ -62,15 +58,14 @@ class FrameScheduler {
 // 全局共享一个调度器
 const global_scheduler = new FrameScheduler();
 
-const create_scheduler = (fn: () => ReactiveEffectRunner) => () =>
-  global_scheduler.schedule(fn());
+const create_scheduler = (fn: () => ReactiveEffectRunner) => () => global_scheduler.schedule(fn());
 
 /**
  * 帧级副作用 用法同effect()，但会同步所有操作在下一帧执行
  */
 export const frame_effect = (
   fn: () => any,
-  options?: ReactiveEffectOptions
+  options?: ReactiveEffectOptions,
 ): ReactiveEffectRunner => {
   const runner: ReactiveEffectRunner = effect(fn, {
     ...options,

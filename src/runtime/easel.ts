@@ -53,7 +53,10 @@ export class Easel {
   /** Per-node event bus — subscribers get granular per-node change notifications. */
   node_events = new Map<string, EventEmitter<NodeEventPayloads>>();
   register: Register;
-  node_instances = new Map<string, { el: HTMLElement; inst: EaselNode; runner: ReactiveEffectRunner }>();
+  node_instances = new Map<
+    string,
+    { el: HTMLElement; inst: EaselNode; runner: ReactiveEffectRunner }
+  >();
   plugin_data: EaselPluginData = {} as EaselPluginData;
   keybindings = new KeybindingManager();
   theme: Theme;
@@ -66,8 +69,14 @@ export class Easel {
     // Register built-in node types
     this.register.add_node('subgraph', SubgraphNode);
     this.register.add_node('group', GroupNode);
-    this.register.add_node('subgraph_input', SubgraphInputNode, { resizable: false, size: vec2_create(20, 20) });
-    this.register.add_node('subgraph_output', SubgraphOutputNode, { resizable: false, size: vec2_create(20, 20) });
+    this.register.add_node('subgraph_input', SubgraphInputNode, {
+      resizable: false,
+      size: vec2_create(20, 20),
+    });
+    this.register.add_node('subgraph_output', SubgraphOutputNode, {
+      resizable: false,
+      size: vec2_create(20, 20),
+    });
 
     const shadow = container.attachShadow({ mode: 'open' });
 
@@ -87,7 +96,7 @@ export class Easel {
     this.app_events = new EventEmitter<EaselEvents>();
 
     const current_dispatch = with_guidelines(canvas_el, this.state, store.dispatch);
-    this.dispatch = (updater) => {
+    this.dispatch = updater => {
       const prev = this.state.value;
       current_dispatch(updater);
       const next = this.state.value;
@@ -109,7 +118,10 @@ export class Easel {
   set_theme = (new_theme: Partial<Theme>) => {
     this.theme = { ...this.theme, ...new_theme };
     const root = this.container.getRootNode();
-    apply_theme(root instanceof ShadowRoot ? root.host as HTMLElement : this.container, this.theme);
+    apply_theme(
+      root instanceof ShadowRoot ? (root.host as HTMLElement) : this.container,
+      this.theme,
+    );
   };
 
   get_node_instance(id: string): EaselNode | undefined {

@@ -10,7 +10,7 @@ export const create_initial_execution_state = (): ExecutionState => ({
   ready_queue: [],
   running_nodes: [],
   in_degrees: {},
-  adj: {}
+  adj: {},
 });
 
 export class GraphExecutor {
@@ -20,7 +20,10 @@ export class GraphExecutor {
   realtime: Ref<boolean>;
   private realtime_debounce_timer: ReturnType<typeof setTimeout> | null = null;
   // Persists across compilations 閳?caches outputs keyed by (node_id, inputs_fingerprint)
-  private input_cache = new Map<string, { fingerprint: string; outputs: Record<string, unknown> }>();
+  private input_cache = new Map<
+    string,
+    { fingerprint: string; outputs: Record<string, unknown> }
+  >();
 
   constructor(easel: Easel) {
     this.easel = easel;
@@ -31,7 +34,7 @@ export class GraphExecutor {
   compile(): E.Either<Error, void> {
     const nodes = this.easel.state.value.nodes;
     const wires = Object.values(this.easel.state.value.wires);
-    
+
     const in_degrees: Record<string, number> = {};
     const adj: Record<string, string[]> = {};
     const missing_reqs: Record<string, string> = {};
@@ -70,7 +73,7 @@ export class GraphExecutor {
       in_degrees,
       adj,
       ready_queue,
-      running_nodes: []
+      running_nodes: [],
     };
 
     return E.right(undefined);
@@ -79,7 +82,9 @@ export class GraphExecutor {
   private check_requirements(node: GraphNode, wires: any[]): string | null {
     for (const port of node.inputs) {
       if (port.required) {
-        const has_wire = wires.some(w => w.target_node_id === node.id && w.target_port_id === port.id);
+        const has_wire = wires.some(
+          w => w.target_node_id === node.id && w.target_port_id === port.id,
+        );
         if (!has_wire) return `Missing required input: ${port.label}`;
       }
     }
@@ -95,7 +100,11 @@ export class GraphExecutor {
 
   async run() {
     if (this.state.value.status === 'running') return;
-    if (this.state.value.status === 'idle' || this.state.value.status === 'stopped' || this.state.value.status === 'completed') {
+    if (
+      this.state.value.status === 'idle' ||
+      this.state.value.status === 'stopped' ||
+      this.state.value.status === 'completed'
+    ) {
       const res = this.compile();
       if (E.isLeft(res)) return;
     }
@@ -120,7 +129,11 @@ export class GraphExecutor {
   /** Enable realtime mode: the executor will react to input changes */
   start_realtime() {
     this.realtime.value = true;
-    if (this.state.value.status === 'idle' || this.state.value.status === 'stopped' || this.state.value.status === 'completed') {
+    if (
+      this.state.value.status === 'idle' ||
+      this.state.value.status === 'stopped' ||
+      this.state.value.status === 'completed'
+    ) {
       this.compile();
       // Initial full run to establish baseline outputs
       this.run().then(() => {
@@ -153,17 +166,21 @@ export class GraphExecutor {
   }
 
   async step() {
-    if (this.state.value.status === 'idle' || this.state.value.status === 'stopped' || this.state.value.status === 'completed') {
+    if (
+      this.state.value.status === 'idle' ||
+      this.state.value.status === 'stopped' ||
+      this.state.value.status === 'completed'
+    ) {
       this.compile();
     }
     this.state.value = { ...this.state.value, status: 'paused' };
-    
+
     const next_id = this.state.value.ready_queue[0];
     if (next_id) {
       this.state.value = {
         ...this.state.value,
         ready_queue: this.state.value.ready_queue.slice(1),
-        running_nodes: [...this.state.value.running_nodes, next_id]
+        running_nodes: [...this.state.value.running_nodes, next_id],
       };
       await this.execute_node(next_id);
     }
@@ -171,13 +188,13 @@ export class GraphExecutor {
 
   private trigger_execution() {
     if (this.state.value.status !== 'running') return;
-    
+
     const ready = [...this.state.value.ready_queue];
     if (ready.length > 0) {
       this.state.value = {
         ...this.state.value,
         ready_queue: [],
-        running_nodes: [...this.state.value.running_nodes, ...ready]
+        running_nodes: [...this.state.value.running_nodes, ...ready],
       };
 
       ready.forEach(id => {
@@ -208,7 +225,7 @@ export class GraphExecutor {
       const id = queue.shift()!;
       if (visited.has(id)) continue;
       visited.add(id);
-      for (const target of (this.state.value.adj[id] || [])) {
+      for (const target of this.state.value.adj[id] || []) {
         queue.push(target);
       }
     }
@@ -252,7 +269,7 @@ export class GraphExecutor {
     while (queue.length > 0) {
       const id = queue.shift()!;
       order.push(id);
-      for (const tgt of (this.state.value.adj[id] || [])) {
+      for (const tgt of this.state.value.adj[id] || []) {
         if (!subgraph.has(tgt)) continue;
         in_deg[tgt]--;
         if (in_deg[tgt] === 0) {
@@ -266,7 +283,7 @@ export class GraphExecutor {
       status: 'running',
       node_states,
       ready_queue: [],
-      running_nodes: []
+      running_nodes: [],
     };
 
     // Execute each node in topological order using the realtime path
@@ -306,7 +323,7 @@ export class GraphExecutor {
           this.update_node_state(id, { status: 'completed', progress: 100, outputs });
           this.state.value = {
             ...this.state.value,
-            running_nodes: this.state.value.running_nodes.filter(n => n !== id)
+            running_nodes: this.state.value.running_nodes.filter(n => n !== id),
           };
           return;
         }
@@ -314,12 +331,12 @@ export class GraphExecutor {
         outputs = await inst.execute({
           node: node!,
           inputs,
-          report_progress: (progress) => {
+          report_progress: progress => {
             if (!this.abort_controller?.signal.aborted) {
               this.update_node_state(id, { progress });
             }
           },
-          signal: this.abort_controller!.signal
+          signal: this.abort_controller!.signal,
         });
       }
 
@@ -327,19 +344,26 @@ export class GraphExecutor {
 
       const fresh_inputs = this.gather_inputs(id);
       const fresh_fingerprint = this.inputs_fingerprint(fresh_inputs);
-      this.input_cache.set(id, { fingerprint: fresh_fingerprint, outputs: GraphExecutor.deep_clone(outputs) });
+      this.input_cache.set(id, {
+        fingerprint: fresh_fingerprint,
+        outputs: GraphExecutor.deep_clone(outputs),
+      });
 
       this.update_node_state(id, { status: 'completed', progress: 100, outputs });
       this.state.value = {
         ...this.state.value,
-        running_nodes: this.state.value.running_nodes.filter(n => n !== id)
+        running_nodes: this.state.value.running_nodes.filter(n => n !== id),
       };
     } catch (e) {
       if (this.abort_controller?.signal.aborted) return;
-      this.update_node_state(id, { status: 'error', progress: 0, error: e instanceof Error ? e.message : String(e) });
+      this.update_node_state(id, {
+        status: 'error',
+        progress: 0,
+        error: e instanceof Error ? e.message : String(e),
+      });
       this.state.value = {
         ...this.state.value,
-        running_nodes: this.state.value.running_nodes.filter(n => n !== id)
+        running_nodes: this.state.value.running_nodes.filter(n => n !== id),
       };
     }
   }
@@ -349,8 +373,8 @@ export class GraphExecutor {
       ...this.state.value,
       node_states: {
         ...this.state.value.node_states,
-        [id]: { ...this.state.value.node_states[id]!, ...update }
-      }
+        [id]: { ...this.state.value.node_states[id]!, ...update },
+      },
     };
   }
 
@@ -358,7 +382,7 @@ export class GraphExecutor {
     const inputs: Record<string, unknown> = {};
     const node = this.easel.state.value.nodes[node_id];
     const wires = Object.values(this.easel.state.value.wires);
-    
+
     if (node?.widgets) {
       for (const w of node.widgets) inputs[w.id] = w.value;
     }
@@ -412,12 +436,12 @@ export class GraphExecutor {
         outputs = await inst.execute({
           node: node!,
           inputs,
-          report_progress: (progress) => {
+          report_progress: progress => {
             if (!this.abort_controller?.signal.aborted) {
               this.update_node_state(id, { progress });
             }
           },
-          signal: this.abort_controller!.signal
+          signal: this.abort_controller!.signal,
         });
       } else {
         outputs = {};
@@ -428,13 +452,20 @@ export class GraphExecutor {
       // Cache fresh outputs so unchanged inputs skip execution on future runs
       const fresh_inputs = this.gather_inputs(id);
       const fresh_fingerprint = this.inputs_fingerprint(fresh_inputs);
-      this.input_cache.set(id, { fingerprint: fresh_fingerprint, outputs: GraphExecutor.deep_clone(outputs) });
+      this.input_cache.set(id, {
+        fingerprint: fresh_fingerprint,
+        outputs: GraphExecutor.deep_clone(outputs),
+      });
 
       this.update_node_state(id, { status: 'completed', progress: 100, outputs });
       this.finish_node(id);
     } catch (e) {
       if (this.abort_controller?.signal.aborted) return;
-      this.update_node_state(id, { status: 'error', progress: 0, error: e instanceof Error ? e.message : String(e) });
+      this.update_node_state(id, {
+        status: 'error',
+        progress: 0,
+        error: e instanceof Error ? e.message : String(e),
+      });
       this.finish_node(id, true);
     }
   }
@@ -459,8 +490,7 @@ export class GraphExecutor {
       ...this.state.value,
       in_degrees: new_in_degrees,
       running_nodes: this.state.value.running_nodes.filter(n => n !== id),
-      ready_queue: [...this.state.value.ready_queue, ...new_ready]
+      ready_queue: [...this.state.value.ready_queue, ...new_ready],
     };
   }
 }
-

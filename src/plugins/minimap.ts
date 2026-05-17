@@ -2,7 +2,7 @@ import type { EaselPlugin } from '@/runtime/easel';
 import { frame_effect } from '@/runtime/frame_effect';
 import { apply_styles } from '@/utils/css';
 
-export const minimap_plugin: EaselPlugin = (easel) => {
+export const minimap_plugin: EaselPlugin = easel => {
   const minimap_container = document.createElement('div');
   minimap_container.className = 'easel-minimap';
   apply_styles(minimap_container, {
@@ -24,7 +24,7 @@ export const minimap_plugin: EaselPlugin = (easel) => {
   minimap_canvas.width = 150;
   minimap_canvas.height = 100;
   minimap_container.appendChild(minimap_canvas);
-  
+
   easel.container.appendChild(minimap_container);
 
   const minimap_ctx = minimap_canvas.getContext('2d')!;
@@ -33,9 +33,12 @@ export const minimap_plugin: EaselPlugin = (easel) => {
     const state = easel.state.value;
     minimap_ctx.clearRect(0, 0, 150, 100);
 
-    let min_x = Infinity, min_y = Infinity, max_x = -Infinity, max_y = -Infinity;
+    let min_x = Infinity,
+      min_y = Infinity,
+      max_x = -Infinity,
+      max_y = -Infinity;
     const nodes = Object.values(state.nodes);
-    
+
     if (nodes.length > 0) {
       nodes.forEach(n => {
         min_x = Math.min(min_x, n.position.x);
@@ -44,12 +47,17 @@ export const minimap_plugin: EaselPlugin = (easel) => {
         max_y = Math.max(max_y, n.position.y + n.size.y);
       });
     } else {
-      min_x = -500; min_y = -500; max_x = 500; max_y = 500;
+      min_x = -500;
+      min_y = -500;
+      max_x = 500;
+      max_y = 500;
     }
 
     const padding = 200;
-    min_x -= padding; min_y -= padding;
-    max_x += padding; max_y += padding;
+    min_x -= padding;
+    min_y -= padding;
+    max_x += padding;
+    max_y += padding;
 
     const width = max_x - min_x;
     const height = max_y - min_y;
@@ -64,7 +72,7 @@ export const minimap_plugin: EaselPlugin = (easel) => {
         offset_x + (n.position.x - min_x) * scale,
         offset_y + (n.position.y - min_y) * scale,
         Math.max(1.5, n.size.x * scale),
-        Math.max(1.5, n.size.y * scale)
+        Math.max(1.5, n.size.y * scale),
       );
     });
 
@@ -80,7 +88,7 @@ export const minimap_plugin: EaselPlugin = (easel) => {
       offset_x + (vp_x - min_x) * scale,
       offset_y + (vp_y - min_y) * scale,
       vp_w * scale,
-      vp_h * scale
+      vp_h * scale,
     );
   });
 };

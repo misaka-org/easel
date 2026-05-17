@@ -94,7 +94,10 @@ function layout_component(
     let best_deg = 0;
     for (const id of comp) {
       const deg = out_adj.get(id)!.length + in_deg.get(id)!;
-      if (deg > best_deg) { best_deg = deg; best = id; }
+      if (deg > best_deg) {
+        best_deg = deg;
+        best = id;
+      }
     }
     layer.set(best, 0);
     queue.push(best);
@@ -272,11 +275,7 @@ export function auto_layout(
   // 5. Compute camera to frame content in viewport (same logic as do_fit)
   const content_w = max_x - min_x + padding * 2;
   const content_h = max_y - min_y + padding * 2;
-  const zoom = Math.min(
-    viewport_width / content_w,
-    viewport_height / content_h,
-    2,
-  );
+  const zoom = Math.min(viewport_width / content_w, viewport_height / content_h, 2);
   const center_x = (min_x + max_x) / 2;
   const center_y = (min_y + max_y) / 2;
 

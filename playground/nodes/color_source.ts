@@ -43,14 +43,14 @@ export class ColorSourceNode extends EaselNode {
     this.container.appendChild(this.header);
     this.container.appendChild(this.body);
 
-    this.body.addEventListener('pointerdown', (e) => {
+    this.body.addEventListener('pointerdown', e => {
       const target = e.target as HTMLElement;
       if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName)) {
         e.stopPropagation();
       }
     });
 
-    this.widgets_container.addEventListener('input', (e) => {
+    this.widgets_container.addEventListener('input', e => {
       const target = e.target as HTMLInputElement;
       const widget_id = target.dataset['widgetId'];
       if (widget_id) {
@@ -70,36 +70,48 @@ export class ColorSourceNode extends EaselNode {
     `;
     set_inner_html(this.header, title_html);
 
-    const is_port_connected = (p_id: string) => Object.values(state.wires).some(
-      w => (w.target_node_id === this.node_id && w.target_port_id === p_id) ||
-           (w.source_node_id === this.node_id && w.source_port_id === p_id));
+    const is_port_connected = (p_id: string) =>
+      Object.values(state.wires).some(
+        w =>
+          (w.target_node_id === this.node_id && w.target_port_id === p_id) ||
+          (w.source_node_id === this.node_id && w.source_port_id === p_id),
+      );
 
-    const ports_html = (node_data.outputs || []).map(p => {
-      const cc = is_port_connected(p.id) ? 'connected' : '';
-      return `<div class="port-row"><div></div><div class="port" data-port-id="${p.id}" data-port-type="output"><span class="port-label">${p.label}</span><div class="port-dot port-type-text ${cc}"></div></div></div>`;
-    }).join('');
+    const ports_html = (node_data.outputs || [])
+      .map(p => {
+        const cc = is_port_connected(p.id) ? 'connected' : '';
+        return `<div class="port-row"><div></div><div class="port" data-port-id="${p.id}" data-port-type="output"><span class="port-label">${p.label}</span><div class="port-dot port-type-text ${cc}"></div></div></div>`;
+      })
+      .join('');
     set_inner_html(this.ports_container, ports_html);
 
     const widgets_schema = (node_data.widgets || []).map(w => `${w.id}:${w.type}`).join(',');
     if (this.widgets_container.dataset['schema'] !== widgets_schema) {
-      const whtml = (node_data.widgets || []).map(w =>
-        `<div class="widget-row" style="display:flex;align-items:center;gap:8px;padding:4px 8px;">
+      const whtml = (node_data.widgets || [])
+        .map(
+          w =>
+            `<div class="widget-row" style="display:flex;align-items:center;gap:8px;padding:4px 8px;">
           <span style="font-size:11px;min-width:36px;">${w.label}</span>
           <input type="color" data-widget-id="${w.id}" value="${w.value}" style="width:100%;height:32px;border:none;cursor:pointer;" />
-        </div>`
-      ).join('');
+        </div>`,
+        )
+        .join('');
       this.widgets_container.innerHTML = whtml;
       this.widgets_container.dataset['schema'] = widgets_schema;
     } else {
       (node_data.widgets || []).forEach(w => {
-        const inp = this.widgets_container.querySelector(`[data-widget-id="${w.id}"]`) as HTMLInputElement;
+        const inp = this.widgets_container.querySelector(
+          `[data-widget-id="${w.id}"]`,
+        ) as HTMLInputElement;
         if (inp && inp.value !== String(w.value)) inp.value = String(w.value);
       });
     }
   }
 
   unmount(): void {
-    this.header.remove(); this.ports_container.remove(); this.widgets_container.remove(); this.body.remove();
+    this.header.remove();
+    this.ports_container.remove();
+    this.widgets_container.remove();
+    this.body.remove();
   }
 }
-

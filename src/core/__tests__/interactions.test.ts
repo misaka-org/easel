@@ -1,56 +1,117 @@
 import { describe, it, expect } from 'vitest';
 import { create_initial_state } from '@/core/state';
 import { add_node } from '@/core/node_ops';
-import { pointer_down, pointer_move, pointer_up, wheel_zoom, update_modifiers } from '@/core/interactions';
+import {
+  pointer_down,
+  pointer_move,
+  pointer_up,
+  wheel_zoom,
+  update_modifiers,
+} from '@/core/interactions';
 import { vec2_create } from '@/core/math';
 import * as O from 'fp-ts/Option';
 
 describe('interactions', () => {
   const node = () => ({
-    id: 'n1', type: 'default', position: vec2_create(0, 0), size: vec2_create(100, 100),
-    title: 'N', inputs: [{ id: 'in1', label: 'In', type: 'input' as const }],
+    id: 'n1',
+    type: 'default',
+    position: vec2_create(0, 0),
+    size: vec2_create(100, 100),
+    title: 'N',
+    inputs: [{ id: 'in1', label: 'In', type: 'input' as const }],
     outputs: [{ id: 'out1', label: 'Out', type: 'output' as const }],
-    widgets: [], custom_data: {}
+    widgets: [],
+    custom_data: {},
   });
 
   const base = () => add_node(create_initial_state(), node());
   const mod = () => ({ ctrl: false, shift: false, alt: false, meta: false });
 
   it('selects and drags node on pointer down', () => {
-    const s = pointer_down(base(), { screen_position: vec2_create(10,10), target_node_id: O.some('n1'), target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    const s = pointer_down(base(), {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n1'),
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
     expect(s.selected_node_ids).toEqual(['n1']);
     expect(s.interaction.mode).toBe('dragging');
   });
 
   it('starts box selecting on empty area', () => {
-    const s = pointer_down(base(), { screen_position: vec2_create(10,10), target_node_id: O.none, target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    const s = pointer_down(base(), {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.none,
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
     expect(s.interaction.mode).toBe('box_selecting');
   });
 
   it('starts panning on empty area with ctrl', () => {
-    const s = pointer_down(base(), { screen_position: vec2_create(10,10), target_node_id: O.none, target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: { ...mod(), ctrl: true } });
+    const s = pointer_down(base(), {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.none,
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: { ...mod(), ctrl: true },
+    });
     expect(s.interaction.mode).toBe('panning');
   });
 
   it('starts wiring on output port', () => {
-    const s = pointer_down(base(), { screen_position: vec2_create(10,10), target_node_id: O.some('n1'), target_port_id: O.some('out1'), target_port_type: O.some('output'), target_action: O.none, modifiers: mod() });
+    const s = pointer_down(base(), {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n1'),
+      target_port_id: O.some('out1'),
+      target_port_type: O.some('output'),
+      target_action: O.none,
+      modifiers: mod(),
+    });
     expect(s.interaction.mode).toBe('wiring');
   });
 
   it('starts resizing on resize handle', () => {
-    const s = pointer_down(base(), { screen_position: vec2_create(10,10), target_node_id: O.some('n1'), target_port_id: O.none, target_port_type: O.none, target_action: O.some('resize'), modifiers: mod() });
+    const s = pointer_down(base(), {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n1'),
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.some('resize'),
+      modifiers: mod(),
+    });
     expect(s.interaction.mode).toBe('resizing');
   });
 
   it('applies zoom with wheel_zoom', () => {
-    const s1 = wheel_zoom(base(), { screen_position: vec2_create(100,100), delta_x: 0, delta_y: -120, modifiers: { ...mod(), ctrl: true } });
+    const s1 = wheel_zoom(base(), {
+      screen_position: vec2_create(100, 100),
+      delta_x: 0,
+      delta_y: -120,
+      modifiers: { ...mod(), ctrl: true },
+    });
     expect(s1.camera.zoom).toBeGreaterThan(1);
-    const s2 = wheel_zoom(base(), { screen_position: vec2_create(100,100), delta_x: 0, delta_y: 120, modifiers: { ...mod(), ctrl: true } });
+    const s2 = wheel_zoom(base(), {
+      screen_position: vec2_create(100, 100),
+      delta_x: 0,
+      delta_y: 120,
+      modifiers: { ...mod(), ctrl: true },
+    });
     expect(s2.camera.zoom).toBeLessThan(1);
   });
 
   it('pans with wheel_zoom without ctrl', () => {
-    const s = wheel_zoom(base(), { screen_position: vec2_create(100,100), delta_x: 10, delta_y: 20, modifiers: mod() });
+    const s = wheel_zoom(base(), {
+      screen_position: vec2_create(100, 100),
+      delta_x: 10,
+      delta_y: 20,
+      modifiers: mod(),
+    });
     expect(s.camera.position.x).toBe(-10);
     expect(s.camera.position.y).toBe(-20);
   });
@@ -64,11 +125,35 @@ describe('interactions', () => {
   it('connects wire on pointer up during wiring', () => {
     let s = base();
     // Add second node with an input port
-    s = add_node(s, { id: 'n2', type: 'default', position: vec2_create(300,0), size: vec2_create(100,100), title: 'N2', inputs: [{ id: 'in1', label: 'In', type: 'input' }], outputs: [], widgets: [], custom_data: {} });
+    s = add_node(s, {
+      id: 'n2',
+      type: 'default',
+      position: vec2_create(300, 0),
+      size: vec2_create(100, 100),
+      title: 'N2',
+      inputs: [{ id: 'in1', label: 'In', type: 'input' }],
+      outputs: [],
+      widgets: [],
+      custom_data: {},
+    });
     // Start wiring
-    s = pointer_down(s, { screen_position: vec2_create(10,10), target_node_id: O.some('n1'), target_port_id: O.some('out1'), target_port_type: O.some('output'), target_action: O.none, modifiers: mod() });
+    s = pointer_down(s, {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n1'),
+      target_port_id: O.some('out1'),
+      target_port_type: O.some('output'),
+      target_action: O.none,
+      modifiers: mod(),
+    });
     // Complete on target input
-    s = pointer_up(s, { screen_position: vec2_create(10,10), target_node_id: O.some('n2'), target_port_id: O.some('in1'), target_port_type: O.some('input'), target_action: O.none, modifiers: mod() });
+    s = pointer_up(s, {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n2'),
+      target_port_id: O.some('in1'),
+      target_port_type: O.some('input'),
+      target_action: O.none,
+      modifiers: mod(),
+    });
     expect(Object.keys(s.wires).length).toBe(1);
     const wire = Object.values(s.wires)[0];
     expect(wire.source_node_id).toBe('n1');
@@ -76,9 +161,30 @@ describe('interactions', () => {
   });
 
   it('completes box selection on pointer up', () => {
-    let s = pointer_down(base(), { screen_position: vec2_create(0,0), target_node_id: O.none, target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
-    s = pointer_move(s, { screen_position: vec2_create(200,200), target_node_id: O.none, target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
-    s = pointer_up(s, { screen_position: vec2_create(200,200), target_node_id: O.none, target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    let s = pointer_down(base(), {
+      screen_position: vec2_create(0, 0),
+      target_node_id: O.none,
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    s = pointer_move(s, {
+      screen_position: vec2_create(200, 200),
+      target_node_id: O.none,
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    s = pointer_up(s, {
+      screen_position: vec2_create(200, 200),
+      target_node_id: O.none,
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
     expect(s.interaction.mode).toBe('idle');
     expect(s.selected_node_ids).toContain('n1');
   });
@@ -86,11 +192,39 @@ describe('interactions', () => {
   it('starts wiring on connected input by disconnecting existing wire', () => {
     let s = base();
     // Add second node with output
-    s = add_node(s, { id: 'n2', type: 'default', position: vec2_create(300,0), size: vec2_create(100,100), title: 'N2', inputs: [], outputs: [{ id: 'out1', label: 'Out', type: 'output' }], widgets: [], custom_data: {} });
+    s = add_node(s, {
+      id: 'n2',
+      type: 'default',
+      position: vec2_create(300, 0),
+      size: vec2_create(100, 100),
+      title: 'N2',
+      inputs: [],
+      outputs: [{ id: 'out1', label: 'Out', type: 'output' }],
+      widgets: [],
+      custom_data: {},
+    });
     // Connect n1.in1 <- n2.out1 (wire direction: n2 source, n1 target)
-    s = { ...s, wires: { w1: { id: 'w1', source_node_id: 'n2', source_port_id: 'out1', target_node_id: 'n1', target_port_id: 'in1' } } };
+    s = {
+      ...s,
+      wires: {
+        w1: {
+          id: 'w1',
+          source_node_id: 'n2',
+          source_port_id: 'out1',
+          target_node_id: 'n1',
+          target_port_id: 'in1',
+        },
+      },
+    };
     // Click on the connected input port -> should disconnect and start wiring from n2
-    s = pointer_down(s, { screen_position: vec2_create(10,10), target_node_id: O.some('n1'), target_port_id: O.some('in1'), target_port_type: O.some('input'), target_action: O.none, modifiers: mod() });
+    s = pointer_down(s, {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n1'),
+      target_port_id: O.some('in1'),
+      target_port_type: O.some('input'),
+      target_action: O.none,
+      modifiers: mod(),
+    });
     expect(s.interaction.mode).toBe('wiring');
     expect(Object.keys(s.wires).length).toBe(0);
   });
@@ -98,24 +232,83 @@ describe('interactions', () => {
   it('does not connect wire to same node', () => {
     let s = base();
     // Start wiring from n1 output
-    s = pointer_down(s, { screen_position: vec2_create(10,10), target_node_id: O.some('n1'), target_port_id: O.some('out1'), target_port_type: O.some('output'), target_action: O.none, modifiers: mod() });
+    s = pointer_down(s, {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n1'),
+      target_port_id: O.some('out1'),
+      target_port_type: O.some('output'),
+      target_action: O.none,
+      modifiers: mod(),
+    });
     // Drop on same node input
-    s = pointer_up(s, { screen_position: vec2_create(10,10), target_node_id: O.some('n1'), target_port_id: O.some('in1'), target_port_type: O.some('input'), target_action: O.none, modifiers: mod() });
+    s = pointer_up(s, {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n1'),
+      target_port_id: O.some('in1'),
+      target_port_type: O.some('input'),
+      target_action: O.none,
+      modifiers: mod(),
+    });
     expect(Object.keys(s.wires).length).toBe(0);
   });
 
   it('completes box selection with shift modifier (additive)', () => {
     let s = base();
     // Add a second node
-    s = add_node(s, { id: 'n2', type: 'default', position: vec2_create(300,0), size: vec2_create(100,100), title: 'N2', inputs: [], outputs: [], widgets: [], custom_data: {} });
+    s = add_node(s, {
+      id: 'n2',
+      type: 'default',
+      position: vec2_create(300, 0),
+      size: vec2_create(100, 100),
+      title: 'N2',
+      inputs: [],
+      outputs: [],
+      widgets: [],
+      custom_data: {},
+    });
     // First select n1
-    s = pointer_down(s, { screen_position: vec2_create(10,10), target_node_id: O.some('n1'), target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
-    s = pointer_up(s, { screen_position: vec2_create(10,10), target_node_id: O.some('n1'), target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    s = pointer_down(s, {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n1'),
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    s = pointer_up(s, {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n1'),
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
     expect(s.selected_node_ids).toEqual(['n1']);
     // Then box-select n2 with shift
-    s = pointer_down(s, { screen_position: vec2_create(250, -50), target_node_id: O.none, target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: { ...mod(), shift: true } });
-    s = pointer_move(s, { screen_position: vec2_create(450, 150), target_node_id: O.none, target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: { ...mod(), shift: true } });
-    s = pointer_up(s, { screen_position: vec2_create(450, 150), target_node_id: O.none, target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: { ...mod(), shift: true } });
+    s = pointer_down(s, {
+      screen_position: vec2_create(250, -50),
+      target_node_id: O.none,
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: { ...mod(), shift: true },
+    });
+    s = pointer_move(s, {
+      screen_position: vec2_create(450, 150),
+      target_node_id: O.none,
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: { ...mod(), shift: true },
+    });
+    s = pointer_up(s, {
+      screen_position: vec2_create(450, 150),
+      target_node_id: O.none,
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: { ...mod(), shift: true },
+    });
     expect(s.interaction.mode).toBe('idle');
     expect(s.selected_node_ids).toContain('n1');
     expect(s.selected_node_ids).toContain('n2');
@@ -123,18 +316,65 @@ describe('interactions', () => {
 
   it('wiring is cancelled on pointer up without hitting a port', () => {
     let s = base();
-    s = pointer_down(s, { screen_position: vec2_create(10,10), target_node_id: O.some('n1'), target_port_id: O.some('out1'), target_port_type: O.some('output'), target_action: O.none, modifiers: mod() });
-    s = pointer_up(s, { screen_position: vec2_create(200,200), target_node_id: O.none, target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    s = pointer_down(s, {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n1'),
+      target_port_id: O.some('out1'),
+      target_port_type: O.some('output'),
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    s = pointer_up(s, {
+      screen_position: vec2_create(200, 200),
+      target_node_id: O.none,
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
     expect(s.interaction.mode).toBe('idle');
     expect(Object.keys(s.wires).length).toBe(0);
   });
 
   it('auto-connects to compatible input port when no target port specified', () => {
     let s = base();
-    s = add_node(s, { id: 'n2', type: 'default', position: vec2_create(300, 0), size: vec2_create(100, 100), title: 'N2', inputs: [{ id: 'in1', label: 'In', type: 'input', value_type: 'text' }], outputs: [], widgets: [], custom_data: {} });
-    s = { ...s, nodes: { ...s.nodes, n1: { ...s.nodes.n1, outputs: [{ id: 'out1', label: 'Out', type: 'output', value_type: 'text' }] } } };
-    s = pointer_down(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n1'), target_port_id: O.some('out1'), target_port_type: O.some('output'), target_action: O.none, modifiers: mod() });
-    s = pointer_up(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n2'), target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    s = add_node(s, {
+      id: 'n2',
+      type: 'default',
+      position: vec2_create(300, 0),
+      size: vec2_create(100, 100),
+      title: 'N2',
+      inputs: [{ id: 'in1', label: 'In', type: 'input', value_type: 'text' }],
+      outputs: [],
+      widgets: [],
+      custom_data: {},
+    });
+    s = {
+      ...s,
+      nodes: {
+        ...s.nodes,
+        n1: {
+          ...s.nodes.n1,
+          outputs: [{ id: 'out1', label: 'Out', type: 'output', value_type: 'text' }],
+        },
+      },
+    };
+    s = pointer_down(s, {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n1'),
+      target_port_id: O.some('out1'),
+      target_port_type: O.some('output'),
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    s = pointer_up(s, {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n2'),
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
     expect(Object.keys(s.wires).length).toBe(1);
     expect(Object.values(s.wires)[0].target_node_id).toBe('n2');
     expect(Object.values(s.wires)[0].target_port_id).toBe('in1');
@@ -142,21 +382,108 @@ describe('interactions', () => {
 
   it('does not auto-connect to input with incompatible type', () => {
     let s = base();
-    s = add_node(s, { id: 'n2', type: 'default', position: vec2_create(300, 0), size: vec2_create(100, 100), title: 'N2', inputs: [{ id: 'in1', label: 'In', type: 'input', value_type: 'number' }], outputs: [], widgets: [], custom_data: {} });
-    s = { ...s, nodes: { ...s.nodes, n1: { ...s.nodes.n1, outputs: [{ id: 'out1', label: 'Out', type: 'output', value_type: 'text' }] } } };
-    s = pointer_down(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n1'), target_port_id: O.some('out1'), target_port_type: O.some('output'), target_action: O.none, modifiers: mod() });
-    s = pointer_up(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n2'), target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    s = add_node(s, {
+      id: 'n2',
+      type: 'default',
+      position: vec2_create(300, 0),
+      size: vec2_create(100, 100),
+      title: 'N2',
+      inputs: [{ id: 'in1', label: 'In', type: 'input', value_type: 'number' }],
+      outputs: [],
+      widgets: [],
+      custom_data: {},
+    });
+    s = {
+      ...s,
+      nodes: {
+        ...s.nodes,
+        n1: {
+          ...s.nodes.n1,
+          outputs: [{ id: 'out1', label: 'Out', type: 'output', value_type: 'text' }],
+        },
+      },
+    };
+    s = pointer_down(s, {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n1'),
+      target_port_id: O.some('out1'),
+      target_port_type: O.some('output'),
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    s = pointer_up(s, {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n2'),
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
     expect(Object.keys(s.wires).length).toBe(0);
   });
 
   it('auto-connect skips occupied port (replacement needs explicit target)', () => {
     let s = base();
-    s = add_node(s, { id: 'n2', type: 'default', position: vec2_create(300, 0), size: vec2_create(100, 100), title: 'N2', inputs: [{ id: 'in1', label: 'In', type: 'input', value_type: 'text' }], outputs: [], widgets: [], custom_data: {} });
-    s = add_node(s, { id: 'n3', type: 'default', position: vec2_create(0, 200), size: vec2_create(100, 100), title: 'N3', outputs: [{ id: 'out1', label: 'Out', type: 'output', value_type: 'text' }], inputs: [], widgets: [], custom_data: {} });
-    s = { ...s, wires: { w1: { id: 'w1', source_node_id: 'n3', source_port_id: 'out1', target_node_id: 'n2', target_port_id: 'in1' } } };
-    s = { ...s, nodes: { ...s.nodes, n1: { ...s.nodes.n1, outputs: [{ id: 'out1', label: 'Out', type: 'output', value_type: 'text' }] } } };
-    s = pointer_down(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n1'), target_port_id: O.some('out1'), target_port_type: O.some('output'), target_action: O.none, modifiers: mod() });
-    s = pointer_up(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n2'), target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    s = add_node(s, {
+      id: 'n2',
+      type: 'default',
+      position: vec2_create(300, 0),
+      size: vec2_create(100, 100),
+      title: 'N2',
+      inputs: [{ id: 'in1', label: 'In', type: 'input', value_type: 'text' }],
+      outputs: [],
+      widgets: [],
+      custom_data: {},
+    });
+    s = add_node(s, {
+      id: 'n3',
+      type: 'default',
+      position: vec2_create(0, 200),
+      size: vec2_create(100, 100),
+      title: 'N3',
+      outputs: [{ id: 'out1', label: 'Out', type: 'output', value_type: 'text' }],
+      inputs: [],
+      widgets: [],
+      custom_data: {},
+    });
+    s = {
+      ...s,
+      wires: {
+        w1: {
+          id: 'w1',
+          source_node_id: 'n3',
+          source_port_id: 'out1',
+          target_node_id: 'n2',
+          target_port_id: 'in1',
+        },
+      },
+    };
+    s = {
+      ...s,
+      nodes: {
+        ...s.nodes,
+        n1: {
+          ...s.nodes.n1,
+          outputs: [{ id: 'out1', label: 'Out', type: 'output', value_type: 'text' }],
+        },
+      },
+    };
+    s = pointer_down(s, {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n1'),
+      target_port_id: O.some('out1'),
+      target_port_type: O.some('output'),
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    s = pointer_up(s, {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n2'),
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
     // Auto-find only targets free ports; occupied port stays unchanged
     expect(Object.keys(s.wires).length).toBe(1);
     expect(Object.values(s.wires)[0].source_node_id).toBe('n3');
@@ -164,18 +491,65 @@ describe('interactions', () => {
 
   it('auto-connects to widget when input port unavailable', () => {
     let s = base();
-    s = add_node(s, { id: 'n2', type: 'default', position: vec2_create(300, 0), size: vec2_create(100, 100), title: 'N2', inputs: [], outputs: [], widgets: [{ id: 'w1', label: 'Widget In', type: 'widget', value_type: 'text' }], custom_data: {} });
-    s = { ...s, nodes: { ...s.nodes, n1: { ...s.nodes.n1, outputs: [{ id: 'out1', label: 'Out', type: 'output', value_type: 'text' }] } } };
-    s = pointer_down(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n1'), target_port_id: O.some('out1'), target_port_type: O.some('output'), target_action: O.none, modifiers: mod() });
-    s = pointer_up(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n2'), target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    s = add_node(s, {
+      id: 'n2',
+      type: 'default',
+      position: vec2_create(300, 0),
+      size: vec2_create(100, 100),
+      title: 'N2',
+      inputs: [],
+      outputs: [],
+      widgets: [{ id: 'w1', label: 'Widget In', type: 'widget', value_type: 'text' }],
+      custom_data: {},
+    });
+    s = {
+      ...s,
+      nodes: {
+        ...s.nodes,
+        n1: {
+          ...s.nodes.n1,
+          outputs: [{ id: 'out1', label: 'Out', type: 'output', value_type: 'text' }],
+        },
+      },
+    };
+    s = pointer_down(s, {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n1'),
+      target_port_id: O.some('out1'),
+      target_port_type: O.some('output'),
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    s = pointer_up(s, {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n2'),
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
     expect(Object.keys(s.wires).length).toBe(1);
     expect(Object.values(s.wires)[0].target_port_id).toBe('w1');
   });
 
   it('clamps resize to minimum size', () => {
     let s = base();
-    s = pointer_down(s, { screen_position: vec2_create(10, 10), target_node_id: O.some('n1'), target_port_id: O.none, target_port_type: O.none, target_action: O.some('resize'), modifiers: mod() });
-    s = pointer_move(s, { screen_position: vec2_create(-200, -200), target_node_id: O.some('n1'), target_port_id: O.none, target_port_type: O.none, target_action: O.none, modifiers: mod() });
+    s = pointer_down(s, {
+      screen_position: vec2_create(10, 10),
+      target_node_id: O.some('n1'),
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.some('resize'),
+      modifiers: mod(),
+    });
+    s = pointer_move(s, {
+      screen_position: vec2_create(-200, -200),
+      target_node_id: O.some('n1'),
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
     expect(s.nodes.n1.size.x).toBe(50);
     expect(s.nodes.n1.size.y).toBe(30);
   });

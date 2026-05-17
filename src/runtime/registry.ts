@@ -1,8 +1,8 @@
- import type { GraphNode, State } from '@/core/types';
+import type { GraphNode, State } from '@/core/types';
 import type { ContextMenuContext, ContextMenuItem } from '@/plugins/context_menu/types';
 import { vec2_create, type Vec2 } from '@/core/math';
 import type { Port, Widget } from '@/core/types';
- 
+
 export type Dispatch = (updater: (state: State) => State) => void;
 
 export abstract class EaselNode {
@@ -11,7 +11,12 @@ export abstract class EaselNode {
   protected node_id: string;
   protected context: Record<string, any>;
 
-  constructor(container: HTMLElement, dispatch: Dispatch, node_id: string, context: Record<string, any>) {
+  constructor(
+    container: HTMLElement,
+    dispatch: Dispatch,
+    node_id: string,
+    context: Record<string, any>,
+  ) {
     this.container = container;
     this.dispatch = dispatch;
     this.node_id = node_id;
@@ -43,9 +48,11 @@ export abstract class EaselNode {
    * / IDE support.
    */
   get_context_menu_items?(ctx: ContextMenuContext): readonly ContextMenuItem[];
- 
+
   get_input_value(state: State, port_id: string): any {
-    const wire = Object.values(state.wires).find(w => w.target_node_id === this.node_id && w.target_port_id === port_id);
+    const wire = Object.values(state.wires).find(
+      w => w.target_node_id === this.node_id && w.target_port_id === port_id,
+    );
     if (!wire) return undefined;
     const source_node = state.nodes[wire.source_node_id];
     return source_node?.custom_data[wire.source_port_id];
@@ -72,9 +79,9 @@ export abstract class EaselNode {
           ...state.nodes,
           [this.node_id]: {
             ...node,
-            custom_data: { ...node.custom_data, [port_id]: value }
-          }
-        }
+            custom_data: { ...node.custom_data, [port_id]: value },
+          },
+        },
       };
     });
   }
@@ -93,7 +100,7 @@ export type EaselNodeConstructor = new (
   container: HTMLElement,
   dispatch: Dispatch,
   node_id: string,
-  context: Record<string, any>
+  context: Record<string, any>,
 ) => EaselNode;
 
 const registry = new Map<string, EaselNodeConstructor>();
@@ -168,9 +175,7 @@ export const create_node_data = (
   overrides?: Partial<Pick<GraphNode, 'id' | 'position' | 'title' | 'custom_data'>>,
 ): GraphNode => {
   const spec = resolve_node_spec(type);
-  const title = type
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (l) => l.toUpperCase());
+  const title = type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   return {
     id: `${type}_${Date.now()}`,
     type,

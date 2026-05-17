@@ -33,7 +33,7 @@ export class DefaultNode extends EaselNode {
     this.container.appendChild(this.body);
 
     // Stop propagation so interacting with inputs doesn't drag the node
-    this.body.addEventListener('pointerdown', (e) => {
+    this.body.addEventListener('pointerdown', e => {
       const target = e.target as HTMLElement;
       if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName)) {
         e.stopPropagation();
@@ -41,7 +41,7 @@ export class DefaultNode extends EaselNode {
     });
 
     // Widget input handler - uses dataset.widgetType to find the parse function
-    this.widgets_container.addEventListener('input', (e) => {
+    this.widgets_container.addEventListener('input', e => {
       const target = e.target as HTMLElement;
       const widget_id = target.dataset['widgetId'];
       if (!widget_id) return;
@@ -50,11 +50,11 @@ export class DefaultNode extends EaselNode {
       const def = get_widget_type(widget_type);
       if (def?.parse) {
         const val = def.parse(target);
-        this.dispatch((s) => update_widget_value(s, this.node_id, widget_id, val));
+        this.dispatch(s => update_widget_value(s, this.node_id, widget_id, val));
       }
     });
 
-    this.header.addEventListener('pointerdown', (e) => {
+    this.header.addEventListener('pointerdown', e => {
       const target = e.target as HTMLElement;
       const action_el = target.closest('[data-action]') as HTMLElement | null;
       if (action_el) {
@@ -62,7 +62,9 @@ export class DefaultNode extends EaselNode {
         if (e.button !== 0) return;
         const action = action_el.dataset['action'];
         if (action === 'toggle_collapse') {
-          this.dispatch(state => update_node_data(state, this.node_id, n => ({ ...n, collapsed: !n.collapsed })));
+          this.dispatch(state =>
+            update_node_data(state, this.node_id, n => ({ ...n, collapsed: !n.collapsed })),
+          );
         } else if (action === 'delete') {
           this.dispatch(s => remove_node(s, this.node_id));
         }
@@ -91,10 +93,12 @@ export class DefaultNode extends EaselNode {
   }
 
   protected update_ports(node_data: GraphNode, state: State): void {
-    const is_port_connected = (p_id: string) => Object.values(state.wires).some(
-      wire => (wire.target_node_id === this.node_id && wire.target_port_id === p_id) ||
-              (wire.source_node_id === this.node_id && wire.source_port_id === p_id)
-    );
+    const is_port_connected = (p_id: string) =>
+      Object.values(state.wires).some(
+        wire =>
+          (wire.target_node_id === this.node_id && wire.target_port_id === p_id) ||
+          (wire.source_node_id === this.node_id && wire.source_port_id === p_id),
+      );
 
     const ports_html = [
       ...node_data.inputs.map(p => {
@@ -107,7 +111,8 @@ export class DefaultNode extends EaselNode {
           </div>
           <div></div>
         </div>
-      `}),
+      `;
+      }),
       ...node_data.outputs.map(p => {
         const type_class = p.value_type ? `port-type-${p.value_type}` : '';
         const connected_class = is_port_connected(p.id) ? 'connected' : '';
@@ -118,7 +123,8 @@ export class DefaultNode extends EaselNode {
             <span class="port-label">${p.label}</span><div class="port-dot ${type_class} ${connected_class}"></div>
           </div>
         </div>
-      `})
+      `;
+      }),
     ].join('');
 
     set_inner_html(this.ports_container, ports_html);
@@ -128,12 +134,14 @@ export class DefaultNode extends EaselNode {
     const widgets = node_data.widgets || [];
 
     // Build schema: widget id + type + connection state
-    const schema = widgets.map(w => {
-      const connected = Object.values(state.wires).some(
-        wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id
-      );
-      return `${w.id}:${w.type}:${connected}`;
-    }).join(',');
+    const schema = widgets
+      .map(w => {
+        const connected = Object.values(state.wires).some(
+          wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id,
+        );
+        return `${w.id}:${w.type}:${connected}`;
+      })
+      .join(',');
 
     if (schema !== this.last_widget_schema) {
       // Schema changed -> rebuild widget DOM
@@ -150,7 +158,7 @@ export class DefaultNode extends EaselNode {
         // Tag element so input handler can find widget type without state lookup
         el.dataset.widgetType = w.type;
         // Tag child elements too (e.g. switch inner input)
-        el.querySelectorAll('[data-widget-id]').forEach((child) => {
+        el.querySelectorAll('[data-widget-id]').forEach(child => {
           (child as HTMLElement).dataset.widgetType = w.type;
         });
         this.widget_elements.set(w.id, el);
@@ -159,7 +167,7 @@ export class DefaultNode extends EaselNode {
         const row = document.createElement('div');
         row.className = 'widget-row';
         const connected = Object.values(state.wires).some(
-          wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id
+          wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id,
         );
         const type_class = `port-type-${w.type}`;
         const connected_class = connected ? 'connected' : '';
@@ -190,7 +198,7 @@ export class DefaultNode extends EaselNode {
         const def = get_widget_type(w.type);
         if (!def) continue;
         const connected = Object.values(state.wires).some(
-          wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id
+          wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id,
         );
         def.update(el, w, { connected, disabled: connected });
       }
@@ -198,7 +206,7 @@ export class DefaultNode extends EaselNode {
   }
 
   protected update_resize_handle(node_data: GraphNode): void {
-    if ((node_data.resizable !== false) && !node_data.collapsed) {
+    if (node_data.resizable !== false && !node_data.collapsed) {
       if (!this.container.querySelector('.node-resize-handle')) {
         const handle = document.createElement('div');
         handle.className = 'node-resize-handle';

@@ -11,6 +11,6 @@ export const create_store = (initial_state: State = create_initial_state()) => {
 
   return {
     state: state_ref,
-    dispatch
+    dispatch,
   };
 };

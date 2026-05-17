@@ -1,4 +1,7 @@
-export const apply_styles = (el: HTMLElement | SVGElement, styles: Partial<CSSStyleDeclaration>): void => {
+export const apply_styles = (
+  el: HTMLElement | SVGElement,
+  styles: Partial<CSSStyleDeclaration>,
+): void => {
   // for (const key in styles) {
   //   const value = styles[key];
   //   if (value !== undefined) {

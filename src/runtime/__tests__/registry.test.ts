@@ -1,5 +1,15 @@
 ﻿import { describe, it, expect } from 'vitest';
-import { EaselNode, register_node_type, get_node_constructor, get_registered_types, register_node_ns, get_node_ns, register_node_spec, resolve_node_spec, create_node_data } from '@/runtime/registry';
+import {
+  EaselNode,
+  register_node_type,
+  get_node_constructor,
+  get_registered_types,
+  register_node_ns,
+  get_node_ns,
+  register_node_spec,
+  resolve_node_spec,
+  create_node_data,
+} from '@/runtime/registry';
 import { vec2_create } from '@/core/math';
 
 // Minimal EaselNode stub for testing

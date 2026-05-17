@@ -31,9 +31,14 @@ export class KeybindingManager {
   dispatch(e: KeyboardEvent, in_input: boolean): boolean {
     let matched = false;
     for (const b of this.bindings) {
-      if (e.key !== b.key && !(b.key === 'Delete' && e.key === 'Backspace') && !(b.key === 'Backspace' && e.key === 'Delete')) continue;
+      if (
+        e.key !== b.key &&
+        !(b.key === 'Delete' && e.key === 'Backspace') &&
+        !(b.key === 'Backspace' && e.key === 'Delete')
+      )
+        continue;
 
-      const ctrl_ok = b.ctrl ? (e.ctrlKey || e.metaKey) : (!e.ctrlKey && !e.metaKey);
+      const ctrl_ok = b.ctrl ? e.ctrlKey || e.metaKey : !e.ctrlKey && !e.metaKey;
       if (!ctrl_ok) continue;
       if (b.shift && !e.shiftKey) continue;
       if (!b.shift && e.shiftKey) continue;
@@ -57,7 +62,7 @@ export function register_core_keybindings(kb: KeybindingManager, dispatch: Dispa
     if (s.selected_node_ids.length === 0) return s;
     return s.selected_node_ids.reduce((acc: any, id: string) => {
       const node = acc.nodes[id];
-      if (node && (node.type === "subgraph_input" || node.type === "subgraph_output")) return acc;
+      if (node && (node.type === 'subgraph_input' || node.type === 'subgraph_output')) return acc;
       return remove_node(acc, id);
     }, s);
   };
@@ -83,7 +88,10 @@ export function register_core_keybindings(kb: KeybindingManager, dispatch: Dispa
         const selected = s.selected_node_ids;
         if (selected.length === 0) return s;
 
-        let min_x = Infinity, min_y = Infinity, max_x = -Infinity, max_y = -Infinity;
+        let min_x = Infinity,
+          min_y = Infinity,
+          max_x = -Infinity,
+          max_y = -Infinity;
         selected.forEach((id: string) => {
           const n = s.nodes[id];
           if (n) {

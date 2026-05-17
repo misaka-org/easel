@@ -59,9 +59,7 @@ export const ICON_GRID = svg(
 
 // ---- Media / Player -------------------------------------------------------
 export const ICON_PLAY = svg(`<polygon points="5 3 19 12 5 21 5 3"/>`);
-export const ICON_STOP = svg(
-  `<rect x="4" y="4" width="16" height="16" rx="2" ry="2"/>`,
-);
+export const ICON_STOP = svg(`<rect x="4" y="4" width="16" height="16" rx="2" ry="2"/>`);
 export const ICON_STEP = svg(
   `<line x1="6" y1="4" x2="6" y2="20"/><polygon points="10 4 20 12 10 20 10 4"/>`,
 );
@@ -71,9 +69,7 @@ export const ICON_CHECK = svg(`<polyline points="20 6 9 17 4 12"/>`);
 export const ICON_CLOCK = svg(
   `<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>`,
 );
-export const ICON_ACTIVITY = svg(
-  `<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>`,
-);
+export const ICON_ACTIVITY = svg(`<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>`);
 
 // ---- Actions --------------------------------------------------------------
 export const ICON_UNDO = svg(

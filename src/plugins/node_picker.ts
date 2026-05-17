@@ -119,7 +119,7 @@ type PickerEntry = {
 // ---------------------------------------------------------------------------
 // Plugin
 // ---------------------------------------------------------------------------
-export const node_picker_plugin: EaselPlugin = (easel) => {
+export const node_picker_plugin: EaselPlugin = easel => {
   const root_node = easel.container.getRootNode() as ShadowRoot | Document;
   inject_styles(root_node);
 
@@ -132,13 +132,11 @@ export const node_picker_plugin: EaselPlugin = (easel) => {
 
   const rebuild_entries = () => {
     const types = get_registered_types().filter(
-      (t) => t !== 'subgraph_input' && t !== 'subgraph_output',
+      t => t !== 'subgraph_input' && t !== 'subgraph_output',
     );
-    entries = types.map((type_name) => ({
+    entries = types.map(type_name => ({
       type: type_name,
-      label: type_name
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, (l) => l.toUpperCase()),
+      label: type_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
       ns: get_node_ns(type_name) || [],
     }));
     // Sort: entries with ns first, then by ns path + label
@@ -179,15 +177,15 @@ export const node_picker_plugin: EaselPlugin = (easel) => {
   // Intercept all pointer events on the overlay so they don't reach the canvas.
   // Clicks on the overlay backdrop close the picker; clicks inside the panel
   // stop at the overlay boundary so canvas drag/wiring/pan never trigger.
-  overlay.addEventListener('pointerdown', (e) => {
+  overlay.addEventListener('pointerdown', e => {
     if (e.target === overlay) do_close();
     e.stopPropagation();
   });
-  overlay.addEventListener('pointerup', (e) => e.stopPropagation());
-  overlay.addEventListener('click', (e) => e.stopPropagation());
+  overlay.addEventListener('pointerup', e => e.stopPropagation());
+  overlay.addEventListener('click', e => e.stopPropagation());
 
   // Prevent wheel events on the picker from zooming the canvas below
-  overlay.addEventListener('wheel', (e) => e.stopPropagation(), { passive: false });
+  overlay.addEventListener('wheel', e => e.stopPropagation(), { passive: false });
 
   // Close picker when clicking outside the overlay (e.g. on the HUD panel)
   const window_pointerdown_handler = (e: PointerEvent) => {
@@ -243,7 +241,7 @@ export const node_picker_plugin: EaselPlugin = (easel) => {
 
       // Use pointerup instead of click to ensure reliable selection
       // in all shadow-DOM environments.
-      item.addEventListener('pointerup', (e_idx) => {
+      item.addEventListener('pointerup', e_idx => {
         e_idx.stopPropagation();
         select_entry(i);
       });
@@ -304,9 +302,9 @@ export const node_picker_plugin: EaselPlugin = (easel) => {
     if (!query) {
       filtered = [...entries];
     } else {
-      filtered = entries.filter((e) => {
+      filtered = entries.filter(e => {
         const name_match = e.label.toLowerCase().includes(query);
-        const ns_match = e.ns.some((s) => s.toLowerCase().includes(query));
+        const ns_match = e.ns.some(s => s.toLowerCase().includes(query));
         const type_match = e.type.toLowerCase().includes(query);
         return name_match || ns_match || type_match;
       });
@@ -316,7 +314,7 @@ export const node_picker_plugin: EaselPlugin = (easel) => {
   });
 
   // ---- Keyboard navigation ----
-  search_input.addEventListener('keydown', (e) => {
+  search_input.addEventListener('keydown', e => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (filtered.length === 0) return;
@@ -338,7 +336,7 @@ export const node_picker_plugin: EaselPlugin = (easel) => {
   });
 
   // ---- Dblclick on empty space opens the picker ----
-  easel.container.addEventListener('dblclick', (e) => {
+  easel.container.addEventListener('dblclick', e => {
     // Use elementFromPoint (matching the context_menu plugin) so the .node
     // check reliably crosses shadow DOM boundaries.
     const root = easel.container.getRootNode() as ShadowRoot | Document;

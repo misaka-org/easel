@@ -35,14 +35,20 @@ describe('ContextMenuService', () => {
   });
 
   it('unregister removes provider', () => {
-    service.register({ id: 't', get_items: (ctx) => ctx.node_id ? [{ id: 'x', label: 'X', action: () => {} }] : [] });
+    service.register({
+      id: 't',
+      get_items: ctx => (ctx.node_id ? [{ id: 'x', label: 'X', action: () => {} }] : []),
+    });
     service.unregister('t');
     service.show(makeCtx({ node_id: 'n1' }), vec2_create(0, 0));
     expect(service.menu_element.children.length).toBe(0);
   });
 
   it('show creates menu items', () => {
-    service.register({ id: 't', get_items: () => [{ id: 'a', label: 'Item A', action: () => {} }] });
+    service.register({
+      id: 't',
+      get_items: () => [{ id: 'a', label: 'Item A', action: () => {} }],
+    });
     service.show(makeCtx(), vec2_create(10, 10));
     expect(service.menu_element.style.display).toBe('flex');
     expect(service.menu_element.children.length).toBe(1);
@@ -53,8 +59,22 @@ describe('ContextMenuService', () => {
     // collect() iterates twice (exclusive check then normal collect), so providers
     // are called in priority order in each pass
     const order: string[] = [];
-    service.register({ id: 'low', priority: 0, get_items: () => { order.push('low'); return [{ id: 'a', label: 'A', action: () => {} }]; } });
-    service.register({ id: 'high', priority: 100, get_items: () => { order.push('high'); return [{ id: 'b', label: 'B', action: () => {} }]; } });
+    service.register({
+      id: 'low',
+      priority: 0,
+      get_items: () => {
+        order.push('low');
+        return [{ id: 'a', label: 'A', action: () => {} }];
+      },
+    });
+    service.register({
+      id: 'high',
+      priority: 100,
+      get_items: () => {
+        order.push('high');
+        return [{ id: 'b', label: 'B', action: () => {} }];
+      },
+    });
     service.show(makeCtx(), vec2_create(0, 0));
     // Each of the two passes iterates high first, then low
     expect(order.slice(0, 2)).toEqual(['high', 'low']);
@@ -62,8 +82,15 @@ describe('ContextMenuService', () => {
   });
 
   it('exclusive provider replaces all others', () => {
-    service.register({ id: 'normal', get_items: () => [{ id: 'n', label: 'Normal', action: () => {} }] });
-    service.register({ id: 'excl', exclusive: true, get_items: () => [{ id: 'o', label: 'Only', action: () => {} }] });
+    service.register({
+      id: 'normal',
+      get_items: () => [{ id: 'n', label: 'Normal', action: () => {} }],
+    });
+    service.register({
+      id: 'excl',
+      exclusive: true,
+      get_items: () => [{ id: 'o', label: 'Only', action: () => {} }],
+    });
     service.show(makeCtx(), vec2_create(0, 0));
     expect(service.menu_element.children.length).toBe(1);
     expect(service.menu_element.children[0].textContent).toContain('Only');
@@ -79,10 +106,13 @@ describe('ContextMenuService', () => {
   });
 
   it('inserts separators on group change', () => {
-    service.register({ id: 't', get_items: () => [
-      { id: 'a', label: 'A', group: 'g1', action: () => {} },
-      { id: 'b', label: 'B', group: 'g2', action: () => {} },
-    ]});
+    service.register({
+      id: 't',
+      get_items: () => [
+        { id: 'a', label: 'A', group: 'g1', action: () => {} },
+        { id: 'b', label: 'B', group: 'g2', action: () => {} },
+      ],
+    });
     service.show(makeCtx(), vec2_create(0, 0));
     // 2 items + 1 separator = 3 children
     expect(service.menu_element.children.length).toBe(3);
@@ -90,28 +120,35 @@ describe('ContextMenuService', () => {
   });
 
   it('label items use label element class', () => {
-    service.register({ id: 't', get_items: () => [
-      { id: 'l', kind: 'label', label: 'My Label' },
-      { id: 'a', label: 'Action', action: () => {} },
-    ]});
+    service.register({
+      id: 't',
+      get_items: () => [
+        { id: 'l', kind: 'label', label: 'My Label' },
+        { id: 'a', label: 'Action', action: () => {} },
+      ],
+    });
     service.show(makeCtx(), vec2_create(0, 0));
     expect(service.menu_element.children[0].className).toContain('label');
     expect(service.menu_element.children[1].className).toContain('item');
   });
 
   it('items with submenu get arrow indicator', () => {
-    service.register({ id: 't', get_items: () => [
-      { id: 'm', label: 'Menu', submenu: [{ id: 'c', label: 'Child', action: () => {} }] },
-    ]});
+    service.register({
+      id: 't',
+      get_items: () => [
+        { id: 'm', label: 'Menu', submenu: [{ id: 'c', label: 'Child', action: () => {} }] },
+      ],
+    });
     service.show(makeCtx(), vec2_create(0, 0));
     expect(service.menu_element.querySelector('.easel-context-menu-item-arrow')).toBeTruthy();
   });
 
   it('disabled items do not respond to clicks', () => {
     const action = vi.fn();
-    service.register({ id: 't', get_items: () => [
-      { id: 'd', label: 'Disabled', disabled: true, action },
-    ]});
+    service.register({
+      id: 't',
+      get_items: () => [{ id: 'd', label: 'Disabled', disabled: true, action }],
+    });
     service.show(makeCtx(), vec2_create(0, 0));
     const el = service.menu_element.children[0] as HTMLElement;
     expect(el.className).toContain('disabled');

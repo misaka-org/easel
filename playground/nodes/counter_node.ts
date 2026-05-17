@@ -36,7 +36,7 @@ export class CounterNode extends EaselNode {
     this.body.appendChild(this.display);
 
     this.container.appendChild(this.body);
-    this.body.addEventListener('pointerdown', (e) => e.stopPropagation());
+    this.body.addEventListener('pointerdown', e => e.stopPropagation());
   }
 
   update(node_data: GraphNode, _state: State): void {
@@ -79,7 +79,8 @@ export class CounterNode extends EaselNode {
         icon: ICON_PLUS,
         action: () => {
           this.dispatch(s => {
-            const cur = (s.nodes[this.node_id]?.widgets?.find(w => w.id === 'value')?.value as number) ?? 0;
+            const cur =
+              (s.nodes[this.node_id]?.widgets?.find(w => w.id === 'value')?.value as number) ?? 0;
             return update_widget_value(s, this.node_id, 'value', cur + 1);
           });
         },
@@ -90,7 +91,8 @@ export class CounterNode extends EaselNode {
         icon: ICON_MINUS,
         action: () => {
           this.dispatch(s => {
-            const cur = (s.nodes[this.node_id]?.widgets?.find(w => w.id === 'value')?.value as number) ?? 0;
+            const cur =
+              (s.nodes[this.node_id]?.widgets?.find(w => w.id === 'value')?.value as number) ?? 0;
             return update_widget_value(s, this.node_id, 'value', cur - 1);
           });
         },
@@ -102,7 +104,8 @@ export class CounterNode extends EaselNode {
         icon: ICON_REFRESH,
         action: () => {
           this.dispatch(s => {
-            const cur = (s.nodes[this.node_id]?.widgets?.find(w => w.id === 'value')?.value as number) ?? 0;
+            const cur =
+              (s.nodes[this.node_id]?.widgets?.find(w => w.id === 'value')?.value as number) ?? 0;
             return update_widget_value(s, this.node_id, 'value', cur * 2);
           });
         },
@@ -110,4 +113,3 @@ export class CounterNode extends EaselNode {
     ];
   }
 }
-

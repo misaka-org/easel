@@ -75,14 +75,19 @@ export class CSSPreviewNode extends EaselNode {
     `;
     set_inner_html(this.header, title_html);
 
-    const is_connected = (p_id: string) => Object.values(state.wires).some(
-      w => (w.target_node_id === this.node_id && w.target_port_id === p_id) ||
-           (w.source_node_id === this.node_id && w.source_port_id === p_id));
+    const is_connected = (p_id: string) =>
+      Object.values(state.wires).some(
+        w =>
+          (w.target_node_id === this.node_id && w.target_port_id === p_id) ||
+          (w.source_node_id === this.node_id && w.source_port_id === p_id),
+      );
 
-    const ports_html = (node_data.inputs || []).map(p => {
-      const cc = is_connected(p.id) ? 'connected' : '';
-      return `<div class="port-row"><div class="port" data-port-id="${p.id}" data-port-type="input"><div class="port-dot port-type-text ${cc}"></div><span class="port-label">${p.label}</span></div><div></div></div>`;
-    }).join('');
+    const ports_html = (node_data.inputs || [])
+      .map(p => {
+        const cc = is_connected(p.id) ? 'connected' : '';
+        return `<div class="port-row"><div class="port" data-port-id="${p.id}" data-port-type="input"><div class="port-dot port-type-text ${cc}"></div><span class="port-label">${p.label}</span></div><div></div></div>`;
+      })
+      .join('');
     set_inner_html(this.ports_container, ports_html);
 
     const css = node_data.custom_data?.['display_css'] as string;
@@ -96,6 +101,9 @@ export class CSSPreviewNode extends EaselNode {
     }
   }
 
-  unmount(): void { this.header.remove(); this.ports_container.remove(); this.body.remove(); }
+  unmount(): void {
+    this.header.remove();
+    this.ports_container.remove();
+    this.body.remove();
+  }
 }
-

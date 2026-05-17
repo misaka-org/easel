@@ -15,48 +15,47 @@ export type Theme = {
 };
 
 export const default_theme: Theme = {
-  canvas_bg: "#09090b",
-  node_bg: "#09090b",
-  node_border: "#27272a",
-  node_header_bg: "transparent",
-  text_color: "#fafafa",
-  text_muted: "#a1a1aa",
-  primary_color: "#fafafa",
-  primary_hover: "rgba(255, 255, 255, 0.5)",
-  wire_color: "#52525b",
-  wire_active_color: "#fafafa",
-  port_color: "#52525b",
-  selection_bg: "rgba(250, 250, 250, 0.1)",
-  selection_border: "rgba(250, 250, 250, 0.5)",
+  canvas_bg: '#09090b',
+  node_bg: '#09090b',
+  node_border: '#27272a',
+  node_header_bg: 'transparent',
+  text_color: '#fafafa',
+  text_muted: '#a1a1aa',
+  primary_color: '#fafafa',
+  primary_hover: 'rgba(255, 255, 255, 0.5)',
+  wire_color: '#52525b',
+  wire_active_color: '#fafafa',
+  port_color: '#52525b',
+  selection_bg: 'rgba(250, 250, 250, 0.1)',
+  selection_border: 'rgba(250, 250, 250, 0.5)',
 };
 
 export const light_theme: Theme = {
-  canvas_bg: "#f5f5f5",
-  node_bg: "#ffffff",
-  node_border: "#e5e7eb",
-  node_header_bg: "#f9fafb",
-  text_color: "#171717",
-  text_muted: "#525252",
-  primary_color: "#000000",
-  primary_hover: "rgba(0, 0, 0, 0.5)",
-  wire_color: "#d4d4d8",
-  wire_active_color: "#000000",
-  port_color: "#a1a1aa",
-  selection_bg: "rgba(0, 0, 0, 0.05)",
-  selection_border: "rgba(0, 0, 0, 0.3)",
+  canvas_bg: '#f5f5f5',
+  node_bg: '#ffffff',
+  node_border: '#e5e7eb',
+  node_header_bg: '#f9fafb',
+  text_color: '#171717',
+  text_muted: '#525252',
+  primary_color: '#000000',
+  primary_hover: 'rgba(0, 0, 0, 0.5)',
+  wire_color: '#d4d4d8',
+  wire_active_color: '#000000',
+  port_color: '#a1a1aa',
+  selection_bg: 'rgba(0, 0, 0, 0.05)',
+  selection_border: 'rgba(0, 0, 0, 0.3)',
 };
 
 export const apply_theme = (container: HTMLElement, theme: Theme) => {
   for (const [key, value] of Object.entries(theme)) {
-    container.style.setProperty(`--${key.replace(/_/g, "-")}`, value);
+    container.style.setProperty(`--${key.replace(/_/g, '-')}`, value);
   }
 };
 
 /**
  * 用于触发 vscode 语法高亮用的临时函数
  */
-const css = (x: TemplateStringsArray, ...v: any[]) =>
-  x.map((s, i) => s + (v[i] || "")).join("");
+const css = (x: TemplateStringsArray, ...v: any[]) => x.map((s, i) => s + (v[i] || '')).join('');
 export const get_base_css = () => css`
   :host {
     display: block;
@@ -232,7 +231,9 @@ export const get_base_css = () => css`
 
   .type-indicator {
     cursor: pointer;
-    transition: box-shadow 0.15s, opacity 0.15s;
+    transition:
+      box-shadow 0.15s,
+      opacity 0.15s;
   }
   .type-indicator:hover {
     box-shadow: 0 0 0 2px var(--text-muted);
@@ -368,8 +369,8 @@ export const get_base_css = () => css`
     text-align: right;
   }
 
-  .widget-row input[type="text"],
-  .widget-row input[type="number"] {
+  .widget-row input[type='text'],
+  .widget-row input[type='number'] {
     width: 80px;
     background: transparent;
     border: 1px solid var(--node-border);
@@ -378,11 +379,13 @@ export const get_base_css = () => css`
     border-radius: 4px;
     font-size: 11px;
     box-sizing: border-box;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s;
   }
 
-  .widget-row input[type="text"]:focus,
-  .widget-row input[type="number"]:focus {
+  .widget-row input[type='text']:focus,
+  .widget-row input[type='number']:focus {
     outline: none;
     border-color: var(--text-color);
     box-shadow: 0 0 0 1px var(--text-color);
@@ -404,7 +407,9 @@ export const get_base_css = () => css`
     box-sizing: border-box;
     resize: vertical;
     font-family: inherit;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s;
   }
   .widget-row textarea:focus {
     outline: none;
@@ -433,14 +438,14 @@ export const get_base_css = () => css`
     cursor: not-allowed;
   }
 
-  .widget-row input[type="range"] {
+  .widget-row input[type='range'] {
     width: 80px;
     height: 4px;
     margin: 0;
     vertical-align: middle;
     accent-color: var(--primary-color, #fafafa);
   }
-  .widget-row input[type="range"]:disabled {
+  .widget-row input[type='range']:disabled {
     opacity: 0.5;
   }
 
@@ -467,7 +472,7 @@ export const get_base_css = () => css`
     transition: background 0.2s;
   }
   .widget-row .easel-switch-slider::before {
-    content: "";
+    content: '';
     position: absolute;
     width: 14px;
     height: 14px;
@@ -524,19 +529,19 @@ export const get_base_css = () => css`
     opacity: 0.8;
   }
 
-  .wire[data-value-type="text"] {
+  .wire[data-value-type='text'] {
     stroke: #3b82f6;
   }
-  .wire[data-value-type="image"] {
+  .wire[data-value-type='image'] {
     stroke: #10b981;
   }
-  .wire[data-value-type="video"] {
+  .wire[data-value-type='video'] {
     stroke: #8b5cf6;
   }
-  .wire[data-value-type="audio"] {
+  .wire[data-value-type='audio'] {
     stroke: #f59e0b;
   }
-  .wire[data-value-type="number"] {
+  .wire[data-value-type='number'] {
     stroke: #0dcaf0;
   }
 

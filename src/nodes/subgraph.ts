@@ -18,7 +18,7 @@ export class SubgraphNode extends EaselNode {
     this.container.appendChild(this.header);
     this.container.appendChild(this.body);
 
-    this.header.addEventListener('pointerdown', (e) => {
+    this.header.addEventListener('pointerdown', e => {
       const target = e.target as HTMLElement;
       const action_el = target.closest('[data-action]') as HTMLElement | null;
       if (action_el) {
@@ -54,22 +54,26 @@ export class SubgraphNode extends EaselNode {
     set_inner_html(this.header, title_html);
 
     const ports_html = [
-      ...node_data.inputs.map(p => `
+      ...node_data.inputs.map(
+        p => `
         <div class="port-row">
           <div class="port" data-port-id="${p.id}" data-port-type="input">
             <div class="port-dot"></div><span class="port-label">${p.label}</span>
           </div>
           <div></div>
         </div>
-      `),
-      ...node_data.outputs.map(p => `
+      `,
+      ),
+      ...node_data.outputs.map(
+        p => `
         <div class="port-row">
           <div></div>
           <div class="port" data-port-id="${p.id}" data-port-type="output">
             <span class="port-label">${p.label}</span><div class="port-dot"></div>
           </div>
         </div>
-      `)
+      `,
+      ),
     ].join('');
 
     set_inner_html(this.body, ports_html);
@@ -93,11 +97,15 @@ export class SubgraphInputNode extends EaselNode {
   }
 
   update(node_data: GraphNode, _state: State): void {
-    const html = node_data.outputs.map(p => `
+    const html = node_data.outputs
+      .map(
+        p => `
       <div class="port" data-port-id="${p.id}" data-port-type="output">
         <span class="port-label">${p.label}</span><div class="port-dot"></div>
       </div>
-    `).join('');
+    `,
+      )
+      .join('');
     set_inner_html(this.body, html);
   }
 
@@ -118,11 +126,15 @@ export class SubgraphOutputNode extends EaselNode {
   }
 
   update(node_data: GraphNode, _state: State): void {
-    const html = node_data.inputs.map(p => `
+    const html = node_data.inputs
+      .map(
+        p => `
       <div class="port" data-port-id="${p.id}" data-port-type="input">
         <div class="port-dot"></div><span class="port-label">${p.label}</span>
       </div>
-    `).join('');
+    `,
+      )
+      .join('');
     set_inner_html(this.body, html);
   }
 

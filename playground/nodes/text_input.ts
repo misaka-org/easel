@@ -40,14 +40,14 @@ export class TextInputNode extends EaselNode {
     this.container.appendChild(this.header);
     this.container.appendChild(this.body);
 
-    this.body.addEventListener('pointerdown', (e) => {
+    this.body.addEventListener('pointerdown', e => {
       const target = e.target as HTMLElement;
       if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName)) {
         e.stopPropagation();
       }
     });
 
-    this.widgets_container.addEventListener('input', (e) => {
+    this.widgets_container.addEventListener('input', e => {
       const target = e.target as HTMLInputElement;
       const widget_id = target.dataset['widgetId'];
       if (widget_id) {
@@ -96,7 +96,7 @@ export class TextInputNode extends EaselNode {
     const widgets_html = (node_data.widgets || [])
       .map(w => {
         const is_connected = Object.values(state.wires).some(
-          wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id
+          wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id,
         );
         const disabled = is_connected ? 'disabled' : '';
         return `
@@ -114,7 +114,7 @@ export class TextInputNode extends EaselNode {
     const widgets_schema = (node_data.widgets || [])
       .map(w => {
         const is_connected = Object.values(state.wires).some(
-          wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id
+          wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id,
         );
         return `${w.id}:${is_connected}`;
       })
@@ -128,7 +128,7 @@ export class TextInputNode extends EaselNode {
       // Schema unchanged – update values in-place without destroying focus
       node_data.widgets?.forEach(w => {
         const input = this.widgets_container.querySelector(
-          `[data-widget-id="${w.id}"]`
+          `[data-widget-id="${w.id}"]`,
         ) as HTMLInputElement;
         if (input) {
           const current = input.value;
@@ -148,4 +148,3 @@ export class TextInputNode extends EaselNode {
     this.body.remove();
   }
 }
-

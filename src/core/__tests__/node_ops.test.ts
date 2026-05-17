@@ -1,16 +1,38 @@
 import { describe, it, expect } from 'vitest';
 import { create_initial_state } from '@/core/state';
-import { add_node, move_node, move_nodes, remove_node, update_node_data, update_widget_value, is_ancestor } from '@/core/node_ops';
+import {
+  add_node,
+  move_node,
+  move_nodes,
+  remove_node,
+  update_node_data,
+  update_widget_value,
+  is_ancestor,
+} from '@/core/node_ops';
 import { vec2_create } from '@/core/math';
 
 describe('node_ops', () => {
   const node_a = () => ({
-    id: 'a', type: 'default', position: vec2_create(0, 0), size: vec2_create(100, 100),
-    title: 'Node A', inputs: [], outputs: [], widgets: [], custom_data: {}
+    id: 'a',
+    type: 'default',
+    position: vec2_create(0, 0),
+    size: vec2_create(100, 100),
+    title: 'Node A',
+    inputs: [],
+    outputs: [],
+    widgets: [],
+    custom_data: {},
   });
   const node_b = () => ({
-    id: 'b', type: 'default', position: vec2_create(200, 0), size: vec2_create(100, 100),
-    title: 'Node B', inputs: [], outputs: [], widgets: [], custom_data: {}
+    id: 'b',
+    type: 'default',
+    position: vec2_create(200, 0),
+    size: vec2_create(100, 100),
+    title: 'Node B',
+    inputs: [],
+    outputs: [],
+    widgets: [],
+    custom_data: {},
   });
 
   it('should add a node', () => {
@@ -40,7 +62,18 @@ describe('node_ops', () => {
   it('should remove a node and its connected wires', () => {
     let s = add_node(create_initial_state(), node_a());
     s = add_node(s, node_b());
-    s = { ...s, wires: { w1: { id: 'w1', source_node_id: 'a', source_port_id: 'out', target_node_id: 'b', target_port_id: 'in' } } };
+    s = {
+      ...s,
+      wires: {
+        w1: {
+          id: 'w1',
+          source_node_id: 'a',
+          source_port_id: 'out',
+          target_node_id: 'b',
+          target_port_id: 'in',
+        },
+      },
+    };
     s = remove_node(s, 'a');
     expect(s.nodes['a']).toBeUndefined();
     expect(s.nodes['b']).toBeDefined();
@@ -55,12 +88,18 @@ describe('node_ops', () => {
   });
 
   it('should update node data with update_node_data', () => {
-    const s = update_node_data(add_node(create_initial_state(), node_a()), 'a', n => ({ ...n, title: 'Updated' }));
+    const s = update_node_data(add_node(create_initial_state(), node_a()), 'a', n => ({
+      ...n,
+      title: 'Updated',
+    }));
     expect(s.nodes['a']?.title).toBe('Updated');
   });
 
   it('should update widget value with update_widget_value', () => {
-    const node = { ...node_a(), widgets: [{ id: 'w1', type: 'number' as const, label: 'Num', value: 0 }] };
+    const node = {
+      ...node_a(),
+      widgets: [{ id: 'w1', type: 'number' as const, label: 'Num', value: 0 }],
+    };
     const s = update_widget_value(add_node(create_initial_state(), node), 'a', 'w1', 42);
     expect(s.nodes['a']?.widgets?.[0]?.value).toBe(42);
   });
@@ -98,7 +137,7 @@ describe('node_ops', () => {
       // a has children ['b'], so is_ancestor(nodes, 'b', 'a') means: is b in a's children?
       const nodes = {
         a: { ...node_a(), custom_data: { children: ['b'] } },
-        b: node_b()
+        b: node_b(),
       };
       // is_ancestor(proposed_parent, child): is child a descendant of proposed_parent?
       // 'a' has 'b' as child -> is_ancestor(nodes, 'a', 'b') = false (a not in b's children)
@@ -109,7 +148,7 @@ describe('node_ops', () => {
     it('detects circular reference', () => {
       const nodes = {
         a: { ...node_a(), custom_data: { children: ['b'] } },
-        b: { ...node_b(), custom_data: { children: ['a'] } }
+        b: { ...node_b(), custom_data: { children: ['a'] } },
       };
       // Starting from 'a', following children we reach 'b', then from 'b' we reach 'a' again
       expect(is_ancestor(nodes, 'a', 'b')).toBe(true);
@@ -119,7 +158,7 @@ describe('node_ops', () => {
     it('returns false when no cycle', () => {
       const nodes = {
         a: { ...node_a(), custom_data: { children: ['b'] } },
-        b: node_b()
+        b: node_b(),
       };
       expect(is_ancestor(nodes, 'a', 'b')).toBe(false);
     });

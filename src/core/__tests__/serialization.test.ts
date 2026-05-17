@@ -17,13 +17,23 @@ describe('serialization', () => {
 
   it('roundtrips nodes and wires', () => {
     let s = add_node(create_initial_state(), {
-      id: 'n1', type: 'default', position: vec2_create(100, 100), size: vec2_create(200, 150),
-      title: 'Test', inputs: [{ id: 'in', label: 'In', type: 'input' }],
+      id: 'n1',
+      type: 'default',
+      position: vec2_create(100, 100),
+      size: vec2_create(200, 150),
+      title: 'Test',
+      inputs: [{ id: 'in', label: 'In', type: 'input' }],
       outputs: [{ id: 'out', label: 'Out', type: 'output' }],
       widgets: [{ id: 'w1', type: 'number', label: 'Num', value: 42 }],
-      custom_data: { foo: 'bar' }
+      custom_data: { foo: 'bar' },
     });
-    s = add_wire(s, { id: 'wire1', source_node_id: 'n1', source_port_id: 'out', target_node_id: 'n1', target_port_id: 'in' });
+    s = add_wire(s, {
+      id: 'wire1',
+      source_node_id: 'n1',
+      source_port_id: 'out',
+      target_node_id: 'n1',
+      target_port_id: 'in',
+    });
 
     const json = serialize_state(s);
     const restored = deserialize_state(json);

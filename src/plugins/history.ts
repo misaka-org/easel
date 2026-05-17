@@ -5,7 +5,7 @@ import { apply_styles } from '@/utils/css';
 import type { ContextMenuItem, ContextMenuContext } from '@/plugins/context_menu/types';
 import { ICON_CLOCK, ICON_UNDO, ICON_REDO } from '@/icons';
 
-export const history_plugin: EaselPlugin = (easel) => {
+export const history_plugin: EaselPlugin = easel => {
   const history: State[] = [easel.state.value];
   let current_index = 0;
   let is_undoing = false;
@@ -85,7 +85,7 @@ export const history_plugin: EaselPlugin = (easel) => {
         fontSize: '12px',
         borderRadius: '4px',
       });
-      
+
       if (idx === current_index) {
         item.style.background = 'var(--primary-color)';
         item.style.color = 'var(--canvas-bg)';
@@ -115,14 +115,18 @@ export const history_plugin: EaselPlugin = (easel) => {
   const jump_to = (index: number) => {
     is_undoing = true;
     current_index = index;
-    original_dispatch(s => ({ ...history[current_index]!, camera: s.camera, interaction: { mode: 'idle' } }));
+    original_dispatch(s => ({
+      ...history[current_index]!,
+      camera: s.camera,
+      interaction: { mode: 'idle' },
+    }));
     is_undoing = false;
     render_list();
   };
 
   const original_dispatch = easel.dispatch;
 
-  easel.dispatch = (updater) => {
+  easel.dispatch = updater => {
     if (is_undoing) {
       original_dispatch(updater);
       return;
@@ -135,19 +139,24 @@ export const history_plugin: EaselPlugin = (easel) => {
     if (prev_state !== next_state) {
       if (next_state.interaction.mode === 'idle') {
         const last_recorded = history[current_index];
-        const state_changed = last_recorded?.nodes !== next_state.nodes || last_recorded?.wires !== next_state.wires;
-        
+        const state_changed =
+          last_recorded?.nodes !== next_state.nodes || last_recorded?.wires !== next_state.wires;
+
         if (state_changed) {
-           history.splice(current_index + 1);
-           // 存储快照时排除 transient 字段以减小内存
-           const snapshot: State = { ...create_initial_state(), ...next_state, interaction: { mode: 'idle' } as const };
-           history.push(snapshot);
-           if (history.length > MAX_HISTORY) {
-             history.shift();
-           } else {
-             current_index = history.length - 1;
-           }
-           render_list();
+          history.splice(current_index + 1);
+          // 存储快照时排除 transient 字段以减小内存
+          const snapshot: State = {
+            ...create_initial_state(),
+            ...next_state,
+            interaction: { mode: 'idle' } as const,
+          };
+          history.push(snapshot);
+          if (history.length > MAX_HISTORY) {
+            history.shift();
+          } else {
+            current_index = history.length - 1;
+          }
+          render_list();
         }
       }
     }
@@ -155,9 +164,34 @@ export const history_plugin: EaselPlugin = (easel) => {
 
   render_list();
 
-  easel.keybindings.register({ id: 'history.undo', key: 'z', ctrl: true, handler: () => { if (current_index > 0) jump_to(current_index - 1); }, description: 'Undo (Ctrl+Z)' });
-  easel.keybindings.register({ id: 'history.redo_shift', key: 'z', ctrl: true, shift: true, handler: () => { if (current_index < history.length - 1) jump_to(current_index + 1); }, description: 'Redo (Ctrl+Shift+Z)' });
-  easel.keybindings.register({ id: 'history.redo_y', key: 'y', ctrl: true, handler: () => { if (current_index < history.length - 1) jump_to(current_index + 1); }, description: 'Redo (Ctrl+Y)' });
+  easel.keybindings.register({
+    id: 'history.undo',
+    key: 'z',
+    ctrl: true,
+    handler: () => {
+      if (current_index > 0) jump_to(current_index - 1);
+    },
+    description: 'Undo (Ctrl+Z)',
+  });
+  easel.keybindings.register({
+    id: 'history.redo_shift',
+    key: 'z',
+    ctrl: true,
+    shift: true,
+    handler: () => {
+      if (current_index < history.length - 1) jump_to(current_index + 1);
+    },
+    description: 'Redo (Ctrl+Shift+Z)',
+  });
+  easel.keybindings.register({
+    id: 'history.redo_y',
+    key: 'y',
+    ctrl: true,
+    handler: () => {
+      if (current_index < history.length - 1) jump_to(current_index + 1);
+    },
+    description: 'Redo (Ctrl+Y)',
+  });
 
   // -----------------------------------------------------------------------
   // Context menu provider — register a "History" submenu
@@ -167,28 +201,33 @@ export const history_plugin: EaselPlugin = (easel) => {
     cm.register({
       id: 'history',
       priority: 50,
-      get_items: (_ctx: ContextMenuContext): readonly ContextMenuItem[] => [{
-        id: 'history_submenu',
-        label: 'History',
-        icon: ICON_CLOCK,
-        submenu: [
-          {
-            id: 'undo',
-            label: 'Undo (Ctrl+Z)',
-            icon: ICON_UNDO,
-            disabled: current_index <= 0,
-            action: () => { if (current_index > 0) jump_to(current_index - 1); },
-          },
-          {
-            id: 'redo',
-            label: 'Redo (Ctrl+Shift+Z)',
-            icon: ICON_REDO,
-            disabled: current_index >= history.length - 1,
-            action: () => { if (current_index < history.length - 1) jump_to(current_index + 1); },
-          },
-        ],
-      }],
+      get_items: (_ctx: ContextMenuContext): readonly ContextMenuItem[] => [
+        {
+          id: 'history_submenu',
+          label: 'History',
+          icon: ICON_CLOCK,
+          submenu: [
+            {
+              id: 'undo',
+              label: 'Undo (Ctrl+Z)',
+              icon: ICON_UNDO,
+              disabled: current_index <= 0,
+              action: () => {
+                if (current_index > 0) jump_to(current_index - 1);
+              },
+            },
+            {
+              id: 'redo',
+              label: 'Redo (Ctrl+Shift+Z)',
+              icon: ICON_REDO,
+              disabled: current_index >= history.length - 1,
+              action: () => {
+                if (current_index < history.length - 1) jump_to(current_index + 1);
+              },
+            },
+          ],
+        },
+      ],
     });
   }
-
 };

@@ -1,22 +1,22 @@
-﻿import type { State } from "../core/types";
-import type { Dispatch } from "../runtime/registry";
-import { frame_effect } from "../runtime/frame_effect";
-import { move_nodes } from "../core/node_ops";
+﻿import type { State } from '../core/types';
+import type { Dispatch } from '../runtime/registry';
+import { frame_effect } from '../runtime/frame_effect';
+import { move_nodes } from '../core/node_ops';
 import { apply_styles } from '@/utils/css';
 export const with_guidelines = (
   container: HTMLElement,
   state_ref: { value: State },
-  dispatch: Dispatch
+  dispatch: Dispatch,
 ): Dispatch => {
-  const overlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   apply_styles(overlay, {
-    position: "absolute",
-    top: "0",
-    left: "0",
-    width: "100%",
-    height: "100%",
-    pointerEvents: "none",
-    zIndex: "100",
+    position: 'absolute',
+    top: '0',
+    left: '0',
+    width: '100%',
+    height: '100%',
+    pointerEvents: 'none',
+    zIndex: '100',
   });
   container.appendChild(overlay);
   const SNAP_THRESHOLD = 10;
@@ -24,51 +24,36 @@ export const with_guidelines = (
   frame_effect(() => {
     const state = state_ref.value;
     const zoom = state.camera.zoom;
-    overlay.innerHTML = "";
-    if (
-      state.interaction.mode === "dragging" &&
-      active_guidelines.x !== undefined
-    ) {
-      const line = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "line"
-      );
+    overlay.innerHTML = '';
+    if (state.interaction.mode === 'dragging' && active_guidelines.x !== undefined) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
       const screen_x = active_guidelines.x * zoom + state.camera.position.x;
-      line.setAttribute("x1", screen_x.toString());
-      line.setAttribute("y1", "0");
-      line.setAttribute("x2", screen_x.toString());
-      line.setAttribute("y2", "10000");
-      line.setAttribute("stroke", "#007acc");
-      line.setAttribute("stroke-width", "1");
-      line.setAttribute("stroke-dasharray", "4");
+      line.setAttribute('x1', screen_x.toString());
+      line.setAttribute('y1', '0');
+      line.setAttribute('x2', screen_x.toString());
+      line.setAttribute('y2', '10000');
+      line.setAttribute('stroke', '#007acc');
+      line.setAttribute('stroke-width', '1');
+      line.setAttribute('stroke-dasharray', '4');
       overlay.appendChild(line);
     }
-    if (
-      state.interaction.mode === "dragging" &&
-      active_guidelines.y !== undefined
-    ) {
-      const line = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "line"
-      );
+    if (state.interaction.mode === 'dragging' && active_guidelines.y !== undefined) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
       const screen_y = active_guidelines.y * zoom + state.camera.position.y;
-      line.setAttribute("x1", "0");
-      line.setAttribute("y1", screen_y.toString());
-      line.setAttribute("x2", "10000");
-      line.setAttribute("y2", screen_y.toString());
-      line.setAttribute("stroke", "#007acc");
-      line.setAttribute("stroke-width", "1");
-      line.setAttribute("stroke-dasharray", "4");
+      line.setAttribute('x1', '0');
+      line.setAttribute('y1', screen_y.toString());
+      line.setAttribute('x2', '10000');
+      line.setAttribute('y2', screen_y.toString());
+      line.setAttribute('stroke', '#007acc');
+      line.setAttribute('stroke-width', '1');
+      line.setAttribute('stroke-dasharray', '4');
       overlay.appendChild(line);
     }
   });
-  return (updater) => {
-    dispatch((state) => {
+  return updater => {
+    dispatch(state => {
       let next_state = updater(state);
-      if (
-        next_state.interaction.mode === "dragging" &&
-        !next_state.modifiers.shift
-      ) {
+      if (next_state.interaction.mode === 'dragging' && !next_state.modifiers.shift) {
         const dragged_id = next_state.selected_node_ids[0];
         if (dragged_id && next_state.nodes[dragged_id]) {
           const dragged = next_state.nodes[dragged_id];
@@ -86,7 +71,7 @@ export const with_guidelines = (
           const d_cy = dragged.position.y + dragged.size.y / 2;
           for (const [id, target] of Object.entries(next_state.nodes)) {
             if (next_state.selected_node_ids.includes(id)) continue;
-            
+
             const t_left = target.position.x;
             const t_right = target.position.x + target.size.x;
             const t_top = target.position.y;
@@ -98,7 +83,7 @@ export const with_guidelines = (
               { t: t_left, d: d_right, snap: t_left },
               { t: t_right, d: d_left, snap: t_right },
               { t: t_right, d: d_right, snap: t_right },
-              { t: t_cx, d: d_cx, snap: t_cx }
+              { t: t_cx, d: d_cx, snap: t_cx },
             ];
             for (const pair of x_pairs) {
               const dist = Math.abs(pair.t - pair.d);
@@ -113,7 +98,7 @@ export const with_guidelines = (
               { t: t_top, d: d_bottom, snap: t_top },
               { t: t_bottom, d: d_top, snap: t_bottom },
               { t: t_bottom, d: d_bottom, snap: t_bottom },
-              { t: t_cy, d: d_cy, snap: t_cy }
+              { t: t_cy, d: d_cy, snap: t_cy },
             ];
             for (const pair of y_pairs) {
               const dist = Math.abs(pair.t - pair.d);
@@ -126,7 +111,10 @@ export const with_guidelines = (
           }
           active_guidelines = { x: snap_x, y: snap_y };
           if (best_dx !== 0 || best_dy !== 0) {
-            next_state = move_nodes(next_state, next_state.selected_node_ids, { x: best_dx, y: best_dy });
+            next_state = move_nodes(next_state, next_state.selected_node_ids, {
+              x: best_dx,
+              y: best_dy,
+            });
           }
         }
       } else {

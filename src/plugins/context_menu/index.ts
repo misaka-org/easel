@@ -139,7 +139,7 @@ function node_ops_provider(easel: any): ContextMenuProvider {
   return {
     id: '__builtin_node_ops',
     priority: 20,
-    get_items: (ctx) => {
+    get_items: ctx => {
       if (!ctx.node_id) return [];
       const node_id: string = ctx.node_id;
       const node_type: string | undefined = ctx.node_type;
@@ -149,7 +149,9 @@ function node_ops_provider(easel: any): ContextMenuProvider {
           id: 'delete_node',
           label: 'Delete Node',
           group: 'node_ops',
-          action: () => { easel.dispatch((s: any) => remove_node(s, node_id)); },
+          action: () => {
+            easel.dispatch((s: any) => remove_node(s, node_id));
+          },
         },
         {
           id: 'duplicate_node',
@@ -164,7 +166,11 @@ function node_ops_provider(easel: any): ContextMenuProvider {
                 ...s,
                 nodes: {
                   ...s.nodes,
-                  [new_id]: { ...n, id: new_id, position: { x: n.position.x + 20, y: n.position.y + 20 } },
+                  [new_id]: {
+                    ...n,
+                    id: new_id,
+                    position: { x: n.position.x + 20, y: n.position.y + 20 },
+                  },
                 },
               };
             });
@@ -181,7 +187,11 @@ function node_ops_provider(easel: any): ContextMenuProvider {
  * grouped under "Other" when categorized types exist.
  */
 export function build_ns_menu(
-  entries: ReadonlyArray<{ readonly type: string; readonly label: string; readonly action: () => void }>,
+  entries: ReadonlyArray<{
+    readonly type: string;
+    readonly label: string;
+    readonly action: () => void;
+  }>,
 ): ContextMenuItem[] {
   const with_ns: Array<{ type: string; label: string; ns: string[]; action: () => void }> = [];
   const without_ns: Array<{ type: string; label: string; action: () => void }> = [];
@@ -277,12 +287,12 @@ function add_node_provider(easel: any): ContextMenuProvider {
   return {
     id: '__builtin_add_node',
     priority: 10,
-    get_items: (ctx) => {
+    get_items: ctx => {
       const types = get_registered_types().filter(
-        (t) => t !== 'subgraph_input' && t !== 'subgraph_output',
+        t => t !== 'subgraph_input' && t !== 'subgraph_output',
       );
 
-      const entries = types.map((type_name) => ({
+      const entries = types.map(type_name => ({
         type: type_name,
         label: type_name.replace(/_/g, ' '),
         action: () => {
@@ -312,7 +322,7 @@ function canvas_ops_provider(easel: any): ContextMenuProvider {
   return {
     id: '__builtin_canvas_ops',
     priority: -10,
-    get_items: (ctx) => {
+    get_items: ctx => {
       if (ctx.node_id) return [];
       return [
         {
@@ -344,7 +354,7 @@ function node_instance_provider(easel: any): ContextMenuProvider {
   return {
     id: '__builtin_node_instance',
     priority: -20,
-    get_items: (ctx) => {
+    get_items: ctx => {
       if (!ctx.node_id) return [];
       const inst = easel.node_instances.get(ctx.node_id)?.inst;
       if (inst && typeof inst.get_context_menu_items === 'function') {
@@ -359,7 +369,7 @@ function node_instance_provider(easel: any): ContextMenuProvider {
 // Plugin
 // ---------------------------------------------------------------------------
 
-export const context_menu_plugin: EaselPlugin = (easel) => {
+export const context_menu_plugin: EaselPlugin = easel => {
   const root_node = easel.container.getRootNode() as ShadowRoot | Document;
   inject_styles(root_node);
 

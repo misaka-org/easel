@@ -16,8 +16,8 @@ export class ContextMenuService {
     this.menu_el.className = 'easel-context-menu';
     container.appendChild(this.menu_el);
 
-    this.menu_el.addEventListener('pointerdown', (e) => e.stopPropagation());
-    this.menu_el.addEventListener('click', (e) => e.stopPropagation());
+    this.menu_el.addEventListener('pointerdown', e => e.stopPropagation());
+    this.menu_el.addEventListener('click', e => e.stopPropagation());
   }
 
   get menu_element(): HTMLElement {

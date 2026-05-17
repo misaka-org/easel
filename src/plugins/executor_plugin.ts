@@ -15,7 +15,7 @@ import {
   ICON_TRASH,
 } from '@/icons';
 
-export const executor_plugin: EaselPlugin = (easel) => {
+export const executor_plugin: EaselPlugin = easel => {
   const executor = new GraphExecutor(easel);
   const exec_state = executor.state;
 
@@ -38,10 +38,10 @@ export const executor_plugin: EaselPlugin = (easel) => {
 
   const btn_init = document.createElement('button');
   btn_init.textContent = 'Compile';
-  
+
   const btn_step = document.createElement('button');
   btn_step.textContent = 'Step';
-  
+
   const btn_run = document.createElement('button');
   btn_run.textContent = 'Run';
 
@@ -51,7 +51,8 @@ export const executor_plugin: EaselPlugin = (easel) => {
   const btn_realtime = document.createElement('button');
   btn_realtime.textContent = 'Realtime: Off';
   const btn_pulse = document.createElement('span');
-  btn_pulse.style.cssText = 'display:none;width:8px;height:8px;border-radius:50%;background:#10b981;margin-left:4px;';
+  btn_pulse.style.cssText =
+    'display:none;width:8px;height:8px;border-radius:50%;background:#10b981;margin-left:4px;';
 
   btn_realtime.appendChild(btn_pulse);
 
@@ -196,7 +197,7 @@ export const executor_plugin: EaselPlugin = (easel) => {
             boxSizing: 'border-box',
             transition: 'border-color 0.2s, box-shadow 0.2s',
           });
-          
+
           const progress_bar = document.createElement('div');
           progress_bar.className = 'progress-bar';
           apply_styles(progress_bar, {
@@ -209,7 +210,7 @@ export const executor_plugin: EaselPlugin = (easel) => {
             borderRadius: '2px',
           });
           el.appendChild(progress_bar);
-          
+
           const error_text = document.createElement('div');
           error_text.className = 'error-text';
           apply_styles(error_text, {
@@ -222,7 +223,7 @@ export const executor_plugin: EaselPlugin = (easel) => {
             whiteSpace: 'nowrap',
           });
           el.appendChild(error_text);
-          
+
           overlays_container.appendChild(el);
           node_overlays.set(id, el);
         }
@@ -236,30 +237,31 @@ export const executor_plugin: EaselPlugin = (easel) => {
         const error_text = el.querySelector('.error-text') as HTMLElement;
 
         progress_bar.style.width = `${node_state.progress}%`;
-        progress_bar.style.display = node_state.progress > 0 && node_state.progress < 100 ? 'block' : 'none';
+        progress_bar.style.display =
+          node_state.progress > 0 && node_state.progress < 100 ? 'block' : 'none';
 
-       if (node_state.status === 'running') {
-         el.style.border = '3px solid #3b82f6';
-         el.style.boxShadow = '0 0 15px rgba(59, 130, 246, 0.5)';
-         error_text.textContent = '';
-       } else if (node_state.status === 'completed') {
-        if (flashing_nodes.has(id)) {
-          el.style.border = '3px solid #10b981';
-          el.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.5)';
+        if (node_state.status === 'running') {
+          el.style.border = '3px solid #3b82f6';
+          el.style.boxShadow = '0 0 15px rgba(59, 130, 246, 0.5)';
+          error_text.textContent = '';
+        } else if (node_state.status === 'completed') {
+          if (flashing_nodes.has(id)) {
+            el.style.border = '3px solid #10b981';
+            el.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.5)';
+          } else {
+            el.style.border = 'none';
+            el.style.boxShadow = 'none';
+          }
+          error_text.textContent = '';
+        } else if (node_state.status === 'error') {
+          el.style.border = '3px solid #ef4444';
+          el.style.boxShadow = '0 0 15px rgba(239, 68, 68, 0.5)';
+          error_text.textContent = node_state.error || 'Error';
         } else {
           el.style.border = 'none';
           el.style.boxShadow = 'none';
+          error_text.textContent = '';
         }
-       error_text.textContent = '';
-       } else if (node_state.status === 'error') {
-         el.style.border = '3px solid #ef4444';
-         el.style.boxShadow = '0 0 15px rgba(239, 68, 68, 0.5)';
-         error_text.textContent = node_state.error || 'Error';
-       } else {
-         el.style.border = 'none';
-         el.style.boxShadow = 'none';
-         error_text.textContent = '';
-       }
       }
     }
 
@@ -282,68 +284,82 @@ export const executor_plugin: EaselPlugin = (easel) => {
       get_items: (_ctx: ContextMenuContext): readonly ContextMenuItem[] => {
         const st = exec_state.value;
         const is_running = st.status === 'running';
-        return [{
-          id: 'executor_submenu',
-          label: 'Executor',
-          icon: ICON_PLAY,
-          submenu: [
-            {
-              id: 'compile',
-              label: 'Compile',
-              icon: ICON_CHECK,
-              action: () => { const r = executor.compile(); if (E.isLeft(r)) { alert('Compile Error: ' + r.left.message); } },
-            },
-            {
-              id: 'step',
-              label: 'Step',
-              icon: ICON_STEP,
-              action: () => { executor.step(); },
-            },
-            is_running
-              ? {
-                  id: 'stop',
-                  label: 'Stop',
-                  icon: ICON_STOP,
-                  action: () => { executor.stop(); },
-                }
-              : {
-                  id: 'run',
-                  label: 'Run',
-                  icon: ICON_PLAY,
-                  action: () => { executor.run(); },
+        return [
+          {
+            id: 'executor_submenu',
+            label: 'Executor',
+            icon: ICON_PLAY,
+            submenu: [
+              {
+                id: 'compile',
+                label: 'Compile',
+                icon: ICON_CHECK,
+                action: () => {
+                  const r = executor.compile();
+                  if (E.isLeft(r)) {
+                    alert('Compile Error: ' + r.left.message);
+                  }
                 },
-            {
-              id: 'toggle_realtime',
-              label: executor.realtime.value ? 'Stop Realtime' : 'Start Realtime',
-              icon: ICON_ACTIVITY,
-              action: () => {
-                if (executor.realtime.value) {
-                  executor.stop_realtime();
-                } else {
-                  executor.start_realtime();
-                }
               },
-            },
-            { id: 'exec_sep', kind: 'label', label: 'Advanced' },
-            {
-              id: 'reset',
-              label: 'Reset',
-              icon: ICON_UNDO,
-              action: () => {
-                executor.stop();
-                executor.compile();
+              {
+                id: 'step',
+                label: 'Step',
+                icon: ICON_STEP,
+                action: () => {
+                  executor.step();
+                },
               },
-            },
-            {
-              id: 'reset_cache',
-              label: 'Reset Cache',
-              icon: ICON_TRASH,
-              action: () => { executor.clear_cache(); },
-            },
-          ],
-        }];
+              is_running
+                ? {
+                    id: 'stop',
+                    label: 'Stop',
+                    icon: ICON_STOP,
+                    action: () => {
+                      executor.stop();
+                    },
+                  }
+                : {
+                    id: 'run',
+                    label: 'Run',
+                    icon: ICON_PLAY,
+                    action: () => {
+                      executor.run();
+                    },
+                  },
+              {
+                id: 'toggle_realtime',
+                label: executor.realtime.value ? 'Stop Realtime' : 'Start Realtime',
+                icon: ICON_ACTIVITY,
+                action: () => {
+                  if (executor.realtime.value) {
+                    executor.stop_realtime();
+                  } else {
+                    executor.start_realtime();
+                  }
+                },
+              },
+              { id: 'exec_sep', kind: 'label', label: 'Advanced' },
+              {
+                id: 'reset',
+                label: 'Reset',
+                icon: ICON_UNDO,
+                action: () => {
+                  executor.stop();
+                  executor.compile();
+                },
+              },
+              {
+                id: 'reset_cache',
+                label: 'Reset Cache',
+                icon: ICON_TRASH,
+                action: () => {
+                  executor.clear_cache();
+                },
+              },
+            ],
+          },
+        ];
       },
     });
   }
-
 };

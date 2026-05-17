@@ -103,7 +103,10 @@ export class TextViewNode extends EaselNode {
     set_inner_html(this.ports_container, ports_html);
 
     // Display content from custom_data
-    const content = node_data.custom_data?.['display_content'] as Record<string, any> | string | undefined;
+    const content = node_data.custom_data?.['display_content'] as
+      | Record<string, any>
+      | string
+      | undefined;
 
     if (content === undefined || content === null) {
       if (this.cached_content !== '') {
@@ -168,4 +171,3 @@ export class TextViewNode extends EaselNode {
     this.body.remove();
   }
 }
-

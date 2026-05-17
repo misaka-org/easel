@@ -14,27 +14,30 @@ import {
   ICON_GRID,
 } from '@/icons';
 
-export const controls_plugin: EaselPlugin = (easel) => {
+export const controls_plugin: EaselPlugin = easel => {
   // -----------------------------------------------------------------------
   // Action functions —shared by both UI buttons and context menu
   // -----------------------------------------------------------------------
   const do_zoom_in = () => {
     easel.dispatch(s => ({
       ...s,
-      camera: { ...s.camera, zoom: Math.min(10, s.camera.zoom * 1.2) }
+      camera: { ...s.camera, zoom: Math.min(10, s.camera.zoom * 1.2) },
     }));
   };
   const do_zoom_out = () => {
     easel.dispatch(s => ({
       ...s,
-      camera: { ...s.camera, zoom: Math.max(0.1, s.camera.zoom / 1.2) }
+      camera: { ...s.camera, zoom: Math.max(0.1, s.camera.zoom / 1.2) },
     }));
   };
   const do_fit = () => {
     const s = easel.state.value;
     const nodes = Object.values(s.nodes);
     if (nodes.length === 0) return;
-    let min_x = Infinity, min_y = Infinity, max_x = -Infinity, max_y = -Infinity;
+    let min_x = Infinity,
+      min_y = Infinity,
+      max_x = -Infinity,
+      max_y = -Infinity;
     for (const n of nodes) {
       min_x = Math.min(min_x, n.position.x);
       min_y = Math.min(min_y, n.position.y);
@@ -52,8 +55,8 @@ export const controls_plugin: EaselPlugin = (easel) => {
       ...s,
       camera: {
         zoom,
-        position: vec2_create(vp.width / 2 - center_x * zoom, vp.height / 2 - center_y * zoom)
-      }
+        position: vec2_create(vp.width / 2 - center_x * zoom, vp.height / 2 - center_y * zoom),
+      },
     }));
   };
   const do_layout = () => {
@@ -102,7 +105,6 @@ export const controls_plugin: EaselPlugin = (easel) => {
     boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
     overflow: 'hidden',
   });
-
 
   const btn_zoom_in = document.createElement('button');
   btn_zoom_in.innerHTML = ICON_PLUS;
@@ -177,7 +179,7 @@ export const controls_plugin: EaselPlugin = (easel) => {
 
   const buttons = [btn_zoom_in, btn_zoom_out, btn_fit, btn_layout, btn_fullscreen];
 
-  buttons.forEach((btn) => {
+  buttons.forEach(btn => {
     // 阻止事件冒泡到画布    btn.addEventListener('pointerdown', (e) => e.stopPropagation());
     bar.appendChild(btn);
   });
@@ -193,44 +195,45 @@ export const controls_plugin: EaselPlugin = (easel) => {
     cm.register({
       id: 'controls',
       priority: 30,
-      get_items: (_ctx: ContextMenuContext): readonly ContextMenuItem[] => [{
-        id: 'controls_submenu',
-        label: 'Controls',
-        icon: ICON_TABLE,
-        submenu: [
-          {
-            id: 'zoom_in',
-            label: 'Zoom In',
-            icon: ICON_SEARCH_PLUS,
-            action: do_zoom_in,
-          },
-          {
-            id: 'zoom_out',
-            label: 'Zoom Out',
-            icon: ICON_SEARCH_MINUS,
-            action: do_zoom_out,
-          },
-          {
-            id: 'fit_to_view',
-            label: 'Fit to View',
-            icon: ICON_MAXIMIZE,
-            action: do_fit,
-          },
-          {
-            id: 'auto_layout',
-            label: 'Auto Layout',
-            icon: ICON_GRID,
-            action: do_layout,
-          },
-          {
-            id: 'fullscreen',
-            label: 'Toggle Fullscreen',
-            icon: ICON_FULLSCREEN,
-            action: do_fullscreen,
-          },
-        ],
-      }],
+      get_items: (_ctx: ContextMenuContext): readonly ContextMenuItem[] => [
+        {
+          id: 'controls_submenu',
+          label: 'Controls',
+          icon: ICON_TABLE,
+          submenu: [
+            {
+              id: 'zoom_in',
+              label: 'Zoom In',
+              icon: ICON_SEARCH_PLUS,
+              action: do_zoom_in,
+            },
+            {
+              id: 'zoom_out',
+              label: 'Zoom Out',
+              icon: ICON_SEARCH_MINUS,
+              action: do_zoom_out,
+            },
+            {
+              id: 'fit_to_view',
+              label: 'Fit to View',
+              icon: ICON_MAXIMIZE,
+              action: do_fit,
+            },
+            {
+              id: 'auto_layout',
+              label: 'Auto Layout',
+              icon: ICON_GRID,
+              action: do_layout,
+            },
+            {
+              id: 'fullscreen',
+              label: 'Toggle Fullscreen',
+              icon: ICON_FULLSCREEN,
+              action: do_fullscreen,
+            },
+          ],
+        },
+      ],
     });
   }
-
 };

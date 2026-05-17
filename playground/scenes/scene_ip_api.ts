@@ -5,7 +5,7 @@ import type { Dispatch } from '@/runtime/registry';
 
 export const load_ip_api_scene = (dispatch: Dispatch) => {
   // Text input node (provides the IP query)
-  dispatch((s) =>
+  dispatch(s =>
     add_node(s, {
       id: 'input1',
       type: 'text_input',
@@ -22,7 +22,7 @@ export const load_ip_api_scene = (dispatch: Dispatch) => {
   );
 
   // IP Geolocation API node (executes the HTTP request)
-  dispatch((s) =>
+  dispatch(s =>
     add_node(s, {
       id: 'api1',
       type: 'ip_api',
@@ -44,7 +44,7 @@ export const load_ip_api_scene = (dispatch: Dispatch) => {
   );
 
   // Text view node (displays the result)
-  dispatch((s) =>
+  dispatch(s =>
     add_node(s, {
       id: 'view1',
       type: 'text_view',

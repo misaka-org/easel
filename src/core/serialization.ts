@@ -6,7 +6,7 @@ export const serialize_state = (state: State): string => {
   const export_data = {
     nodes: state.nodes,
     wires: state.wires,
-    camera: state.camera
+    camera: state.camera,
   };
   return JSON.stringify(export_data, null, 2);
 };
@@ -18,7 +18,7 @@ export const deserialize_state = (json: string): State => {
       ...create_initial_state(),
       nodes: data.nodes || {},
       wires: data.wires || {},
-      camera: data.camera || { position: { x: 0, y: 0 }, zoom: 1 }
+      camera: data.camera || { position: { x: 0, y: 0 }, zoom: 1 },
     };
   } catch (e) {
     console.error('Failed to deserialize state', e);

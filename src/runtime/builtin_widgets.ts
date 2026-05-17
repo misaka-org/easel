@@ -3,7 +3,7 @@ import type { WidgetTypeDef } from './register';
 const builtin_widgets: WidgetTypeDef[] = [
   {
     type: 'text',
-    create: (w) => {
+    create: w => {
       const el = document.createElement('input');
       el.type = 'text';
       el.dataset.widgetId = w.id;
@@ -14,11 +14,11 @@ const builtin_widgets: WidgetTypeDef[] = [
       input.disabled = disabled;
       if (input.value !== String(w.value)) input.value = String(w.value);
     },
-    parse: (el) => (el as HTMLInputElement).value,
+    parse: el => (el as HTMLInputElement).value,
   },
   {
     type: 'textarea',
-    create: (w) => {
+    create: w => {
       const el = document.createElement('textarea');
       el.dataset.widgetId = w.id;
       el.rows = 3;
@@ -29,11 +29,11 @@ const builtin_widgets: WidgetTypeDef[] = [
       ta.disabled = disabled;
       if (ta.value !== String(w.value)) ta.value = String(w.value);
     },
-    parse: (el) => (el as HTMLTextAreaElement).value,
+    parse: el => (el as HTMLTextAreaElement).value,
   },
   {
     type: 'number',
-    create: (w) => {
+    create: w => {
       const el = document.createElement('input');
       el.type = 'number';
       el.dataset.widgetId = w.id;
@@ -47,11 +47,11 @@ const builtin_widgets: WidgetTypeDef[] = [
       input.disabled = disabled;
       if (input.value !== String(w.value)) input.value = String(w.value);
     },
-    parse: (el) => parseFloat((el as HTMLInputElement).value),
+    parse: el => parseFloat((el as HTMLInputElement).value),
   },
   {
     type: 'boolean',
-    create: (w) => {
+    create: w => {
       const el = document.createElement('input');
       el.type = 'checkbox';
       el.dataset.widgetId = w.id;
@@ -62,11 +62,11 @@ const builtin_widgets: WidgetTypeDef[] = [
       input.disabled = disabled;
       input.checked = !!w.value;
     },
-    parse: (el) => (el as HTMLInputElement).checked,
+    parse: el => (el as HTMLInputElement).checked,
   },
   {
     type: 'color',
-    create: (w) => {
+    create: w => {
       const el = document.createElement('input');
       el.type = 'color';
       el.dataset.widgetId = w.id;
@@ -77,15 +77,15 @@ const builtin_widgets: WidgetTypeDef[] = [
       input.disabled = disabled;
       if (input.value !== String(w.value)) input.value = String(w.value);
     },
-    parse: (el) => (el as HTMLInputElement).value,
+    parse: el => (el as HTMLInputElement).value,
   },
   {
     type: 'select',
-    create: (w) => {
+    create: w => {
       const el = document.createElement('select');
       el.dataset.widgetId = w.id;
       const opts = w.options || [];
-    for (const opt of opts) {
+      for (const opt of opts) {
         const opt_el = document.createElement('option');
         if (typeof opt === 'string') {
           opt_el.value = opt;
@@ -103,11 +103,11 @@ const builtin_widgets: WidgetTypeDef[] = [
       sel.disabled = disabled;
       sel.value = String(w.value);
     },
-    parse: (el) => (el as HTMLSelectElement).value,
+    parse: el => (el as HTMLSelectElement).value,
   },
   {
     type: 'range',
-    create: (w) => {
+    create: w => {
       const el = document.createElement('input');
       el.type = 'range';
       el.dataset.widgetId = w.id;
@@ -121,11 +121,11 @@ const builtin_widgets: WidgetTypeDef[] = [
       input.disabled = disabled;
       if (input.value !== String(w.value)) input.value = String(w.value);
     },
-    parse: (el) => parseFloat((el as HTMLInputElement).value),
+    parse: el => parseFloat((el as HTMLInputElement).value),
   },
   {
     type: 'switch',
-    create: (w) => {
+    create: w => {
       const label = document.createElement('label');
       label.className = 'easel-switch';
       const input = document.createElement('input');
@@ -145,7 +145,7 @@ const builtin_widgets: WidgetTypeDef[] = [
         input.checked = !!w.value;
       }
     },
-    parse: (el) => {
+    parse: el => {
       if (el.classList.contains('easel-switch-input')) {
         return (el as HTMLInputElement).checked;
       }

@@ -7,5 +7,5 @@ export const create_initial_state = (): State => ({
   camera: { position: vec2_create(0, 0), zoom: 1 },
   interaction: { mode: 'idle' },
   selected_node_ids: [],
-  modifiers: { ctrl: false, shift: false, alt: false, meta: false }
+  modifiers: { ctrl: false, shift: false, alt: false, meta: false },
 });
