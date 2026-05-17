@@ -14,6 +14,8 @@ export { EaselNode, register_node_type, get_node_constructor, get_registered_typ
 export { register_node_spec, create_node_data, resolve_node_spec, type NodeSpec } from "./runtime/registry";
 export { register_node_ns, get_node_ns } from "./runtime/registry";
 export { DefaultNode } from "./runtime/default_node";
+export { Register, get_widget_type } from "./runtime/register";
+export type { WidgetTypeDef, WidgetUpdateOptions } from "./runtime/register";
 export { default_theme, light_theme, apply_theme, type Theme } from "./runtime/theme";
 
 // Executor exports
@@ -31,11 +33,11 @@ export { executor_plugin } from "./plugins/executor_plugin";
 export { with_guidelines } from "./plugins/guidelines";
 export { node_picker_plugin } from "./plugins/node_picker";
 
-// Built-in nodes (internal)
-import { SubgraphNode, SubgraphInputNode, SubgraphOutputNode } from "./nodes/subgraph";
-import { GroupNode } from "./nodes/group";
+// Built-in nodes (for backward compat; no longer needed since easel.register handles it)
 import { register_node_type } from "./runtime/registry";
 import { vec2_create } from "./core/math";
+import { SubgraphNode, SubgraphInputNode, SubgraphOutputNode } from "./nodes/subgraph";
+import { GroupNode } from "./nodes/group";
 
 export function register_builtin_nodes() {
  register_node_type("subgraph", SubgraphNode);

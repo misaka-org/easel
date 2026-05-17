@@ -7,25 +7,13 @@ import { get_base_css, apply_theme, default_theme, type Theme } from './theme';
 import EventEmitter from 'eventemitter3';
 import type { State } from '@/core/types';
 import type { ShallowRef, ReactiveEffectRunner } from '@vue/reactivity';
-import { register_builtin_nodes } from '@/index';
 import type { EaselNode, Dispatch } from './registry';
 import { KeybindingManager, register_core_keybindings } from './keybindings';
+import { Register, register_builtin_widgets } from './register';
+import { vec2_create } from '@/core/math';
+import { SubgraphNode, SubgraphInputNode, SubgraphOutputNode } from '@/nodes/subgraph';
+import { GroupNode } from '@/nodes/group';
 
-/**
- * 插件扩展数据命名空间。
- * 插件通过 declaration merging 向此接口添加字段，
- * 消费者直接通过 easel.plugin_data.xxx 访问，全程类型安全。
- *
- * @example
- * // context_menu/index.ts
- * declare module '../runtime/easel' {
- *   interface EaselPluginData {
- *     context_menu?: ContextMenuService;
- *   }
- * }
- * // 消费者
- * easel.plugin_data.context_menu?.register(...)
- */
 export interface EaselPluginData {}
 
 export interface EaselEvents {
@@ -55,22 +43,29 @@ export class Easel {
   state: ShallowRef<State>;
   dispatch: Dispatch;
   app_events: EventEmitter<EaselEvents>;
+  register: Register;
   node_instances = new Map<string, { el: HTMLElement; inst: EaselNode; runner: ReactiveEffectRunner }>();
-  /** 插件扩展数据 —— 通过 declaration merging 添加类型，零 cast 访问 */
   plugin_data: EaselPluginData = {} as EaselPluginData;
-  /** 键盘快捷键管理器 */
   keybindings = new KeybindingManager();
   theme: Theme;
 
   constructor(container: HTMLElement, options: MountOptions = {}) {
-    register_builtin_nodes();
+    // Initialize registry with built-in widget types
+    this.register = new Register();
+    register_builtin_widgets();
+
+    // Register built-in node types
+    this.register.add_node('subgraph', SubgraphNode);
+    this.register.add_node('group', GroupNode);
+    this.register.add_node('subgraph_input', SubgraphInputNode, { resizable: false, size: vec2_create(20, 20) });
+    this.register.add_node('subgraph_output', SubgraphOutputNode, { resizable: false, size: vec2_create(20, 20) });
 
     const shadow = container.attachShadow({ mode: 'open' });
-    
+
     const style_el = document.createElement('style');
     style_el.textContent = get_base_css() + (options.custom_css ? `\n${options.custom_css}` : '');
     shadow.appendChild(style_el);
-    
+
     this.theme = { ...default_theme, ...options.theme };
     apply_theme(container, this.theme);
 
@@ -81,7 +76,7 @@ export class Easel {
     const store = create_store(options.initial_state);
     this.state = store.state;
     this.app_events = new EventEmitter<EaselEvents>();
-    
+
     let current_dispatch = with_guidelines(canvas_el, this.state, store.dispatch);
     this.dispatch = (updater) => {
       const prev = this.state.value;

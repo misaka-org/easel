@@ -1,5 +1,5 @@
-﻿import { effect } from "@vue/reactivity";
-import { Easel, register_node_type, register_node_ns, EaselNode, type ExecuteContext, type NodeSpec } from "@/index";
+import { effect } from "@vue/reactivity";
+import { Easel, EaselNode, type ExecuteContext, type NodeSpec } from "@/index";
 import { add_node, update_node_data } from "@/core/node_ops";
 import { create_initial_state } from "@/core/state";
 import { serialize_state, deserialize_state } from "@/core/serialization";
@@ -86,36 +86,6 @@ class ImageGenNode extends DefaultNode {
   }
 }
 
-register_node_type("default", ExecutableDefaultNode);
-register_node_type("text_generation", TextGenNode);
-register_node_type("image_generation", ImageGenNode);
-register_node_type("image_preview", ImagePreviewNode);
-register_node_type("math", MathNode);
-register_node_type("ip_api", IpApiNode);
-register_node_type("text_input", TextInputNode);
-register_node_type("text_view", TextViewNode);
-register_node_type("color_source", ColorSourceNode);
-register_node_type("css_builder", CSSBuilderNode);
-register_node_type("css_preview", CSSPreviewNode);
-register_node_type("counter", CounterNode);
-
-// -------------------------------------------------------------------
-// Namespace registration 锟?organizes the "Add Node" submenu
-// into hierarchical submenus. Nodes without ns appear under "Other".
-// -------------------------------------------------------------------
-register_node_ns("image_generation", ["生成", "图像"]);
-register_node_ns("text_generation", ["生成", "文本"]);
-register_node_ns("audio_generation", ["生成", "音频"]);
-register_node_ns("video_concatenation", ["生成", "视频"]);
-register_node_ns("ip_api", ["网络"]);
-register_node_ns("math", ["数学"]);
-register_node_ns("counter", ["数学"]);
-register_node_ns("image_preview", ["预览"]);
-register_node_ns("text_view", ["预览"]);
-register_node_ns("css_preview", ["预览"]);
-register_node_ns("css_builder", ["预览"]);
-register_node_ns("text_input", ["输入"]);
-register_node_ns("color_source", ["输入"]);
 const init = () => {
   const canvas_el = document.getElementById("canvas");
   if (!canvas_el) return;
@@ -165,6 +135,35 @@ const init = () => {
   });
 
   const { state, dispatch, app_events, set_theme } = easel;
+
+  // Register node types via easel.register (OOP API)
+  easel.register.add_node('default', ExecutableDefaultNode);
+  easel.register.add_node('text_generation', TextGenNode);
+  easel.register.add_node('image_generation', ImageGenNode);
+  easel.register.add_node('image_preview', ImagePreviewNode);
+  easel.register.add_node('math', MathNode);
+  easel.register.add_node('ip_api', IpApiNode);
+  easel.register.add_node('text_input', TextInputNode);
+  easel.register.add_node('text_view', TextViewNode);
+  easel.register.add_node('color_source', ColorSourceNode);
+  easel.register.add_node('css_builder', CSSBuilderNode);
+  easel.register.add_node('css_preview', CSSPreviewNode);
+  easel.register.add_node('counter', CounterNode);
+
+  // Register namespace hierarchy for "Add Node" submenu
+  easel.register.add_node_ns('image_generation', ['生成', '图像']);
+  easel.register.add_node_ns('text_generation', ['生成', '文本']);
+  easel.register.add_node_ns('audio_generation', ['生成', '音频']);
+  easel.register.add_node_ns('video_concatenation', ['生成', '视频']);
+  easel.register.add_node_ns('ip_api', ['网络']);
+  easel.register.add_node_ns('math', ['数学']);
+  easel.register.add_node_ns('counter', ['数学']);
+  easel.register.add_node_ns('image_preview', ['预览']);
+  easel.register.add_node_ns('text_view', ['预览']);
+  easel.register.add_node_ns('css_preview', ['预览']);
+  easel.register.add_node_ns('css_builder', ['预览']);
+  easel.register.add_node_ns('text_input', ['输入']);
+  easel.register.add_node_ns('color_source', ['输入']);
 
   // Graph Stack Management
   type StackItem = { parent_node_id: string; parent_state: State };

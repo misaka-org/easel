@@ -1,6 +1,7 @@
 import { EaselNode } from './registry';
-import type { GraphNode } from '@/core/types';
+import type { GraphNode, State, Widget } from '@/core/types';
 import { update_node_data, update_widget_value, remove_node } from '@/core/node_ops';
+import { get_widget_type } from './register';
 import { ICON_X } from '@/icons';
 
 export class DefaultNode extends EaselNode {
@@ -8,6 +9,8 @@ export class DefaultNode extends EaselNode {
   private body!: HTMLElement;
   private ports_container!: HTMLElement;
   private widgets_container!: HTMLElement;
+  private widget_elements = new Map<string, HTMLElement>();
+  private last_widget_schema = '';
 
   mount(node_data: GraphNode): void {
     this.header = document.createElement('div');
@@ -36,13 +39,16 @@ export class DefaultNode extends EaselNode {
       }
     });
 
+    // Widget input handler - uses dataset.widgetType to find the parse function
     this.widgets_container.addEventListener('input', (e) => {
-      const target = e.target as HTMLInputElement;
+      const target = e.target as HTMLElement;
       const widget_id = target.dataset['widgetId'];
-      if (widget_id) {
-        let val: string | number | boolean = target.value;
-        if (target.type === 'checkbox') val = target.checked;
-        if (target.type === 'number') val = parseFloat(target.value);
+      if (!widget_id) return;
+      const widget_type = target.dataset['widgetType'];
+      if (!widget_type) return;
+      const def = get_widget_type(widget_type);
+      if (def?.parse) {
+        const val = def.parse(target);
         this.dispatch((s) => update_widget_value(s, this.node_id, widget_id, val));
       }
     });
@@ -63,7 +69,14 @@ export class DefaultNode extends EaselNode {
     });
   }
 
-  update(node_data: GraphNode, state: import('../core/types').State): void {
+  update(node_data: GraphNode, state: State): void {
+    this.update_header(node_data);
+    this.update_ports(node_data, state);
+    this.update_widgets(node_data, state);
+    this.update_resize_handle(node_data);
+  }
+
+  protected update_header(node_data: GraphNode): void {
     const hue = (node_data.custom_data['color'] as string) || 'var(--primary-color)';
     const title_html = `
       <div class="type-indicator" data-action="toggle_collapse" style="background: ${hue}; flex-shrink: 0; margin-right: 6px;"></div>
@@ -76,7 +89,9 @@ export class DefaultNode extends EaselNode {
     if (this.header.innerHTML !== title_html) {
       this.header.innerHTML = title_html;
     }
+  }
 
+  protected update_ports(node_data: GraphNode, state: State): void {
     const is_port_connected = (p_id: string) => Object.values(state.wires).some(
       wire => (wire.target_node_id === this.node_id && wire.target_port_id === p_id) ||
               (wire.source_node_id === this.node_id && wire.source_port_id === p_id)
@@ -110,56 +125,82 @@ export class DefaultNode extends EaselNode {
     if (this.ports_container.innerHTML !== ports_html) {
       this.ports_container.innerHTML = ports_html;
     }
+  }
 
-    let widgets_html = '';
-    if (node_data.widgets) {
-      widgets_html += node_data.widgets.map(w => {
-        const is_connected = Object.values(state.wires).some(wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id);
-        const disabled = is_connected ? 'disabled' : '';
+  protected update_widgets(node_data: GraphNode, state: State): void {
+    const widgets = node_data.widgets || [];
+
+    // Build schema: widget id + type + connection state
+    const schema = widgets.map(w => {
+      const connected = Object.values(state.wires).some(
+        wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id
+      );
+      return `${w.id}:${w.type}:${connected}`;
+    }).join(',');
+
+    if (schema !== this.last_widget_schema) {
+      // Schema changed -> rebuild widget DOM
+      this.last_widget_schema = schema;
+      this.widget_elements.clear();
+      this.widgets_container.innerHTML = '';
+
+      for (const w of widgets) {
+        const def = get_widget_type(w.type);
+        if (!def) continue;
+        const el = def.create(w);
+        // Initialize widget value on creation (update() called later for incremental sync)
+        def.update(el, w, { connected: false, disabled: false });
+        // Tag element so input handler can find widget type without state lookup
+        el.dataset.widgetType = w.type;
+        // Tag child elements too (e.g. switch inner input)
+        el.querySelectorAll('[data-widget-id]').forEach((child) => {
+          (child as HTMLElement).dataset.widgetType = w.type;
+        });
+        this.widget_elements.set(w.id, el);
+
+        // Wrapper row for consistent layout
+        const row = document.createElement('div');
+        row.className = 'widget-row';
+        const connected = Object.values(state.wires).some(
+          wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id
+        );
         const type_class = `port-type-${w.type}`;
-        const connected_class = is_connected ? 'connected' : '';
+        const connected_class = connected ? 'connected' : '';
 
-        let input_html = '';
-        if (w.type === 'text') input_html = `<input type="text" data-widget-id="${w.id}" value="${w.value}" ${disabled} />`;
-        else if (w.type === 'number') input_html = `<input type="number" data-widget-id="${w.id}" value="${w.value}" min="${w.min ?? ''}" max="${w.max ?? ''}" ${disabled} />`;
-        else if (w.type === 'boolean') input_html = `<input type="checkbox" data-widget-id="${w.id}" ${w.value ? 'checked' : ''} ${disabled} />`;
-        else if (w.type === 'color') input_html = `<input type="color" data-widget-id="${w.id}" value="${w.value}" ${disabled} />`;
-
-        return `
-          <div class="widget-row">
-            <div class="port" data-port-id="${w.id}" data-port-type="input">
-              <div class="port-dot ${type_class} ${connected_class}"></div>
-              <span class="port-label">${w.label}</span>
-            </div>
-            <div class="widget-input-container">${input_html}</div>
+        // Port dot + label on the left, widget input on the right
+        const label_html = `
+          <div class="port" data-port-id="${w.id}" data-port-type="input">
+            <div class="port-dot ${type_class} ${connected_class}"></div>
+            <span class="port-label">${w.label}</span>
           </div>
         `;
-      }).join('');
-    }
+        const label_wrapper = document.createElement('div');
+        label_wrapper.innerHTML = label_html;
+        row.appendChild(label_wrapper.firstElementChild || label_wrapper);
 
-    const widgets_schema = (node_data.widgets?.map(w => {
-      const is_connected = Object.values(state.wires).some(wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id);
-      return `${w.id}:${is_connected}`;
-    }).join(',') || '');
-
-    if (this.widgets_container.dataset['schema'] !== widgets_schema) {
-      this.widgets_container.innerHTML = widgets_html;
-      this.widgets_container.dataset['schema'] = widgets_schema;
-      this.widgets_container.style.display = widgets_html ? 'flex' : 'none';
+        const input_wrapper = document.createElement('div');
+        input_wrapper.className = 'widget-input-container';
+        input_wrapper.appendChild(el);
+        row.appendChild(input_wrapper);
+        this.widgets_container.appendChild(row);
+      }
+      this.widgets_container.style.display = widgets.length > 0 ? 'flex' : 'none';
     } else {
-      // Schema matched, safely update values without destroying DOM focus
-      node_data.widgets?.forEach(w => {
-        const input = this.widgets_container.querySelector(`[data-widget-id="${w.id}"]`) as HTMLInputElement;
-        if (input) {
-          if (w.type === 'boolean' && input.type === 'checkbox') {
-            input.checked = w.value as boolean;
-          } else if (input.value !== String(w.value)) {
-            input.value = String(w.value);
-          }
-        }
-      });
+      // Schema unchanged -> update values in-place without destroying focus
+      for (const w of widgets) {
+        const el = this.widget_elements.get(w.id);
+        if (!el) continue;
+        const def = get_widget_type(w.type);
+        if (!def) continue;
+        const connected = Object.values(state.wires).some(
+          wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id
+        );
+        def.update(el, w, { connected, disabled: connected });
+      }
     }
+  }
 
+  protected update_resize_handle(node_data: GraphNode): void {
     if ((node_data.resizable !== false) && !node_data.collapsed) {
       if (!this.container.querySelector('.node-resize-handle')) {
         const handle = document.createElement('div');
@@ -176,5 +217,6 @@ export class DefaultNode extends EaselNode {
   unmount(): void {
     this.header.remove();
     this.body.remove();
+    this.widget_elements.clear();
   }
 }

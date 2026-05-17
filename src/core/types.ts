@@ -11,13 +11,17 @@ export type Port = {
 
 export type WidgetValue = string | number | boolean;
 
+export type WidgetOption = { readonly label: string; readonly value: string };
+
 export type Widget = {
   readonly id: string;
-  readonly type: 'text' | 'number' | 'boolean' | 'color';
+  readonly type: 'text' | 'textarea' | 'number' | 'boolean' | 'color' | 'select' | 'range' | 'switch';
   readonly label: string;
   readonly value: WidgetValue;
   readonly min?: number;
   readonly max?: number;
+  readonly step?: number;
+  readonly options?: readonly string[] | readonly WidgetOption[];
   readonly value_type?: string;
   readonly accepts?: readonly string[];
   readonly required?: boolean;

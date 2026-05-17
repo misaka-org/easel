@@ -370,6 +370,101 @@ export const get_base_css = () => css`
     cursor: not-allowed;
   }
 
+  .widget-row textarea {
+    width: 120px;
+    background: transparent;
+    border: 1px solid var(--node-border);
+    color: var(--text-color);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    box-sizing: border-box;
+    resize: vertical;
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .widget-row textarea:focus {
+    outline: none;
+    border-color: var(--text-color);
+    box-shadow: 0 0 0 1px var(--text-color);
+  }
+
+  .widget-row select {
+    width: 80px;
+    background: transparent;
+    border: 1px solid var(--node-border);
+    color: var(--text-color);
+    padding: 4px 4px;
+    border-radius: 4px;
+    font-size: 11px;
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .widget-row select:focus {
+    outline: none;
+    border-color: var(--text-color);
+  }
+  .widget-row select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .widget-row input[type="range"] {
+    width: 80px;
+    height: 4px;
+    margin: 0;
+    vertical-align: middle;
+    accent-color: var(--primary-color, #fafafa);
+  }
+  .widget-row input[type="range"]:disabled {
+    opacity: 0.5;
+  }
+
+  .widget-row .easel-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: 32px;
+    height: 18px;
+    cursor: pointer;
+    vertical-align: middle;
+  }
+  .widget-row .easel-switch-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .widget-row .easel-switch-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--node-border, #333);
+    border-radius: 18px;
+    transition: background 0.2s;
+  }
+  .widget-row .easel-switch-slider::before {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    left: 2px;
+    bottom: 2px;
+    background: var(--text-color, #fafafa);
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .widget-row .easel-switch-input:checked + .easel-switch-slider {
+    background: var(--primary-color, #fafafa);
+  }
+  .widget-row .easel-switch-input:checked + .easel-switch-slider::before {
+    transform: translateX(14px);
+  }
+  .widget-row .easel-switch-input:disabled + .easel-switch-slider {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   .selection-box {
     position: absolute;
     border: 1px solid var(--selection-border);
