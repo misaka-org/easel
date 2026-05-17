@@ -1,7 +1,7 @@
- import type { GraphNode, State } from '../core/types';
+ import type { GraphNode, State } from '@/core/types';
 import type { ContextMenuContext, ContextMenuItem } from '@/plugins/context_menu/types';
-import { vec2_create, type Vec2 } from '../core/math';
-import type { Port, Widget } from '../core/types';
+import { vec2_create, type Vec2 } from '@/core/math';
+import type { Port, Widget } from '@/core/types';
  
 export type Dispatch = (updater: (state: State) => State) => void;
 

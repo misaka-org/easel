@@ -1,5 +1,5 @@
-import type { GraphNode, Wire } from '../core/types';
-import { vec2_create, type Vec2 } from '../core/math';
+import type { GraphNode, Wire } from '@/core/types';
+import { vec2_create, type Vec2 } from '@/core/math';
 
 // ---------------------------------------------------------------------------
 // Internal types

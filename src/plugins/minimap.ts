@@ -1,5 +1,5 @@
-import type { EaselPlugin } from '../runtime/easel';
-import { frame_effect } from '../runtime/frame_effect';
+import type { EaselPlugin } from '@/runtime/easel';
+import { frame_effect } from '@/runtime/frame_effect';
 import { apply_styles } from '@/utils/css';
 
 export const minimap_plugin: EaselPlugin = (easel) => {

@@ -1,5 +1,5 @@
-import type { EaselPlugin } from '../runtime/easel';
-import { vec2_create } from '../core/math';
+import type { EaselPlugin } from '@/runtime/easel';
+import { vec2_create } from '@/core/math';
 import { apply_styles } from '@/utils/css';
 import { auto_layout } from '@/runtime/auto_layout';
 import type { ContextMenuItem, ContextMenuProvider, ContextMenuContext } from '@/plugins/context_menu/types';

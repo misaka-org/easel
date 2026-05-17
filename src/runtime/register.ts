@@ -1,4 +1,4 @@
-import type { Widget } from '../core/types';
+import type { Widget } from '@/core/types';
 import type { EaselNodeConstructor, NodeSpec } from './registry';
 import {
   register_node_type as _reg_node,

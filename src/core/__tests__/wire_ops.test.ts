@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { create_initial_state } from '../state';
-import { add_wire, remove_wire } from '../wire_ops';
+import { create_initial_state } from '@/core/state';
+import { add_wire, remove_wire } from '@/core/wire_ops';
 
 describe('wire_ops', () => {
   const wire_a = {

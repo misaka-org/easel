@@ -1,6 +1,6 @@
-import type { EaselPlugin } from '../runtime/easel';
-import { vec2_create, vec2_add } from '../core/math';
-import { pointer_move } from '../core/interactions';
+import type { EaselPlugin } from '@/runtime/easel';
+import { vec2_create, vec2_add } from '@/core/math';
+import { pointer_move } from '@/core/interactions';
 import * as O from 'fp-ts/Option';
 
 export const auto_pan_plugin: EaselPlugin = (easel) => {

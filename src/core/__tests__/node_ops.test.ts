@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { create_initial_state } from '../state';
-import { add_node, move_node, remove_node } from '../node_ops';
-import { vec2_create } from '../math';
+import { create_initial_state } from '@/core/state';
+import { add_node, move_node, remove_node } from '@/core/node_ops';
+import { vec2_create } from '@/core/math';
 
 describe('node_ops', () => {
   const node_a = {

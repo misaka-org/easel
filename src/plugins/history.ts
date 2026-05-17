@@ -1,6 +1,6 @@
-import type { EaselPlugin } from '../runtime/easel';
-import type { State } from '../core/types';
-import { create_initial_state } from '../core/state';
+import type { EaselPlugin } from '@/runtime/easel';
+import type { State } from '@/core/types';
+import { create_initial_state } from '@/core/state';
 import { apply_styles } from '@/utils/css';
 import type { ContextMenuItem, ContextMenuProvider, ContextMenuContext } from '@/plugins/context_menu/types';
 import { ICON_CLOCK, ICON_UNDO, ICON_REDO } from '@/icons';

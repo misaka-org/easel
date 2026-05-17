@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { vec2_create, vec2_add, vec2_sub, vec2_scale } from '../math';
+import { vec2_create, vec2_add, vec2_sub, vec2_scale } from '@/core/math';
 
 describe('math', () => {
   it('should add vectors', () => {
