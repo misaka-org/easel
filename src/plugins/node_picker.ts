@@ -335,13 +335,16 @@ export const node_picker_plugin: EaselPlugin = easel => {
     }
   });
 
-  // ---- Dblclick on empty space opens the picker ----
+  // ---- Dblclick on empty canvas space opens the picker ----
   easel.container.addEventListener('dblclick', e => {
+    // 排除在 control/panel 等 UI 元素上的双击
+    const panel_sel = '.easel-controls, .easel-history-panel, .easel-minimap, .easel-context-menu, .easel-executor-panel, .executor-overlays, button, input, textarea, select';
     // Use elementFromPoint (matching the context_menu plugin) so the .node
     // check reliably crosses shadow DOM boundaries.
     const root = easel.container.getRootNode() as ShadowRoot | Document;
     const el = root.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
     if (el?.closest('.node')) return;
+    if (el?.closest(panel_sel)) return;
 
     e.stopPropagation();
 
