@@ -8,6 +8,8 @@ export {
   update_node_data,
   update_widget_value,
   remove_node,
+  create_subgraph_from_selection,
+  expand_subgraph,
 } from './core/node_ops';
 
 export * from './core/math';
@@ -57,6 +59,7 @@ export { is_port_connected, find_binding_by_target, find_binding_by_source } fro
 export { guidelines_plugin } from './plugins/guidelines';
 export { toolbar_plugin } from './plugins/toolbar';
 export { node_picker_plugin } from './plugins/node_picker';
+export { subgraph_plugin } from './plugins/subgraph';
 
 // Built-in nodes (for backward compat; no longer needed since easel.register handles it)
 import { register_node_type } from './runtime/registry';

@@ -61,7 +61,7 @@ const handle_dragging = (state: State, i: Extract<Interaction, { mode: 'dragging
     if (to_move.has(id)) return;
     to_move.add(id);
     Object.values(state.bindings)
-      .filter(b => b.type === 'group-child' && b.source_id === id)
+      .filter(b => (b.type === 'group-child' || b.type === 'subgraph-child') && b.source_id === id)
       .map(b => b.target_id)
       .forEach(collect);
   };

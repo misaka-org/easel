@@ -39,7 +39,8 @@ export class SubgraphNode extends EaselNode {
   }
 
   update(node_data: GraphNode, _state: State): void {
-    const hue = node_data.custom_data['color'] || 'var(--primary-color)';
+    const hue = (node_data.custom_data['color'] as string) || 'var(--primary-color)';
+
     const title_html = `
       <div class="type-indicator" style="background: ${hue}"></div>
       <span class="title-text">${node_data.title}</span>
@@ -77,6 +78,16 @@ export class SubgraphNode extends EaselNode {
     ].join('');
 
     set_inner_html(this.body, ports_html);
+
+    // resize handle
+    if (node_data.resizable !== false) {
+      if (!this.container.querySelector('.node-resize-handle')) {
+        const handle = document.createElement('div');
+        handle.className = 'node-resize-handle';
+        handle.dataset['action'] = 'resize';
+        this.container.appendChild(handle);
+      }
+    }
   }
 
   unmount(): void {

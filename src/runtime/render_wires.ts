@@ -240,6 +240,7 @@ export const render_wires = (container: HTMLElement, store: Store): void => {
         el.classList.add('wire');
         svg.appendChild(el);
         wire_elements.set(id, el);
+        last_wire_pos.delete(id);
       }
 
       const source_node = store.nodes.get(source_node_id);

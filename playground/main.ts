@@ -1,6 +1,6 @@
 import { effect } from '@vue/reactivity';
 import { Easel, ExecuteContext, type NodeSpec } from '@/index';
-import { add_node, update_node_data } from '@/core/node_ops';
+import { add_node } from '@/core/node_ops';
 import { create_initial_state } from '@/core/state';
 import { serialize_state, deserialize_state } from '@/core/serialization';
 import { vec2_create } from '@/core/math';
@@ -176,54 +176,27 @@ const init = () => {
   easel.register.add_node_ns('text_input', ['输入']);
   easel.register.add_node_ns('color_source', ['输入']);
 
-  // Graph Stack Management
-  type StackItem = { parent_node_id: string; parent_state: State };
-  const graph_stack: StackItem[] = [];
-
-  app_events.on('enter_subgraph', ({ node_id }) => {
-    const node = easel.state.value.nodes[node_id];
-    if (!node) return;
-
-    graph_stack.push({ parent_node_id: node_id, parent_state: state.value });
-
-    const inner_graph = (node.custom_data['graph'] as {
-      nodes: any;
-      bindings: any;
-    }) || { nodes: {}, bindings: {} };
-
-    dispatch(() => ({
-      ...create_initial_state(),
-      nodes: inner_graph.nodes,
-      bindings: inner_graph.bindings,
-    }));
-  });
-
-  const exit_subgraph_fn = () => {
-    if (graph_stack.length === 0) return;
-    const parent = graph_stack.pop()!;
-
-    // Sync inner I/O nodes to parent node ports
-    const inner_nodes = state.value.nodes;
-    const inner_bindings = state.value.bindings;
-
-    const parent_state = parent.parent_state;
-    const next_parent_state = update_node_data(parent_state, parent.parent_node_id, n => ({
-      ...n,
-      custom_data: {
-        ...n.custom_data,
-        graph: { nodes: inner_nodes, bindings: inner_bindings },
-      },
-    }));
-
-    dispatch(() => next_parent_state);
+  // Subgraph stack depth → exit button visibility
+  const update_subgraph_ui = () => {
+    const btn_exit = document.getElementById('btn-exit-subgraph');
+    if (btn_exit) {
+      btn_exit.style.display = easel.plugin_data.subgraph?.stack_depth() ? 'block' : 'none';
+    }
   };
+  effect(update_subgraph_ui);
 
-  document.getElementById('btn-exit-subgraph')?.addEventListener('click', exit_subgraph_fn);
+  document.getElementById('btn-exit-subgraph')?.addEventListener('click', () => {
+    easel.plugin_data.subgraph?.exit();
+  });
 
   // Scene Management
   const load_scene = (name: string) => {
-    graph_stack.length = 0;
-    dispatch(() => create_initial_state());
+    easel.plugin_data.subgraph?.clear();
+    easel.dispatch(() => ({
+      ...create_initial_state(),
+      nodes: {},
+      bindings: {},
+    }));
 
     if (name === 'default') {
       dispatch(s =>
@@ -363,7 +336,7 @@ const init = () => {
         )}, ${s.camera.position.y.toFixed(1)}] @ ${s.camera.zoom.toFixed(2)}x`,
         `Selected: ${s.selected_node_ids.length > 0 ? s.selected_node_ids.join(', ') : 'None'}`,
         `Interaction: ${s.interaction.mode}`,
-        `Stack Depth: ${graph_stack.length}`,
+    `Stack Depth: ${easel.plugin_data.subgraph?.stack_depth() ?? 0}`,
       ].join('\n');
       if (stats_el.textContent !== text_content) {
         stats_el.textContent = text_content;
@@ -371,7 +344,7 @@ const init = () => {
 
       const btn_exit = document.getElementById('btn-exit-subgraph');
       if (btn_exit) {
-        btn_exit.style.display = graph_stack.length > 0 ? 'block' : 'none';
+        btn_exit.style.display = easel.plugin_data.subgraph?.stack_depth() ? 'block' : 'none';
       }
     });
   }

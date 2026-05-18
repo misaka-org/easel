@@ -2,7 +2,7 @@
  * WireTool — 连线模式（点击 port 开始/结束连线）。
  */
 
-import type { State, Interaction } from '@/core/types';
+import type { State, Interaction, Port } from '@/core/types';
 import { create_data_flow_binding } from '@/core/types';
 import type { Tool, ToolResult } from '@/core/tool';
 import type { PointerEventParams } from '@/core/interactions';
@@ -16,6 +16,27 @@ const start_wiring = (state: State, source_node_id: string, source_port_id: stri
   ...state,
   interaction: { mode: 'wiring', source_node_id, source_port_id, target_pos: event.screen_position },
 });
+
+/** 在 subgraph_input 上自动创建 output port 并开始连线。 */
+const try_grab_subgraph_input = (state: State, event: PointerEventParams): O.Option<State> =>
+  pipe(
+    event.target_node_id,
+    O.filter(nid => {
+      const n = state.nodes[nid];
+      return !!n && n.type === 'subgraph_input';
+    }),
+    O.chain(nid => {
+      const n = state.nodes[nid]!;
+      const new_port: Port = {
+        id: `sgi_out_auto_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        label: `Input ${n.outputs.length + 1}`,
+        type: 'output',
+      };
+      const new_node = { ...n, outputs: [...n.outputs, new_port] };
+      const new_state = { ...state, nodes: { ...state.nodes, [nid]: new_node } };
+      return O.some(start_wiring(new_state, nid, new_port.id, event));
+    }),
+  );
 
 export const try_grab_wire = (state: State, event: PointerEventParams): O.Option<State> =>
   pipe(
@@ -34,6 +55,7 @@ export const try_grab_wire = (state: State, event: PointerEventParams): O.Option
       }
       return O.none;
     }),
+    O.alt(() => try_grab_subgraph_input(state, event)),
   );
 
 export const try_connect_wire = (state: State, source_node_id: string, source_port_id: string, event: PointerEventParams): State =>
@@ -78,6 +100,20 @@ export const try_connect_wire = (state: State, source_node_id: string, source_po
             target_accepts = compatible_widget.accepts || [compatible_widget.value_type || 'any'];
           }
         }
+      }
+
+      // 自动创建 port：拖线到 subgraph_output body 且无兼容 port
+      if (!target_port_id && target_node.type === 'subgraph_output') {
+        const new_port: Port = {
+          id: `sgo_in_auto_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          label: `Output ${target_node.inputs.length + 1}`,
+          type: 'input',
+          accepts: [source_type === 'any' ? 'any' : source_type],
+          value_type: source_type === 'any' ? undefined : source_type,
+        };
+        state = { ...state, nodes: { ...state.nodes, [target_node_id]: { ...target_node, inputs: [...target_node.inputs, new_port] } } };
+        target_port_id = new_port.id;
+        target_accepts = new_port.accepts!;
       }
 
       if (!target_port_id) return O.none;

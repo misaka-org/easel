@@ -1,8 +1,7 @@
 import type { EaselPlugin } from '@/runtime/easel';
 import { ContextMenuService } from './service';
 import type { ContextMenuContext, ContextMenuItem, ContextMenuProvider } from './types';
-import { remove_node } from '@/core/node_ops';
-import { add_node } from '@/core/node_ops';
+import { remove_node, add_node, create_subgraph_from_selection, expand_subgraph } from '@/core/node_ops';
 import { vec2_create } from '@/core/math';
 import { get_registered_types, get_node_ns, create_node_data } from '@/runtime/registry';
 
@@ -176,6 +175,18 @@ function node_ops_provider(easel: any): ContextMenuProvider {
             });
           },
         },
+        ...(node_type === 'subgraph'
+          ? [
+              {
+                id: 'expand_subgraph' as const,
+                label: 'Expand Subgraph',
+                group: 'node_ops' as const,
+                action: () => {
+                  easel.dispatch((s: any) => expand_subgraph(s, node_id));
+                },
+              },
+            ]
+          : []),
       ];
     },
   };
@@ -369,6 +380,33 @@ function canvas_ops_provider(easel: any): ContextMenuProvider {
   };
 }
 
+/** 选中节点时显示 Create Subgraph */
+function create_subgraph_provider(easel: any): ContextMenuProvider {
+  return {
+    id: '__builtin_create_subgraph',
+    priority: 5,
+    get_items: ctx => {
+      const selected = easel.state?.value?.selected_node_ids;
+      if (!selected || selected.length === 0) return [];
+      const has_valid = selected.some((id: string) => {
+        const n = easel.state?.value?.nodes[id];
+        return n && n.type !== 'subgraph_input' && n.type !== 'subgraph_output';
+      });
+      if (!has_valid) return [];
+      return [
+        {
+          id: 'create_subgraph',
+          label: 'Create Subgraph',
+          group: 'creation',
+          action: () => {
+            easel.dispatch((s: any) => create_subgraph_from_selection(s));
+          },
+        },
+      ];
+    },
+  };
+}
+
 /** Node instance items: picks up get_context_menu_items() from EaselNode subclasses */
 function node_instance_provider(easel: any): ContextMenuProvider {
   return {
@@ -401,6 +439,7 @@ export const context_menu_plugin: EaselPlugin = easel => {
   // Register built-in providers
   service.register(node_ops_provider(easel));
   service.register(add_node_provider(easel));
+  service.register(create_subgraph_provider(easel));
   service.register(canvas_ops_provider(easel));
   service.register(node_instance_provider(easel));
 

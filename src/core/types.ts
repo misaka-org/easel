@@ -95,6 +95,19 @@ export const create_group_child_binding = (
   target_handle: 'child',
 });
 
+/** Create a subgraph-child binding. */
+export const create_subgraph_child_binding = (
+  subgraph_id: string,
+  child_id: string,
+): Binding => ({
+  id: `sc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+  type: 'subgraph-child',
+  source_id: subgraph_id,
+  source_handle: 'parent',
+  target_id: child_id,
+  target_handle: 'child',
+});
+
 export type Camera = {
   readonly position: Vec2;
   readonly zoom: number;
