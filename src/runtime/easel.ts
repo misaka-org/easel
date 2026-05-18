@@ -3,6 +3,7 @@ import { setup_events } from './events';
 import { render_nodes } from './render';
 import { render_wires } from './render_wires';
 import { guidelines_plugin } from '@/plugins/guidelines';
+import { toolbar_plugin } from '@/plugins/toolbar';
 import { get_base_css, apply_theme, default_theme, type Theme } from './theme';
 import { CameraController } from './camera';
 import { ToolManager } from './tool_manager';
@@ -138,6 +139,7 @@ export class Easel {
 
     // core plugins (always on)
     guidelines_plugin(this);
+    toolbar_plugin(this);
 
     options.plugins?.forEach(plugin => plugin(this));
 

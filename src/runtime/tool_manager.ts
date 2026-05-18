@@ -9,7 +9,6 @@ import type { Tool, ToolResult } from '@/core/tool';
 import type { PointerEventParams, WheelEventParams } from '@/core/interactions';
 import { select_tool } from '@/core/tools/select_tool';
 import { hand_tool } from '@/core/tools/hand_tool';
-import { wire_tool } from '@/core/tools/wire_tool';
 
 export type Dispatch = (updater: (state: State) => State) => void;
 
@@ -20,10 +19,8 @@ export class ToolManager {
 
   constructor(dispatch: Dispatch) {
     this.dispatch = dispatch;
-    // 注册内置工具
     this.register(select_tool);
     this.register(hand_tool);
-    this.register(wire_tool);
   }
 
   /** 绑定 DOM 容器（用于 cursor 切换）。 */
@@ -31,7 +28,26 @@ export class ToolManager {
     this.container = container;
   }
 
-  /** 注册工具。 */
+  /**
+   * 注册自定义工具。
+   *
+   * 插件可在 setup 时调用 easel.tools.register(myTool) 添加自定工具。
+   * 工具会自动出现在工具栏和 context menu 中，用户可通过 easel.tools.activate(id) 切换。
+   *
+   * @example
+   * ```ts
+   * const eraser_tool: Tool = {
+   *   id: 'eraser',
+   *   label: 'Eraser',
+   *   cursor: 'not-allowed',
+   *   onPointerDown: (state, _interaction, event) => {
+   *     // ... 擦除逻辑
+   *     return { state };
+   *   },
+   * };
+   * easel.tools.register(eraser_tool);
+   * ```
+   */
   register(tool: Tool): void {
     this.tools.set(tool.id, tool);
   }
