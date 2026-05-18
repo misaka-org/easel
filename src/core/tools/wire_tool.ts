@@ -3,10 +3,10 @@
  */
 
 import type { State, Interaction } from '@/core/types';
+import { create_data_flow_binding } from '@/core/types';
 import type { Tool, ToolResult } from '@/core/tool';
 import type { PointerEventParams } from '@/core/interactions';
-import { add_wire, remove_wire } from '@/core/wire_ops';
-import { remove_binding, find_binding_by_target } from '@/core/binding_ops';
+import { add_binding, remove_binding, find_binding_by_target } from '@/core/binding_ops';
 import * as O from 'fp-ts/Option';
 import { pipe } from 'fp-ts/function';
 
@@ -25,16 +25,17 @@ export const try_grab_wire = (state: State, event: PointerEventParams): O.Option
     O.bind('port_type', () => event.target_port_type),
     O.chain(({ node_id, port_id, port_type }) => {
       if (port_type === 'input') {
-        const connected = Object.values(state.wires).find(
+        const b = find_binding_by_target(state, node_id, port_id);
+        if (b) {
+          return O.some(start_wiring(remove_binding(state, b.id), b.source_id, b.source_handle, event));
+        }
+        // 也检查旧 wire（兼容）
+        const wire = Object.values(state.wires).find(
           w => w.target_node_id === node_id && w.target_port_id === port_id,
-        ) ?? find_binding_by_target(state, node_id, port_id);
-        if (connected) {
-          const is_wire = 'source_node_id' in connected;
-          const clean = is_wire ? remove_wire(state, connected.id) : remove_binding(state, connected.id);
-          return O.some(
-            start_wiring(clean, is_wire ? connected.source_node_id : connected.source_id,
-              is_wire ? connected.source_port_id : connected.source_handle, event),
-          );
+        );
+        if (wire) {
+          const { [wire.id]: _, ...rest } = state.wires;
+          return O.some(start_wiring({ ...state, wires: rest }, wire.source_node_id, wire.source_port_id, event));
         }
       } else if (port_type === 'output') {
         return O.some(start_wiring(state, node_id, port_id, event));
@@ -64,9 +65,7 @@ export const try_connect_wire = (state: State, source_node_id: string, source_po
         if (!tp && !tw) return O.none;
         target_accepts = tp ? (tp.accepts || [tp.value_type || 'any']) : (tw!.accepts || [tw!.value_type || 'any']);
       } else {
-        const is_free = (id: string) =>
-          !Object.values(state.wires).some(w => w.target_node_id === target_node_id && w.target_port_id === id) &&
-          !find_binding_by_target(state, target_node_id, id);
+        const is_free = (id: string) => !find_binding_by_target(state, target_node_id, id);
 
         const compatible_input = target_node.inputs.find(p => {
           if (!is_free(p.id)) return false;
@@ -92,18 +91,12 @@ export const try_connect_wire = (state: State, source_node_id: string, source_po
       if (!target_port_id) return O.none;
       if (!(target_accepts.includes('any') || source_type === 'any' || target_accepts.includes(source_type))) return O.none;
 
-      const existing = Object.values(state.wires).find(
-        w => w.target_node_id === target_node_id && w.target_port_id === target_port_id,
-      ) ?? find_binding_by_target(state, target_node_id, target_port_id);
-      const clean = existing
-        ? ('target_node_id' in existing ? remove_wire(state, existing.id) : remove_binding(state, existing.id))
-        : state;
+      // 删除旧 binding（如果已连接）
+      const existing = find_binding_by_target(state, target_node_id, target_port_id);
+      const clean = existing ? remove_binding(state, existing.id) : state;
 
-      return O.some(add_wire(clean, {
-        id: `wire_${Date.now()}`,
-        source_node_id, source_port_id,
-        target_node_id, target_port_id,
-      }));
+      const binding = create_data_flow_binding(source_node_id, source_port_id, target_node_id, target_port_id);
+      return O.some(add_binding(clean, binding));
     }),
     O.getOrElse(() => state),
   );

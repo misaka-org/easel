@@ -33,7 +33,16 @@ export class GraphExecutor {
 
   compile(): E.Either<Error, void> {
     const store = this.easel.store;
-    const wires = store.wires.list();
+    const wires = [
+      ...store.wires.list(),
+      ...store.bindings.list().filter(b => b.type === 'data-flow').map(b => ({
+        id: b.id,
+        source_node_id: b.source_id,
+        source_port_id: b.source_handle,
+        target_node_id: b.target_id,
+        target_port_id: b.target_handle,
+      })),
+    ];
 
     const in_degrees: Record<string, number> = {};
     const adj: Record<string, string[]> = {};

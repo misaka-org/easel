@@ -140,7 +140,7 @@ export const history_plugin: EaselPlugin = easel => {
       if (next_state.interaction.mode === 'idle') {
         const last_recorded = history[current_index];
         const state_changed =
-          last_recorded?.nodes !== next_state.nodes || last_recorded?.wires !== next_state.wires;
+          last_recorded?.nodes !== next_state.nodes || last_recorded?.bindings !== next_state.bindings;
 
         if (state_changed) {
           history.splice(current_index + 1);

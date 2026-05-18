@@ -222,11 +222,10 @@ export const render_wires = (container: HTMLElement, store: Store): void => {
     svg.style.transform = `translate(${state.camera.position.x}px, ${state.camera.position.y}px) scale(${state.camera.zoom})`;
     svg.style.strokeWidth = `${2 / state.camera.zoom}px`;
 
-    const wire_ids = new Set(store.wires.keys());
-    const binding_ids = new Set(
-      store.bindings.list().filter(b => b.type === 'data-flow').map(b => b.id)
-    );
-    const current_ids = new Set([...wire_ids, ...binding_ids]);
+    const current_ids = new Set([
+      ...store.wires.keys(),
+      ...store.bindings.list().filter(b => b.type === 'data-flow').map(b => b.id),
+    ]);
 
     Array.from(wire_elements.entries()).forEach(([id, el]) => {
       if (!current_ids.has(id)) {

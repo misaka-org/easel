@@ -3,7 +3,8 @@ import type { Vec2 } from './math';
 import { vec2_sub, vec2_add, vec2_scale, vec2_create, aabb_intersect } from './math';
 import { move_nodes } from './node_ops';
 import { add_wire, remove_wire } from './wire_ops';
-import { remove_binding, find_binding_by_target } from './binding_ops';
+import { add_binding, remove_binding, find_binding_by_target } from './binding_ops';
+import { create_data_flow_binding } from './types';
 import * as O from 'fp-ts/Option';
 import { pipe } from 'fp-ts/function';
 
@@ -100,20 +101,9 @@ const try_grab_wire = (state: State, event: PointerEventParams) =>
     O.bind('port_type', () => event.target_port_type),
     O.chain(({ node_id, port_id, port_type }) => {
       if (port_type === 'input') {
-        const connected = Object.values(state.wires).find(
-          w => w.target_node_id === node_id && w.target_port_id === port_id,
-        ) ?? find_binding_by_target(state, node_id, port_id);
-        if (connected) {
-          const is_wire = 'source_node_id' in connected;
-          const clean_state = is_wire ? remove_wire(state, connected.id) : remove_binding(state, connected.id);
-          return O.some(
-            start_wiring(
-              clean_state,
-              is_wire ? connected.source_node_id : connected.source_id,
-              is_wire ? connected.source_port_id : connected.source_handle,
-              event,
-            ),
-          );
+        const b = find_binding_by_target(state, node_id, port_id);
+        if (b) {
+          return O.some(start_wiring(remove_binding(state, b.id), b.source_id, b.source_handle, event));
         }
       } else if (port_type === 'output') {
         return O.some(start_wiring(state, node_id, port_id, event));
@@ -242,10 +232,7 @@ const try_connect_wire = (
           target_accepts = target_widget.accepts || [target_widget.value_type || 'any'];
         }
       } else {
-        const is_port_free = (id: string) =>
-          !Object.values(state.wires).some(
-            w => w.target_node_id === target_node_id && w.target_port_id === id,
-          );
+        const is_port_free = (id: string) => !find_binding_by_target(state, target_node_id, id);
 
         const compatible_input = target_node.inputs.find(p => {
           if (!is_port_free(p.id)) return false;
@@ -278,24 +265,11 @@ const try_connect_wire = (
         source_type === 'any' ||
         target_accepts.includes(source_type)
       ) {
-        const existing = Object.values(state.wires).find(
-          w => w.target_node_id === target_node_id && w.target_port_id === target_port_id,
-        ) ?? find_binding_by_target(state, target_node_id, target_port_id);
-        const clean_state = existing
-          ? 'target_node_id' in existing
-            ? remove_wire(state, existing.id)
-            : remove_binding(state, existing.id)
-          : state;
+        const existing = find_binding_by_target(state, target_node_id, target_port_id);
+        const clean_state = existing ? remove_binding(state, existing.id) : state;
 
-        return O.some(
-          add_wire(clean_state, {
-            id: `wire_${Date.now()}`,
-            source_node_id,
-            source_port_id,
-            target_node_id,
-            target_port_id: target_port_id,
-          }),
-        );
+        const binding = create_data_flow_binding(source_node_id, source_port_id, target_node_id, target_port_id);
+        return O.some(add_binding(clean_state, binding));
       }
       return O.none;
     }),

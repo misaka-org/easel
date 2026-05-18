@@ -4,6 +4,7 @@ import { update_node_data, update_widget_value, remove_node } from '@/core/node_
 import { get_widget_type } from './register';
 import { ICON_X } from '@/icons';
 import { set_inner_html } from '@/utils/dom';
+import { is_port_connected, find_connection } from '@/core/binding_ops';
 
 export class DefaultNode extends EaselNode {
   private header!: HTMLElement;
@@ -93,17 +94,13 @@ export class DefaultNode extends EaselNode {
   }
 
   protected update_ports(node_data: GraphNode, state: State): void {
-    const is_port_connected = (p_id: string) =>
-      Object.values(state.wires).some(
-        wire =>
-          (wire.target_node_id === this.node_id && wire.target_port_id === p_id) ||
-          (wire.source_node_id === this.node_id && wire.source_port_id === p_id),
-      );
+    const port_connected = (p_id: string, type: 'input' | 'output') =>
+      is_port_connected(state, this.node_id, p_id, type);
 
     const ports_html = [
       ...node_data.inputs.map(p => {
         const type_class = p.value_type ? `port-type-${p.value_type}` : '';
-        const connected_class = is_port_connected(p.id) ? 'connected' : '';
+        const connected_class = port_connected(p.id, 'input') ? 'connected' : '';
         return `
         <div class="port-row">
           <div class="port" data-port-id="${p.id}" data-port-type="input">
@@ -115,7 +112,7 @@ export class DefaultNode extends EaselNode {
       }),
       ...node_data.outputs.map(p => {
         const type_class = p.value_type ? `port-type-${p.value_type}` : '';
-        const connected_class = is_port_connected(p.id) ? 'connected' : '';
+        const connected_class = port_connected(p.id, 'output') ? 'connected' : '';
         return `
         <div class="port-row">
           <div></div>
@@ -136,9 +133,7 @@ export class DefaultNode extends EaselNode {
     // Build schema: widget id + type + connection state
     const schema = widgets
       .map(w => {
-        const connected = Object.values(state.wires).some(
-          wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id,
-        );
+        const connected = is_port_connected(state, this.node_id, w.id, 'input');
         return `${w.id}:${w.type}:${connected}`;
       })
       .join(',');
@@ -166,9 +161,7 @@ export class DefaultNode extends EaselNode {
         // Wrapper row for consistent layout
         const row = document.createElement('div');
         row.className = 'widget-row';
-        const connected = Object.values(state.wires).some(
-          wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id,
-        );
+        const connected = is_port_connected(state, this.node_id, w.id, 'input');
         const type_class = `port-type-${w.type}`;
         const connected_class = connected ? 'connected' : '';
 
@@ -197,9 +190,7 @@ export class DefaultNode extends EaselNode {
         if (!el) continue;
         const def = get_widget_type(w.type);
         if (!def) continue;
-        const connected = Object.values(state.wires).some(
-          wire => wire.target_node_id === this.node_id && wire.target_port_id === w.id,
-        );
+        const connected = is_port_connected(state, this.node_id, w.id, 'input');
         def.update(el, w, { connected, disabled: connected });
       }
     }

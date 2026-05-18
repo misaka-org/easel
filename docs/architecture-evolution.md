@@ -68,7 +68,10 @@
 
 ### 阶段 5：收尾
 
-- [ ] 清理废弃 API（旧 Wire 类型、serialize_state）
+- [ ] `try_connect_wire` 改创 data-flow binding（已完成）
+- [ ] 全部读端优先 binding（已完成）
+- [ ] 移除 `State.wires`（待 `wires` 无任何引用的稳定期后清理）
+- [ ] 外部接口文档同步
 - [ ] 外部接口文档同步
 - [ ] 性能回归测试（渲染 + 交互 + 执行引擎）
 
