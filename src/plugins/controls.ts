@@ -17,10 +17,10 @@ export const controls_plugin: EaselPlugin = easel => {
   // -----------------------------------------------------------------------
   // Action functions —shared by both UI buttons and context menu
   // -----------------------------------------------------------------------
-  const do_zoom_in = () => easel.camera.zoomIn();
-  const do_zoom_out = () => easel.camera.zoomOut();
-  const do_zoom_reset = () => easel.camera.zoomReset();
-  const do_fit = () => easel.camera.fitToView();
+  const do_zoom_in = () => easel.camera.zoom_in();
+  const do_zoom_out = () => easel.camera.zoom_out();
+  const do_zoom_reset = () => easel.camera.zoom_reset();
+  const do_fit = () => easel.camera.fit_to_view();
   const do_layout = () => {
     const vp = easel.container.getBoundingClientRect();
     const s = easel.state.value;

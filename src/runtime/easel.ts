@@ -1,4 +1,4 @@
-import { create_store } from './store';
+﻿import { Store } from './store';
 import { setup_events } from './events';
 import { render_nodes } from './render';
 import { render_wires } from './render_wires';
@@ -50,6 +50,7 @@ export class Easel {
   container: HTMLElement;
   state: ShallowRef<State>;
   dispatch: Dispatch;
+  store: Store;
   app_events: EventEmitter<EaselEvents>;
   /** Per-node event bus — subscribers get granular per-node change notifications. */
   node_events = new Map<string, EventEmitter<NodeEventPayloads>>();
@@ -93,11 +94,12 @@ export class Easel {
     canvas_el.className = 'easel-container';
     shadow.appendChild(canvas_el);
 
-    const store = create_store(options.initial_state);
-    this.state = store.state;
+    const easel_store = new Store({ initial_state: options.initial_state });
+    this.state = easel_store.state;
+    this.store = easel_store;
     this.app_events = new EventEmitter<EaselEvents>();
 
-    const current_dispatch = with_guidelines(canvas_el, this.state, store.dispatch);
+    const current_dispatch = with_guidelines(canvas_el, this.state, easel_store.dispatch);
     this.dispatch = updater => {
       const prev = this.state.value;
       current_dispatch(updater);

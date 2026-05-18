@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Camera controller — animation, zoom-to-fit, and smooth transitions
  * for the easel viewport.
  *
@@ -15,10 +15,10 @@ export type EasingFn = (t: number) => number;
 
 export const EASING = {
   linear: (t: number): number => t,
-  easeInOutCubic: (t: number): number =>
+  ease_in_out_cubic: (t: number): number =>
     t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2,
-  easeOutQuint: (t: number): number => 1 - (1 - t) ** 5,
-  easeOutCubic: (t: number): number => 1 - (1 - t) ** 3,
+  ease_out_quint: (t: number): number => 1 - (1 - t) ** 5,
+  ease_out_cubic: (t: number): number => 1 - (1 - t) ** 3,
 } as const satisfies Record<string, EasingFn>;
 
 // ── Animation types ─────────────────────────────────────────────
@@ -31,7 +31,7 @@ type CameraTarget = {
 type AnimationOptions = {
   duration?: number;    // ms, default 300
   easing?: EasingFn;
-  onComplete?: () => void;
+  on_complete?: () => void;
 };
 
 // ── Controller ──────────────────────────────────────────────────
@@ -55,7 +55,7 @@ export class CameraController {
     this.dispatch = dispatch;
     this.anim_from = read_state().camera;
     this.anim_to = {};
-    this.anim_easing = EASING.easeOutCubic;
+    this.anim_easing = EASING.ease_out_cubic;
   }
 
   /** Whether a camera animation is currently running. */
@@ -78,15 +78,15 @@ export class CameraController {
   }
 
   /** Animate camera to target position/zoom. */
-  animateTo(target: CameraTarget, opts?: AnimationOptions): void {
+  animate_to(target: CameraTarget, opts?: AnimationOptions): void {
     this.cancel();
 
     const s = this.read_state();
     this.anim_from = s.camera;
     this.anim_to = target;
     this.anim_duration = opts?.duration ?? 300;
-    this.anim_easing = opts?.easing ?? EASING.easeOutCubic;
-    this.anim_on_complete = opts?.onComplete;
+    this.anim_easing = opts?.easing ?? EASING.ease_out_cubic;
+    this.anim_on_complete = opts?.on_complete;
     this.anim_start = performance.now();
 
     this.anim_frame = requestAnimationFrame(this.tick);
@@ -101,7 +101,7 @@ export class CameraController {
   }
 
   /** Fit all nodes into viewport with optional padding. */
-  fitToView(padding = 60): void {
+  fit_to_view(padding = 60): void {
     const s = this.read_state();
     const nodes = Object.values(s.nodes);
     if (nodes.length === 0) return;
@@ -114,14 +114,14 @@ export class CameraController {
       if (n.position.y + n.size.y > max_y) max_y = n.position.y + n.size.y;
     }
 
-    this.zoomToRect(
+    this.zoom_to_rect(
       { x: min_x, y: min_y, w: max_x - min_x, h: max_y - min_y },
       padding,
     );
   }
 
   /** Animate to frame a rectangular region in world coords. */
-  zoomToRect(
+  zoom_to_rect(
     rect: { x: number; y: number; w: number; h: number },
     padding = 60,
   ): void {
@@ -132,47 +132,47 @@ export class CameraController {
     const cx = rect.x + rect.w / 2;
     const cy = rect.y + rect.h / 2;
 
-    this.animateTo({
+    this.animate_to({
       position: vec2_create(vp.w / 2 - cx * zoom, vp.h / 2 - cy * zoom),
       zoom,
     });
   }
 
   /** Animate to center on a world point. */
-  centerOnPoint(point: Vec2, zoom?: number): void {
+  center_on_point(point: Vec2, zoom?: number): void {
     const vp = this.get_viewport_size();
     const cur = this.read_state().camera;
-    this.animateTo({
+    this.animate_to({
       position: vec2_create(vp.w / 2 - point.x * (zoom ?? cur.zoom), vp.h / 2 - point.y * (zoom ?? cur.zoom)),
       zoom,
     });
   }
 
   /** Zoom in by factor (default 1.2) anchored at viewport center. */
-  zoomIn(factor = 1.2): void {
+  zoom_in(factor = 1.2): void {
     const s = this.read_state();
     const new_zoom = Math.min(10, s.camera.zoom * factor);
-    this.animateTo({ zoom: new_zoom });
+    this.animate_to({ zoom: new_zoom });
   }
 
   /** Zoom out by factor (default 1.2) anchored at viewport center. */
-  zoomOut(factor = 1.2): void {
+  zoom_out(factor = 1.2): void {
     const s = this.read_state();
     const new_zoom = Math.max(0.1, s.camera.zoom / factor);
-    this.animateTo({ zoom: new_zoom });
+    this.animate_to({ zoom: new_zoom });
   }
 
   /** Reset zoom to 1, anchored at viewport center. */
-  zoomReset(): void {
-    this.animateTo({ zoom: 1 });
+  zoom_reset(): void {
+    this.animate_to({ zoom: 1 });
   }
 
   /** Zoom to currently selected nodes, or fit all if none selected. */
-  zoomToSelection(padding = 40): void {
+  zoom_to_selection(padding = 40): void {
     const s = this.read_state();
     const selected = s.selected_node_ids;
     if (selected.length === 0) {
-      this.fitToView(padding);
+      this.fit_to_view(padding);
       return;
     }
 
@@ -187,17 +187,16 @@ export class CameraController {
     }
 
     if (!isFinite(min_x)) {
-      this.fitToView(padding);
+      this.fit_to_view(padding);
       return;
     }
 
-    this.zoomToRect({ x: min_x, y: min_y, w: max_x - min_x, h: max_y - min_y }, padding);
+    this.zoom_to_rect({ x: min_x, y: min_y, w: max_x - min_x, h: max_y - min_y }, padding);
   }
 
   // ── Internal ──────────────────────────────────────────────────
 
   private get_viewport_size(): { w: number; h: number } {
-    // Real viewport size is not always available; default fallback
     return { w: window.innerWidth, h: window.innerHeight };
   }
 

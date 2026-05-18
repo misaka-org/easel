@@ -1,4 +1,4 @@
-# 架构演进计划
+﻿# 架构演进计划
 
 > 对标 tldraw，结合 easel 实际场景的渐进式架构优化。
 
@@ -39,7 +39,7 @@
 
 - [ ] `Store.onBeforeChange(table, handler)` — 返回 false 阻止变更，可修改 payload
 - [ ] `Store.onAfterChange(table, handler)` — 级联反应
-- [ ] handler 注册返回取消函数
+- [x] handler 注册返回取消函数
 - [ ] 迁移 `with_guidelines` 到 store hook
 - [ ] 节点删除自动清理关联 wire（通过 onBeforeChange 实现）
 - [ ] 删除 `src/runtime/easel.ts` 中的 `with_guidelines` 包装
@@ -176,7 +176,7 @@ class Store {
 
 - [ ] `Store.onBeforeChange(table, handler)` — 返回 false 阻止变更，可修改 payload
 - [ ] `Store.onAfterChange(table, handler)` — 级联反应
-- [ ] handler 注册返回取消函数
+- [x] handler 注册返回取消函数
 - [ ] 迁移 `with_guidelines` 到 store hook
 - [ ] 节点删除自动清理关联 wire（通过 onBeforeChange 实现）
 - [ ] 删除 `src/runtime/easel.ts` 中的 `with_guidelines` 包装
@@ -309,7 +309,7 @@ store.onBeforeChange('node', (event) => {
 
 - [ ] `Store.onBeforeChange(table, handler)` — 返回 false 阻止变更，可修改 payload
 - [ ] `Store.onAfterChange(table, handler)` — 级联反应
-- [ ] handler 注册返回取消函数
+- [x] handler 注册返回取消函数
 - [ ] 迁移 `with_guidelines` 到 store hook
 - [ ] 节点删除自动清理关联 wire（通过 onBeforeChange 实现）
 - [ ] 删除 `src/runtime/easel.ts` 中的 `with_guidelines` 包装
@@ -419,7 +419,7 @@ type Binding = {
 
 - [ ] `Store.onBeforeChange(table, handler)` — 返回 false 阻止变更，可修改 payload
 - [ ] `Store.onAfterChange(table, handler)` — 级联反应
-- [ ] handler 注册返回取消函数
+- [x] handler 注册返回取消函数
 - [ ] 迁移 `with_guidelines` 到 store hook
 - [ ] 节点删除自动清理关联 wire（通过 onBeforeChange 实现）
 - [ ] 删除 `src/runtime/easel.ts` 中的 `with_guidelines` 包装
@@ -551,7 +551,7 @@ Camera 数据仍存在 Store 里（`store.camera`），CameraController 只是�
 
 - [ ] `Store.onBeforeChange(table, handler)` — 返回 false 阻止变更，可修改 payload
 - [ ] `Store.onAfterChange(table, handler)` — 级联反应
-- [ ] handler 注册返回取消函数
+- [x] handler 注册返回取消函数
 - [ ] 迁移 `with_guidelines` 到 store hook
 - [ ] 节点删除自动清理关联 wire（通过 onBeforeChange 实现）
 - [ ] 删除 `src/runtime/easel.ts` 中的 `with_guidelines` 包装
@@ -702,7 +702,7 @@ type State = {
 
 - [ ] `Store.onBeforeChange(table, handler)` — 返回 false 阻止变更，可修改 payload
 - [ ] `Store.onAfterChange(table, handler)` — 级联反应
-- [ ] handler 注册返回取消函数
+- [x] handler 注册返回取消函数
 - [ ] 迁移 `with_guidelines` 到 store hook
 - [ ] 节点删除自动清理关联 wire（通过 onBeforeChange 实现）
 - [ ] 删除 `src/runtime/easel.ts` 中的 `with_guidelines` 包装
