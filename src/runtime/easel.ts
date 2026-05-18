@@ -97,6 +97,18 @@ export class Easel {
     const easel_store = new Store({ initial_state: options.initial_state });
     this.state = easel_store.state;
     this.store = easel_store;
+
+    // Auto-cleanup wires when a node is deleted
+    this.store.nodes.on_before_change((event) => {
+      if (event.type === 'delete' && event.prev) {
+        for (const wire of this.store.wires.list()) {
+          if (wire.source_node_id === event.id || wire.target_node_id === event.id) {
+            this.store.wires.delete(wire.id);
+          }
+        }
+      }
+    });
+
     this.app_events = new EventEmitter<EaselEvents>();
 
     const current_dispatch = with_guidelines(canvas_el, this.state, easel_store.dispatch);

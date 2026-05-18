@@ -59,6 +59,53 @@ describe('Store', () => {
   });
 });
 
+  it('should auto-cleanup wires when a node is deleted via on_before_change', () => {
+    const store = new Store();
+    store.nodes.put('a', make_node('a'));
+    store.nodes.put('b', make_node('b'));
+    store.wires.put('w1', {
+      id: 'w1',
+      source_node_id: 'a',
+      source_port_id: 'out1',
+      target_node_id: 'b',
+      target_port_id: 'in1',
+    });
+
+    // Register auto-cleanup like easel.ts does
+    store.nodes.on_before_change((event) => {
+      if (event.type === 'delete' && event.prev) {
+        for (const wire of store.wires.list()) {
+          if (wire.source_node_id === event.id || wire.target_node_id === event.id) {
+            store.wires.delete(wire.id);
+          }
+        }
+      }
+    });
+
+    store.nodes.delete('a');
+    expect(store.wires.has('w1')).toBe(false);
+    expect(store.nodes.has('a')).toBe(false);
+    expect(store.nodes.has('b')).toBe(true);
+  });
+
+  it('should not prevent node delete when no wires connected', () => {
+    const store = new Store();
+    store.nodes.put('orphan', make_node('orphan'));
+
+    store.nodes.on_before_change((event) => {
+      if (event.type === 'delete' && event.prev) {
+        for (const wire of store.wires.list()) {
+          if (wire.source_node_id === event.id || wire.target_node_id === event.id) {
+            store.wires.delete(wire.id);
+          }
+        }
+      }
+    });
+
+    store.nodes.delete('orphan');
+    expect(store.nodes.has('orphan')).toBe(false);
+  });
+
 // ── Table ──────────────────────────────────────────────────────
 
 describe('Table', () => {

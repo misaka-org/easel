@@ -41,7 +41,7 @@
 - [ ] `Store.onAfterChange(table, handler)` — 级联反应
 - [x] handler 注册返回取消函数
 - [ ] 迁移 `with_guidelines` 到 store hook
-- [ ] 节点删除自动清理关联 wire（通过 onBeforeChange 实现）
+- [x] 节点删除自动清理关联 wire（通过 on_before_change 实现）
 - [ ] 删除 `src/runtime/easel.ts` 中的 `with_guidelines` 包装
 
 ### 阶段 3：Binding 关系系统
@@ -178,7 +178,7 @@ class Store {
 - [ ] `Store.onAfterChange(table, handler)` — 级联反应
 - [x] handler 注册返回取消函数
 - [ ] 迁移 `with_guidelines` 到 store hook
-- [ ] 节点删除自动清理关联 wire（通过 onBeforeChange 实现）
+- [x] 节点删除自动清理关联 wire（通过 on_before_change 实现）
 - [ ] 删除 `src/runtime/easel.ts` 中的 `with_guidelines` 包装
 
 ### 阶段 3：Binding 关系系统
@@ -311,7 +311,7 @@ store.onBeforeChange('node', (event) => {
 - [ ] `Store.onAfterChange(table, handler)` — 级联反应
 - [x] handler 注册返回取消函数
 - [ ] 迁移 `with_guidelines` 到 store hook
-- [ ] 节点删除自动清理关联 wire（通过 onBeforeChange 实现）
+- [x] 节点删除自动清理关联 wire（通过 on_before_change 实现）
 - [ ] 删除 `src/runtime/easel.ts` 中的 `with_guidelines` 包装
 
 ### 阶段 3：Binding 关系系统
@@ -421,7 +421,7 @@ type Binding = {
 - [ ] `Store.onAfterChange(table, handler)` — 级联反应
 - [x] handler 注册返回取消函数
 - [ ] 迁移 `with_guidelines` 到 store hook
-- [ ] 节点删除自动清理关联 wire（通过 onBeforeChange 实现）
+- [x] 节点删除自动清理关联 wire（通过 on_before_change 实现）
 - [ ] 删除 `src/runtime/easel.ts` 中的 `with_guidelines` 包装
 
 ### 阶段 3：Binding 关系系统
@@ -553,7 +553,7 @@ Camera 数据仍存在 Store 里（`store.camera`），CameraController 只是�
 - [ ] `Store.onAfterChange(table, handler)` — 级联反应
 - [x] handler 注册返回取消函数
 - [ ] 迁移 `with_guidelines` 到 store hook
-- [ ] 节点删除自动清理关联 wire（通过 onBeforeChange 实现）
+- [x] 节点删除自动清理关联 wire（通过 on_before_change 实现）
 - [ ] 删除 `src/runtime/easel.ts` 中的 `with_guidelines` 包装
 
 ### 阶段 3：Binding 关系系统
@@ -704,7 +704,7 @@ type State = {
 - [ ] `Store.onAfterChange(table, handler)` — 级联反应
 - [x] handler 注册返回取消函数
 - [ ] 迁移 `with_guidelines` 到 store hook
-- [ ] 节点删除自动清理关联 wire（通过 onBeforeChange 实现）
+- [x] 节点删除自动清理关联 wire（通过 on_before_change 实现）
 - [ ] 删除 `src/runtime/easel.ts` 中的 `with_guidelines` 包装
 
 ### 阶段 3：Binding 关系系统
