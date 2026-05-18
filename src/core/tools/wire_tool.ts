@@ -100,13 +100,13 @@ export const wire_tool: Tool = {
   label: 'Wire',
   cursor: 'crosshair',
 
-  onPointerDown: (state, _interaction, event): ToolResult => {
+  on_pointer_down: (state, _interaction, event): ToolResult => {
     const grabbed = try_grab_wire(state, event);
     if (O.isSome(grabbed)) return { state: grabbed.value };
     return { state };
   },
 
-  onPointerMove: (state, interaction, event): ToolResult => {
+  on_pointer_move: (state, interaction, event): ToolResult => {
     if (interaction.mode !== 'wiring') return { state };
     return {
       state: {
@@ -116,7 +116,7 @@ export const wire_tool: Tool = {
     };
   },
 
-  onPointerUp: (state, interaction, event): ToolResult => {
+  on_pointer_up: (state, interaction, event): ToolResult => {
     let next = state;
     if (interaction.mode === 'wiring' && event) {
       const i = interaction as Extract<Interaction, { mode: 'wiring' }>;

@@ -1,7 +1,6 @@
 import type { EaselPlugin } from '@/runtime/easel';
-import { move_nodes } from '@/core/node_ops';
 import { apply_styles } from '@/utils/css';
-import type { State, GraphNode } from '@/core/types';
+import type { GraphNode } from '@/core/types';
 
 const SNAP_THRESHOLD = 10;
 
@@ -76,7 +75,6 @@ export const guidelines_plugin: EaselPlugin = (easel) => {
   let active_guidelines: { x?: number; y?: number } = {};
 
   // Update overlay on state change (via frame_effect not needed — just react to state).
-  let prev_mode: string | undefined;
   easel.app_events.on('state_changed', () => {
     const state = easel.store.state.value;
     const zoom = state.camera.zoom;

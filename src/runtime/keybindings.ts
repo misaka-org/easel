@@ -111,7 +111,7 @@ export function register_core_keybindings(kb: KeybindingManager, dispatch: Dispa
         const hues = [0, 30, 60, 120, 210, 270, 315];
         const hue = hues[Math.floor(Math.random() * hues.length)];
 
-        let next = add_node(s, {
+        const next = add_node(s, {
           id: group_id,
           type: 'group',
           position: pos,

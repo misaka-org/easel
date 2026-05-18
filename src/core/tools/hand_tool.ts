@@ -2,9 +2,8 @@
  * HandTool — 平移画布。
  */
 
-import type { State, Interaction } from '@/core/types';
+import type { Interaction } from '@/core/types';
 import type { Tool, ToolResult } from '@/core/tool';
-import type { PointerEventParams } from '@/core/interactions';
 import { vec2_sub, vec2_add } from '@/core/math';
 
 export const hand_tool: Tool = {
@@ -12,7 +11,7 @@ export const hand_tool: Tool = {
   label: 'Hand',
   cursor: 'grab',
 
-  onPointerDown: (state, _interaction, event): ToolResult => ({
+  on_pointer_down: (state, _interaction, event): ToolResult => ({
     state: {
       ...state,
       interaction: {
@@ -24,7 +23,7 @@ export const hand_tool: Tool = {
     transition: undefined,
   }),
 
-  onPointerMove: (state, interaction, event): ToolResult => {
+  on_pointer_move: (state, interaction, event): ToolResult => {
     if (interaction.mode !== 'panning') return { state };
     const i = interaction as Extract<Interaction, { mode: 'panning' }>;
     return {
@@ -38,12 +37,12 @@ export const hand_tool: Tool = {
     };
   },
 
-  onPointerUp: (state, _interaction, _event): ToolResult => ({
+  on_pointer_up: (state, _interaction, _event): ToolResult => ({
     state: { ...state, interaction: { mode: 'idle' } },
   }),
 
   /** HandTool 缩放与非 ctrl wheel 平移。 */
-  onWheel: (state, event) => {
+  on_wheel: (state, event) => {
     if (event.modifiers.ctrl || event.modifiers.meta) {
       const factor = event.delta_y > 0 ? 0.9 : 1.1;
       const zoom = Math.max(0.1, Math.min(10, state.camera.zoom * factor));

@@ -40,7 +40,7 @@ export class ToolManager {
    *   id: 'eraser',
    *   label: 'Eraser',
    *   cursor: 'not-allowed',
-   *   onPointerDown: (state, _interaction, event) => {
+ *   on_pointer_down: (state, _interaction, event) => {
    *     // ... 擦除逻辑
    *     return { state };
    *   },
@@ -74,28 +74,28 @@ export class ToolManager {
   /** 处理 pointerdown 事件。 */
   handle_pointer_down(state: State, event: PointerEventParams): ToolResult | null {
     const tool = this.tools.get(state.active_tool);
-    if (!tool?.onPointerDown) return null;
-    return tool.onPointerDown(state, state.interaction, event);
+    if (!tool?.on_pointer_down) return null;
+    return tool.on_pointer_down(state, state.interaction, event);
   }
 
   /** 处理 pointermove 事件。 */
   handle_pointer_move(state: State, event: PointerEventParams): ToolResult | null {
     const tool = this.tools.get(state.active_tool);
-    if (!tool?.onPointerMove) return null;
-    return tool.onPointerMove(state, state.interaction, event);
+    if (!tool?.on_pointer_move) return null;
+    return tool.on_pointer_move(state, state.interaction, event);
   }
 
   /** 处理 pointerup 事件。 */
   handle_pointer_up(state: State, event?: PointerEventParams): ToolResult | null {
     const tool = this.tools.get(state.active_tool);
-    if (!tool?.onPointerUp) return null;
-    return tool.onPointerUp(state, state.interaction, event);
+    if (!tool?.on_pointer_up) return null;
+    return tool.on_pointer_up(state, state.interaction, event);
   }
 
   /** 处理 wheel 事件。 */
   handle_wheel(state: State, event: WheelEventParams): ToolResult | null {
     const tool = this.tools.get(state.active_tool);
-    if (!tool?.onWheel) return null;
-    return tool.onWheel(state, event);
+    if (!tool?.on_wheel) return null;
+    return tool.on_wheel(state, event);
   }
 }

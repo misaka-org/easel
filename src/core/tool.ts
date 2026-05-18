@@ -19,8 +19,8 @@ export type Tool = {
   readonly id: string;
   readonly label: string;
   readonly cursor?: string;
-  onPointerDown?: (state: State, interaction: Interaction, event: PointerEventParams) => ToolResult;
-  onPointerMove?: (state: State, interaction: Interaction, event: PointerEventParams) => ToolResult;
-  onPointerUp?: (state: State, interaction: Interaction, event?: PointerEventParams) => ToolResult;
-  onWheel?: (state: State, event: WheelEventParams) => ToolResult;
+  on_pointer_down?: (state: State, interaction: Interaction, event: PointerEventParams) => ToolResult;
+  on_pointer_move?: (state: State, interaction: Interaction, event: PointerEventParams) => ToolResult;
+  on_pointer_up?: (state: State, interaction: Interaction, event?: PointerEventParams) => ToolResult;
+  on_wheel?: (state: State, event: WheelEventParams) => ToolResult;
 };

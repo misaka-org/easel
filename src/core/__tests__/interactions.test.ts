@@ -154,10 +154,10 @@ describe('interactions', () => {
       target_action: O.none,
       modifiers: mod(),
     });
-    expect(Object.keys(s.wires).length).toBe(1);
-    const wire = Object.values(s.wires)[0];
-    expect(wire.source_node_id).toBe('n1');
-    expect(wire.target_node_id).toBe('n2');
+    expect(Object.keys(s.bindings).length).toBe(1);
+    const b = Object.values(s.bindings)[0];
+    expect((b as any).source_id).toBe('n1');
+    expect((b as any).target_id).toBe('n2');
   });
 
   it('completes box selection on pointer up', () => {
@@ -206,13 +206,14 @@ describe('interactions', () => {
     // Connect n1.in1 <- n2.out1 (wire direction: n2 source, n1 target)
     s = {
       ...s,
-      wires: {
-        w1: {
-          id: 'w1',
-          source_node_id: 'n2',
-          source_port_id: 'out1',
-          target_node_id: 'n1',
-          target_port_id: 'in1',
+      bindings: {
+        b1: {
+          id: 'b1',
+          type: 'data-flow',
+          source_id: 'n2',
+          source_handle: 'out1',
+          target_id: 'n1',
+          target_handle: 'in1',
         },
       },
     };
@@ -226,7 +227,7 @@ describe('interactions', () => {
       modifiers: mod(),
     });
     expect(s.interaction.mode).toBe('wiring');
-    expect(Object.keys(s.wires).length).toBe(0);
+    expect(Object.keys(s.bindings).length).toBe(0);
   });
 
   it('does not connect wire to same node', () => {
@@ -249,7 +250,7 @@ describe('interactions', () => {
       target_action: O.none,
       modifiers: mod(),
     });
-    expect(Object.keys(s.wires).length).toBe(0);
+    expect(Object.keys(s.bindings).length).toBe(0);
   });
 
   it('completes box selection with shift modifier (additive)', () => {
@@ -333,7 +334,7 @@ describe('interactions', () => {
       modifiers: mod(),
     });
     expect(s.interaction.mode).toBe('idle');
-    expect(Object.keys(s.wires).length).toBe(0);
+    expect(Object.keys(s.bindings).length).toBe(0);
   });
 
   it('auto-connects to compatible input port when no target port specified', () => {
@@ -375,9 +376,9 @@ describe('interactions', () => {
       target_action: O.none,
       modifiers: mod(),
     });
-    expect(Object.keys(s.wires).length).toBe(1);
-    expect(Object.values(s.wires)[0].target_node_id).toBe('n2');
-    expect(Object.values(s.wires)[0].target_port_id).toBe('in1');
+    expect(Object.keys(s.bindings).length).toBe(1);
+    expect((Object.values(s.bindings)[0] as any).target_id).toBe('n2');
+    expect((Object.values(s.bindings)[0] as any).target_handle).toBe('in1');
   });
 
   it('does not auto-connect to input with incompatible type', () => {
@@ -419,7 +420,7 @@ describe('interactions', () => {
       target_action: O.none,
       modifiers: mod(),
     });
-    expect(Object.keys(s.wires).length).toBe(0);
+    expect(Object.keys(s.bindings).length).toBe(0);
   });
 
   it('auto-connect skips occupied port (replacement needs explicit target)', () => {
@@ -448,13 +449,14 @@ describe('interactions', () => {
     });
     s = {
       ...s,
-      wires: {
-        w1: {
-          id: 'w1',
-          source_node_id: 'n3',
-          source_port_id: 'out1',
-          target_node_id: 'n2',
-          target_port_id: 'in1',
+      bindings: {
+        b1: {
+          id: 'b1',
+          type: 'data-flow',
+          source_id: 'n3',
+          source_handle: 'out1',
+          target_id: 'n2',
+          target_handle: 'in1',
         },
       },
     };
@@ -485,8 +487,8 @@ describe('interactions', () => {
       modifiers: mod(),
     });
     // Auto-find only targets free ports; occupied port stays unchanged
-    expect(Object.keys(s.wires).length).toBe(1);
-    expect(Object.values(s.wires)[0].source_node_id).toBe('n3');
+    expect(Object.keys(s.bindings).length).toBe(1);
+    expect((Object.values(s.bindings)[0] as any).source_id).toBe('n3');
   });
 
   it('auto-connects to widget when input port unavailable', () => {
@@ -528,8 +530,8 @@ describe('interactions', () => {
       target_action: O.none,
       modifiers: mod(),
     });
-    expect(Object.keys(s.wires).length).toBe(1);
-    expect(Object.values(s.wires)[0].target_port_id).toBe('w1');
+    expect(Object.keys(s.bindings).length).toBe(1);
+    expect((Object.values(s.bindings)[0] as any).target_handle).toBe('w1');
   });
 
   it('clamps resize to minimum size', () => {

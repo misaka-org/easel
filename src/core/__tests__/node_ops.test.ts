@@ -59,25 +59,26 @@ describe('node_ops', () => {
     expect(s.nodes['a']).toBeUndefined();
   });
 
-  it('should remove a node and its connected wires', () => {
+  it('should remove a node and its connected bindings', () => {
     let s = add_node(create_initial_state(), node_a());
     s = add_node(s, node_b());
     s = {
       ...s,
-      wires: {
-        w1: {
-          id: 'w1',
-          source_node_id: 'a',
-          source_port_id: 'out',
-          target_node_id: 'b',
-          target_port_id: 'in',
+      bindings: {
+        b1: {
+          id: 'b1',
+          type: 'data-flow',
+          source_id: 'a',
+          source_handle: 'out',
+          target_id: 'b',
+          target_handle: 'in',
         },
       },
     };
     s = remove_node(s, 'a');
     expect(s.nodes['a']).toBeUndefined();
     expect(s.nodes['b']).toBeDefined();
-    expect(s.wires).toEqual({});
+    expect(s.bindings).toEqual({});
   });
 
   it('should remove node from selected_node_ids', () => {
@@ -119,10 +120,24 @@ describe('node_ops', () => {
     expect(s.nodes).toEqual({});
   });
 
-  it('move_node with children moves child nodes', () => {
-    const parent = { ...node_a(), custom_data: { children: ['b'] } };
+  it('move_node with group-child binding moves child nodes', () => {
+    const parent = { ...node_a(), custom_data: {} };
     let s = add_node(create_initial_state(), parent);
     s = add_node(s, node_b());
+    s = {
+      ...s,
+      bindings: {
+        ...s.bindings,
+        gc1: {
+          id: 'gc1',
+          type: 'group-child',
+          source_id: 'a',
+          source_handle: '',
+          target_id: 'b',
+          target_handle: '',
+        },
+      },
+    };
     s = move_node(s, 'a', vec2_create(10, 10));
     expect(s.nodes['a']?.position).toEqual(vec2_create(10, 10));
     expect(s.nodes['b']?.position).toEqual(vec2_create(210, 10));
@@ -130,37 +145,33 @@ describe('node_ops', () => {
   describe('is_ancestor', () => {
     it('returns false for node with no children', () => {
       const nodes = { a: node_a(), b: node_b() };
-      expect(is_ancestor(nodes, 'a', 'b')).toBe(false);
+      expect(is_ancestor(nodes, {}, 'a', 'b')).toBe(false);
     });
 
     it('detects child in parent children list (cycle prevention)', () => {
-      // a has children ['b'], so is_ancestor(nodes, 'b', 'a') means: is b in a's children?
-      const nodes = {
-        a: { ...node_a(), custom_data: { children: ['b'] } },
-        b: node_b(),
+      const bindings = {
+        gc1: { id: 'gc1', type: 'group-child', source_id: 'a', source_handle: '', target_id: 'b', target_handle: '' },
       };
-      // is_ancestor(proposed_parent, child): is child a descendant of proposed_parent?
-      // 'a' has 'b' as child -> is_ancestor(nodes, 'a', 'b') = false (a not in b's children)
-      // 'b' is in a's children -> is_ancestor(nodes, 'b', 'a') = true (b found in a's children)
-      expect(is_ancestor(nodes, 'b', 'a')).toBe(true);
+      const nodes = { a: node_a(), b: node_b() };
+      expect(is_ancestor(nodes, bindings, 'b', 'a')).toBe(true);
     });
 
     it('detects circular reference', () => {
-      const nodes = {
-        a: { ...node_a(), custom_data: { children: ['b'] } },
-        b: { ...node_b(), custom_data: { children: ['a'] } },
+      const bindings = {
+        gc1: { id: 'gc1', type: 'group-child', source_id: 'a', source_handle: '', target_id: 'b', target_handle: '' },
+        gc2: { id: 'gc2', type: 'group-child', source_id: 'b', source_handle: '', target_id: 'a', target_handle: '' },
       };
-      // Starting from 'a', following children we reach 'b', then from 'b' we reach 'a' again
-      expect(is_ancestor(nodes, 'a', 'b')).toBe(true);
-      expect(is_ancestor(nodes, 'b', 'a')).toBe(true);
+      const nodes = { a: node_a(), b: node_b() };
+      expect(is_ancestor(nodes, bindings, 'a', 'b')).toBe(true);
+      expect(is_ancestor(nodes, bindings, 'b', 'a')).toBe(true);
     });
 
     it('returns false when no cycle', () => {
-      const nodes = {
-        a: { ...node_a(), custom_data: { children: ['b'] } },
-        b: node_b(),
+      const bindings = {
+        gc1: { id: 'gc1', type: 'group-child', source_id: 'a', source_handle: '', target_id: 'b', target_handle: '' },
       };
-      expect(is_ancestor(nodes, 'a', 'b')).toBe(false);
+      const nodes = { a: node_a(), b: node_b() };
+      expect(is_ancestor(nodes, bindings, 'a', 'b')).toBe(false);
     });
   });
 });

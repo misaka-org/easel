@@ -1,4 +1,4 @@
-﻿// @vitest-environment jsdom
+// @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
 import { build_ns_menu, context_menu_plugin } from '@/plugins/context_menu';
 import { register_node_ns, register_node_type, EaselNode } from '@/runtime/registry';
@@ -67,26 +67,28 @@ describe('build_ns_menu', () => {
 });
 
 describe('built-in providers', () => {
-  function createMockEasel(extra = {}) {
+  function createMockEasel(extra: Record<string, any> = {}) {
     const container = document.createElement('div');
     const mt = () => ({ get: () => undefined, list: () => [], keys: () => [], put: () => true, delete() {}, has: () => false, on_before_change: () => (() => {}), on_after_change: () => (() => {}) });
     return {
       container,
-      plugin_data: {},
+      plugin_data: {} as any,
       dispatch: vi.fn(),
       app_events: { on: vi.fn(), emit: vi.fn(), off: vi.fn() },
       node_events: new Map(),
-      store: { state: { value: {} }, dispatch: vi.fn(), nodes: mt(), wires: mt(), bindings: mt(), serialize: () => ({}), transact: (fn) => fn() },
-      camera: { set: vi.fn(), animate_to: vi.fn(), cancel: vi.fn(), zoom_in: vi.fn(), zoom_out: vi.fn(), zoom_reset: vi.fn(), fit_to_view: vi.fn(), is_animating: false },
+      store: { state: { value: {} }, dispatch: vi.fn(), nodes: mt() as any, bindings: mt() as any, serialize: () => ({}), transact: (fn: any) => fn() },
+      camera: { set: vi.fn(), animate_to: vi.fn(), cancel: vi.fn(), zoom_in: vi.fn(), zoom_out: vi.fn(), zoom_reset: vi.fn(), fit_to_view: vi.fn(), is_animating: false } as any,
       set_theme: vi.fn(),
+      tools: { register: vi.fn(), activate: vi.fn(), get: vi.fn(), list: vi.fn(() => []) },
       state: {
         value: {
           nodes: {},
-          wires: {},
+          bindings: {},
           camera: { position: { x: 0, y: 0 }, zoom: 1 },
           selected_node_ids: [],
+          active_tool: 'select',
         },
-      },
+      } as any,
       node_instances: new Map(),
       get_node_instance: vi.fn(),
       register: {
@@ -98,7 +100,7 @@ describe('built-in providers', () => {
       keybindings: { register: vi.fn() },
       theme: {},
       ...extra,
-    };
+    } as any;
   }
 
   it('registers service on plugin_data', () => {
@@ -119,8 +121,8 @@ describe('built-in providers', () => {
       world_pos: { x: 0, y: 0 },
       container: easel.container,
     });
-    expect(items.some(i => i.id === 'delete_node')).toBe(true);
-    expect(items.some(i => i.id === 'duplicate_node')).toBe(true);
+    expect(items.some((i: any) => i.id === 'delete_node')).toBe(true);
+    expect(items.some((i: any) => i.id === 'duplicate_node')).toBe(true);
   });
 
   it('node_ops_provider returns empty for subgraph_input node', () => {
@@ -134,7 +136,7 @@ describe('built-in providers', () => {
       world_pos: { x: 0, y: 0 },
       container: easel.container,
     });
-    expect(items.some(i => i.id === 'delete_node')).toBe(false);
+    expect(items.some((i: any) => i.id === 'delete_node')).toBe(false);
   });
 
   it('canvas_ops_provider returns items when no node targeted', () => {
@@ -147,8 +149,8 @@ describe('built-in providers', () => {
       world_pos: { x: 0, y: 0 },
       container: easel.container,
     });
-    expect(items.some(i => i.id === 'reset_camera')).toBe(true);
-    expect(items.some(i => i.id === 'clear_wires')).toBe(true);
+    expect(items.some((i: any) => i.id === 'reset_camera')).toBe(true);
+    expect(items.some((i: any) => i.id === 'clear_wires')).toBe(true);
   });
 
   it('canvas_ops_provider returns empty when node targeted', () => {
@@ -162,8 +164,8 @@ describe('built-in providers', () => {
       world_pos: { x: 0, y: 0 },
       container: easel.container,
     });
-    expect(items.some(i => i.id === 'reset_camera')).toBe(false);
-    expect(items.some(i => i.id === 'clear_wires')).toBe(false);
+    expect(items.some((i: any) => i.id === 'reset_camera')).toBe(false);
+    expect(items.some((i: any) => i.id === 'clear_wires')).toBe(false);
   });
 
   it('node_instance_provider delegates to get_context_menu_items', () => {
@@ -184,7 +186,7 @@ describe('built-in providers', () => {
       container: easel.container,
     });
     expect(getContextItems).toHaveBeenCalled();
-    expect(items.some(i => i.id === 'custom_item')).toBe(true);
+    expect(items.some((i: any) => i.id === 'custom_item')).toBe(true);
   });
 
   it('add_node_provider returns Add Node item with submenu', () => {
@@ -197,7 +199,7 @@ describe('built-in providers', () => {
       world_pos: { x: 0, y: 0 },
       container: easel.container,
     });
-    const addNode = items.find(i => i.id === 'add_node');
+    const addNode = items.find((i: any) => i.id === 'add_node');
     expect(addNode).toBeDefined();
     expect(addNode.label).toBe('Add Node');
     expect(addNode.submenu).toBeDefined();

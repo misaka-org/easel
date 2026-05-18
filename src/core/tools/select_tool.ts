@@ -111,7 +111,7 @@ export const select_tool: Tool = {
   label: 'Select',
   cursor: 'default',
 
-  onPointerDown: (state, _interaction, event): ToolResult => {
+  on_pointer_down: (state, _interaction, event): ToolResult => {
     // 1) wiring: 点 port 自动开始连线
     const grabbed = try_grab_wire(state, event);
     if (O.isSome(grabbed)) return { state: grabbed.value };
@@ -128,7 +128,7 @@ export const select_tool: Tool = {
     return { state: start_selection_or_pan(state, event) };
   },
 
-  onPointerMove: (state, interaction, event): ToolResult => {
+  on_pointer_move: (state, interaction, event): ToolResult => {
     switch (interaction.mode) {
       case 'wiring':
         return {
@@ -148,7 +148,7 @@ export const select_tool: Tool = {
     }
   },
 
-  onPointerUp: (state, interaction, event): ToolResult => {
+  on_pointer_up: (state, interaction, event): ToolResult => {
     let next = state;
     if (interaction.mode === 'wiring' && event) {
       const i = interaction as Extract<Interaction, { mode: 'wiring' }>;
@@ -159,7 +159,7 @@ export const select_tool: Tool = {
     return { state: { ...next, interaction: { mode: 'idle' } } };
   },
 
-  onWheel: (state, event) => {
+  on_wheel: (state, event) => {
     const factor = event.delta_y > 0 ? 0.9 : 1.1;
     const zoom = Math.max(0.1, Math.min(10, state.camera.zoom * factor));
     const mx = event.screen_position.x;

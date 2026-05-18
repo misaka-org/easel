@@ -1,4 +1,4 @@
-import type { State, GraphNode, Binding } from '@/core/types';
+import type { State, GraphNode } from '@/core/types';
 import { vec2_sub, vec2_scale } from '@/core/math';
 import { frame_effect } from './frame_effect';
 import type { Store } from './store';

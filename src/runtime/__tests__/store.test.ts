@@ -30,7 +30,7 @@ describe('Store', () => {
   it('should create with initial state', () => {
     const store = new Store();
     expect(store.state.value.nodes).toEqual({});
-    expect(store.state.value.wires).toEqual({});
+    expect(store.state.value.bindings).toEqual({});
     expect(store.state.value.camera.zoom).toBe(1);
   });
 
@@ -44,7 +44,7 @@ describe('Store', () => {
   it('should expose nodes as Table', () => {
     const store = new Store();
     expect(store.nodes).toBeInstanceOf(Table);
-    expect(store.wires).toBeInstanceOf(Table);
+    expect(store.bindings).toBeInstanceOf(Table);
   });
 
   it('should dispatch updates and trigger state change', () => {
@@ -65,26 +65,27 @@ describe('Store', () => {
     const store = new Store();
     store.nodes.put('a', make_node('a'));
     store.nodes.put('b', make_node('b'));
-    store.wires.put('w1', {
-      id: 'w1',
-      source_node_id: 'a',
-      source_port_id: 'out1',
-      target_node_id: 'b',
-      target_port_id: 'in1',
+    store.bindings.put('b1', {
+      id: 'b1',
+      type: 'data-flow',
+      source_id: 'a',
+      source_handle: 'out1',
+      target_id: 'b',
+      target_handle: 'in1',
     });
 
     store.nodes.on_before_change((event) => {
       if (event.type === 'delete' && event.prev) {
-        for (const wire of store.wires.list()) {
-          if (wire.source_node_id === event.id || wire.target_node_id === event.id) {
-            store.wires.delete(wire.id);
+        for (const binding of store.bindings.list()) {
+          if (binding.source_id === event.id || binding.target_id === event.id) {
+            store.bindings.delete(binding.id);
           }
         }
       }
     });
 
     store.nodes.delete('a');
-    expect(store.wires.has('w1')).toBe(false);
+    expect(store.bindings.has('b1')).toBe(false);
     expect(store.nodes.has('a')).toBe(false);
     expect(store.nodes.has('b')).toBe(true);
   });
@@ -95,9 +96,9 @@ describe('Store', () => {
 
     store.nodes.on_before_change((event) => {
       if (event.type === 'delete' && event.prev) {
-        for (const wire of store.wires.list()) {
-          if (wire.source_node_id === event.id || wire.target_node_id === event.id) {
-            store.wires.delete(wire.id);
+        for (const binding of store.bindings.list()) {
+          if (binding.source_id === event.id || binding.target_id === event.id) {
+            store.bindings.delete(binding.id);
           }
         }
       }

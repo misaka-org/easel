@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { shallowRef } from '@vue/reactivity';
 import { GraphExecutor } from '@/executor/engine';
 import { create_initial_state } from '@/core/state';
 import { vec2_create } from '@/core/math';
@@ -46,7 +47,7 @@ function mockEasel(nodeOverrides = {}) {
   } as unknown as Easel;
 }
 
-function node(id, opts = {}) {
+function node(id: string, opts: { inputs?: any[]; outputs?: any[]; widgets?: any[] } = {}) {
   return {
     id,
     type: 'default',
@@ -78,25 +79,26 @@ describe('executor', () => {
     it('completes a -> b chain', async () => {
       const a = node('a', { outputs: [{ id: 'out', label: 'Out', type: 'output' }] });
       const b = node('b', { inputs: [{ id: 'in', label: 'In', type: 'input' }] });
-      const wires = {
-        w1: {
-          id: 'w1',
-          source_node_id: 'a',
-          source_port_id: 'out',
-          target_node_id: 'b',
-          target_port_id: 'in',
+      const bindings = {
+        b1: {
+          id: 'b1',
+          type: 'data-flow',
+          source_id: 'a',
+          source_handle: 'out',
+          target_id: 'b',
+          target_handle: 'in',
         },
       };
       const nodes = { a, b };
-      const state = { ...create_initial_state(), nodes, wires };
+      const state = { ...create_initial_state(), nodes, bindings };
       const stateRef = shallowRef(state);
       const exec = new GraphExecutor({
         state: stateRef,
         get_node_instance: () => undefined,
-        store: { state: stateRef, dispatch: (fn) => { stateRef.value = fn(stateRef.value); }, nodes: mock_table(), wires: mock_table(), bindings: mock_table() },
-        camera: { set() {}, animate_to() {}, cancel() {}, zoom_in() {}, zoom_out() {}, zoom_reset() {}, fit_to_view() {}, get is_animating() { return false; } },
+        store: { state: stateRef, dispatch: (fn: any) => { stateRef.value = fn(stateRef.value); }, nodes: mock_table() as any, bindings: mock_table() as any },
+        camera: { set() {}, animate_to() {}, cancel() {}, zoom_in() {}, zoom_out() {}, zoom_reset() {}, fit_to_view() {}, get is_animating() { return false; } } as any,
         set_theme() {},
-      });
+      } as any);
       exec.compile();
       exec.run();
       await new Promise(r => setTimeout(r, 0));
@@ -144,24 +146,25 @@ describe('executor', () => {
     it('executes one node at a time in a -> b chain', async () => {
       const a = node('a', { outputs: [{ id: 'out', label: 'Out', type: 'output' }] });
       const b = node('b', { inputs: [{ id: 'in', label: 'In', type: 'input' }] });
-      const wires = {
-        w1: {
-          id: 'w1',
-          source_node_id: 'a',
-          source_port_id: 'out',
-          target_node_id: 'b',
-          target_port_id: 'in',
+      const bindings_ab = {
+        b1: {
+          id: 'b1',
+          type: 'data-flow',
+          source_id: 'a',
+          source_handle: 'out',
+          target_id: 'b',
+          target_handle: 'in',
         },
       };
-      const state = { ...create_initial_state(), nodes: { a, b }, wires };
+      const state = { ...create_initial_state(), nodes: { a, b }, bindings: bindings_ab };
       const stateRef = shallowRef(state);
       const exec = new GraphExecutor({
         state: stateRef,
         get_node_instance: () => undefined,
-        store: { state: stateRef, dispatch: (fn) => { stateRef.value = fn(stateRef.value); }, nodes: mt(), wires: mt(), bindings: mt(), serialize: () => ({}), transact: (fn) => fn() },
-        camera: { set() {}, animate_to() {}, cancel() {}, zoom_in() {}, zoom_out() {}, zoom_reset() {}, fit_to_view() {}, get is_animating() { return false; } },
+        store: { state: stateRef, dispatch: (fn: any) => { stateRef.value = fn(stateRef.value); }, nodes: mock_table() as any, bindings: mock_table() as any, serialize: () => ({}), transact: (fn: any) => fn() },
+        camera: { set() {}, animate_to() {}, cancel() {}, zoom_in() {}, zoom_out() {}, zoom_reset() {}, fit_to_view() {}, get is_animating() { return false; } } as any,
         set_theme() {},
-      });
+      } as any);
       exec.compile();
       expect(exec.state.value.ready_queue).toEqual(['a']);
       expect(exec.state.value.status).toBe('idle');
@@ -211,30 +214,31 @@ describe('executor', () => {
 
       const a = node('a', { outputs: [{ id: 'out', label: 'Out', type: 'output' }] });
       const b = node('b', { inputs: [{ id: 'in', label: 'In', type: 'input' }] });
-      const wires = {
-        w1: {
-          id: 'w1',
-          source_node_id: 'a',
-          source_port_id: 'out',
-          target_node_id: 'b',
-          target_port_id: 'in',
+      const bindings_ab = {
+        b1: {
+          id: 'b1',
+          type: 'data-flow',
+          source_id: 'a',
+          source_handle: 'out',
+          target_id: 'b',
+          target_handle: 'in',
         },
       };
-      const state = { ...create_initial_state(), nodes: { a, b }, wires };
+      const state = { ...create_initial_state(), nodes: { a, b }, bindings: bindings_ab };
       const stateRef = shallowRef(state);
 
       const exec = new GraphExecutor({
         state: stateRef,
         get_node_instance: () => inst,
-        store: { state: stateRef, dispatch: (fn) => { stateRef.value = fn(stateRef.value); }, nodes: mt(), wires: mt(), bindings: mt(), serialize: () => ({}), transact: (fn) => fn() },
-        camera: { set() {}, animate_to() {}, cancel() {}, zoom_in() {}, zoom_out() {}, zoom_reset() {}, fit_to_view() {}, get is_animating() { return false; } },
+        store: { state: stateRef, dispatch: (fn: any) => { stateRef.value = fn(stateRef.value); }, nodes: mock_table() as any, bindings: mock_table() as any, serialize: () => ({}), transact: (fn: any) => fn() },
+        camera: { set() {}, animate_to() {}, cancel() {}, zoom_in() {}, zoom_out() {}, zoom_reset() {}, fit_to_view() {}, get is_animating() { return false; } } as any,
         set_theme() {},
-        dispatch: fn => {
+        dispatch: (fn: any) => {
           stateRef.value = fn(stateRef.value);
         },
         app_events: { on() {}, emit() {}, off() {} },
         node_events: new Map(),
-      });
+      } as any);
       exec.compile();
       await exec['realtime_execute_downstream']('a');
       expect(exec.state.value.status).toBe('completed');
@@ -304,30 +308,31 @@ describe('executor', () => {
         inputs: [{ id: 'in_b', label: 'In', type: 'input' }],
         widgets: [{ id: 'w1', label: 'Widget', type: 'widget', value: 'hello' }],
       });
-      const wires = {
-        w1: {
-          id: 'w1',
-          source_node_id: 'a',
-          source_port_id: 'out_a',
-          target_node_id: 'b',
-          target_port_id: 'in_b',
+      const bindings_ab = {
+        b1: {
+          id: 'b1',
+          type: 'data-flow',
+          source_id: 'a',
+          source_handle: 'out_a',
+          target_id: 'b',
+          target_handle: 'in_b',
         },
       };
-      const state = { ...create_initial_state(), nodes: { a, b }, wires };
+      const state = { ...create_initial_state(), nodes: { a, b }, bindings: bindings_ab };
       const stateRef = shallowRef(state);
 
       const exec = new GraphExecutor({
         state: stateRef,
-        get_node_instance: id => (id === 'a' ? instA : instB),
-        store: { state: stateRef, dispatch: (fn) => { stateRef.value = fn(stateRef.value); }, nodes: mt(), wires: mt(), bindings: mt(), serialize: () => ({}), transact: (fn) => fn() },
-        camera: { set() {}, animate_to() {}, cancel() {}, zoom_in() {}, zoom_out() {}, zoom_reset() {}, fit_to_view() {}, get is_animating() { return false; } },
+        get_node_instance: (id: string) => (id === 'a' ? instA : instB),
+        store: { state: stateRef, dispatch: (fn: any) => { stateRef.value = fn(stateRef.value); }, nodes: mock_table() as any, bindings: mock_table() as any, serialize: () => ({}), transact: (fn: any) => fn() },
+        camera: { set() {}, animate_to() {}, cancel() {}, zoom_in() {}, zoom_out() {}, zoom_reset() {}, fit_to_view() {}, get is_animating() { return false; } } as any,
         set_theme() {},
-        dispatch: fn => {
+        dispatch: (fn: any) => {
           stateRef.value = fn(stateRef.value);
         },
         app_events: { on() {}, emit() {}, off() {} },
         node_events: new Map(),
-      });
+      } as any);
       exec.compile();
       exec.run();
       await new Promise(r => setTimeout(r, 0));
@@ -343,7 +348,7 @@ describe('executor', () => {
       const executeMock = vi.fn().mockResolvedValue({ out: 'result' });
       const inst = { execute: executeMock };
       const a = node('a', { outputs: [{ id: 'out', label: 'Out', type: 'output' }] });
-      const easel = { ...mockEasel({ a }), get_node_instance: () => inst };
+      const easel = { ...mockEasel({ a }), get_node_instance: () => inst } as any;
       const exec = new GraphExecutor(easel);
       exec.compile();
       exec.run();
@@ -361,7 +366,7 @@ describe('executor', () => {
       const executeMock = vi.fn().mockRejectedValue(new Error('exec failed'));
       const inst = { execute: executeMock };
       const a = node('a', { outputs: [{ id: 'out', label: 'Out', type: 'output' }] });
-      const easel = { ...mockEasel({ a }), get_node_instance: () => inst };
+      const easel = { ...mockEasel({ a }), get_node_instance: () => inst } as any;
       const exec = new GraphExecutor(easel);
       exec.compile();
       exec.run();

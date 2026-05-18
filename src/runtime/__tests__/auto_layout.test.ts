@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { auto_layout } from '@/runtime/auto_layout';
 import { vec2_create } from '@/core/math';
-import type { GraphNode, Wire } from '@/core/types';
+import type { GraphNode, Binding } from '@/core/types';
 
 const node = (id: string, x: number, y: number, w = 100, h = 80): GraphNode => ({
   id,
@@ -34,40 +34,43 @@ describe('auto_layout', () => {
   });
 
   it('positions connected nodes in left-to-right layout', () => {
-    const wires: Record<string, Wire> = {
-      w1: {
-        id: 'w1',
-        source_node_id: 'a',
-        source_port_id: 'out',
-        target_node_id: 'b',
-        target_port_id: 'in',
+    const bindings: Record<string, Binding> = {
+      b1: {
+        id: 'b1',
+        type: 'data-flow',
+        source_id: 'a',
+        source_handle: 'out',
+        target_id: 'b',
+        target_handle: 'in',
       },
     };
-    const r = auto_layout({ a: node('a', 0, 0), b: node('b', 0, 0) }, wires, 800, 600);
+    const r = auto_layout({ a: node('a', 0, 0), b: node('b', 0, 0) }, bindings, 800, 600);
     // 'a' should be left of 'b' because 'a' is source
     expect(r.positions['a']!.x).toBeLessThan(r.positions['b']!.x);
   });
 
   it('positions chain of 3 nodes', () => {
-    const wires: Record<string, Wire> = {
-      w1: {
-        id: 'w1',
-        source_node_id: 'a',
-        source_port_id: 'out',
-        target_node_id: 'b',
-        target_port_id: 'in',
+    const bindings: Record<string, Binding> = {
+      b1: {
+        id: 'b1',
+        type: 'data-flow',
+        source_id: 'a',
+        source_handle: 'out',
+        target_id: 'b',
+        target_handle: 'in',
       },
-      w2: {
-        id: 'w2',
-        source_node_id: 'b',
-        source_port_id: 'out',
-        target_node_id: 'c',
-        target_port_id: 'in',
+      b2: {
+        id: 'b2',
+        type: 'data-flow',
+        source_id: 'b',
+        source_handle: 'out',
+        target_id: 'c',
+        target_handle: 'in',
       },
     };
     const r = auto_layout(
       { a: node('a', 0, 0), b: node('b', 0, 0), c: node('c', 0, 0) },
-      wires,
+      bindings,
       800,
       600,
     );
@@ -79,18 +82,19 @@ describe('auto_layout', () => {
   });
 
   it('handles disconnected groups independently', () => {
-    const wires: Record<string, Wire> = {
-      w1: {
-        id: 'w1',
-        source_node_id: 'a',
-        source_port_id: 'out',
-        target_node_id: 'b',
-        target_port_id: 'in',
+    const bindings: Record<string, Binding> = {
+      b1: {
+        id: 'b1',
+        type: 'data-flow',
+        source_id: 'a',
+        source_handle: 'out',
+        target_id: 'b',
+        target_handle: 'in',
       },
     };
     const r = auto_layout(
       { a: node('a', 0, 0), b: node('b', 0, 0), c: node('c', 0, 0) },
-      wires,
+      bindings,
       800,
       600,
     );
