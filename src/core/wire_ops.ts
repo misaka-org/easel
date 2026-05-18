@@ -1,19 +1,8 @@
-import type { State, Wire } from './types';
+import type { State } from './types';
 
-export const add_wire = (state: State, wire: Wire): State => ({
-  ...state,
-  wires: { ...state.wires, [wire.id]: wire },
-});
-
-export const remove_wire = (state: State, wire_id: string): State => {
-  const { [wire_id]: _, ...rest_wires } = state.wires;
-  return {
-    ...state,
-    wires: rest_wires,
-  };
-};
-
-export const clear_wires = (state: State): State => ({
-  ...state,
-  wires: {},
-});
+/**
+ * @deprecated Use binding_ops instead. Functions kept as no-ops for backward compat.
+ */
+export const add_wire = (state: State, _wire: any): State => state;
+export const remove_wire = (state: State, _wire_id: string): State => state;
+export const clear_wires = (state: State): State => state;

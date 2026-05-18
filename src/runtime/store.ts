@@ -2,18 +2,18 @@
  * Store — 响应式数据层。
  *
  * 核心抽象：
- *   Table<T> — 按表管理可记录数据（nodes, wires, 未来 binding 等）
+ *   Table<T> — 按表管理可记录数据（nodes, bindings 等）
  *   Store — 聚合 Table + 响应式 state + 事件钩子
  *
  * 向后兼容：
  *   store.state 仍是 ShallowRef<State>
  *   store.dispatch 仍是 (state → state) => void
- *   新增 store.nodes / store.wires 提供类型安全 CRUD
+ *   新增 store.nodes / store.bindings 提供类型安全 CRUD
  */
 
 import { shallowRef, type ShallowRef } from '@vue/reactivity';
 import { create_initial_state } from '@/core/state';
-import type { State, GraphNode, Wire, Binding, Camera } from '@/core/types';
+import type { State, GraphNode, Binding, Camera } from '@/core/types';
 
 // ── Change Event Types ──────────────────────────────────────────
 
@@ -120,7 +120,6 @@ export type Dispatch = (updater: (state: State) => State) => void;
 
 export type SerializedStore = {
   nodes: Record<string, GraphNode>;
-  wires: Record<string, Wire>;
   bindings?: Record<string, Binding>;
   camera?: Camera;
 };
@@ -136,7 +135,6 @@ export class Store {
   readonly dispatch: Dispatch;
 
   readonly nodes: Table<GraphNode>;
-  readonly wires: Table<Wire>;
   readonly bindings: Table<Binding>;
 
   private _in_transaction = false;
@@ -162,16 +160,9 @@ export class Store {
       (fn) => { dispatch(s => ({ ...s, nodes: fn(s.nodes) })); },
     );
 
-    this.wires = new Table<Wire>(
-      () => state_ref.value.wires,
-      (fn) => { dispatch(s => ({ ...s, wires: fn(s.wires) })); },
-    );
-
     this.bindings = new Table<Binding>(
       () => state_ref.value.bindings,
-      (fn) => {
-        dispatch(s => ({ ...s, bindings: fn(s.bindings) }));
-      },
+      (fn) => { dispatch(s => ({ ...s, bindings: fn(s.bindings) })); },
     );
   }
 
@@ -198,7 +189,6 @@ export class Store {
     const s = this.state.value;
     const out: SerializedStore = {
       nodes: { ...s.nodes },
-      wires: { ...s.wires },
     };
     if (s.bindings && Object.keys(s.bindings).length > 0) {
       out.bindings = { ...s.bindings };
@@ -214,7 +204,6 @@ export class Store {
       initial_state: {
         ...base,
         nodes: data.nodes,
-        wires: data.wires,
         bindings: data.bindings ?? base.bindings,
         camera: data.camera ?? base.camera,
       },

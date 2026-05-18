@@ -29,14 +29,6 @@ export const try_grab_wire = (state: State, event: PointerEventParams): O.Option
         if (b) {
           return O.some(start_wiring(remove_binding(state, b.id), b.source_id, b.source_handle, event));
         }
-        // 也检查旧 wire（兼容）
-        const wire = Object.values(state.wires).find(
-          w => w.target_node_id === node_id && w.target_port_id === port_id,
-        );
-        if (wire) {
-          const { [wire.id]: _, ...rest } = state.wires;
-          return O.some(start_wiring({ ...state, wires: rest }, wire.source_node_id, wire.source_port_id, event));
-        }
       } else if (port_type === 'output') {
         return O.some(start_wiring(state, node_id, port_id, event));
       }

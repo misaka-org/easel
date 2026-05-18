@@ -101,14 +101,9 @@ export class Easel {
     this.state = easel_store.state;
     this.store = easel_store;
 
-    // Auto-cleanup wires + bindings when a node is deleted
+    // Auto-cleanup bindings when a node is deleted
     this.store.nodes.on_before_change((event) => {
       if (event.type === 'delete' && event.prev) {
-        for (const wire of this.store.wires.list()) {
-          if (wire.source_node_id === event.id || wire.target_node_id === event.id) {
-            this.store.wires.delete(wire.id);
-          }
-        }
         for (const b of this.store.bindings.list()) {
           if (b.source_id === event.id || b.target_id === event.id) {
             this.store.bindings.delete(b.id);

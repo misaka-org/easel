@@ -1,4 +1,4 @@
-import type { GraphNode, Wire, Binding } from '@/core/types';
+import type { GraphNode, Binding } from '@/core/types';
 import { vec2_create, type Vec2 } from '@/core/math';
 
 // ---------------------------------------------------------------------------
@@ -15,15 +15,10 @@ interface ComponentLayout {
 // ---------------------------------------------------------------------------
 function find_connected_components(
   nodes: Record<string, GraphNode>,
-  wires: Record<string, Wire>,
   bindings: Record<string, Binding>,
 ): string[][] {
   const adj = new Map<string, Set<string>>();
   for (const id of Object.keys(nodes)) adj.set(id, new Set());
-  for (const w of Object.values(wires)) {
-    adj.get(w.source_node_id)?.add(w.target_node_id);
-    adj.get(w.target_node_id)?.add(w.source_node_id);
-  }
   for (const b of Object.values(bindings)) {
     if (b.type !== 'data-flow') continue;
     adj.get(b.source_id)?.add(b.target_id);
@@ -63,7 +58,6 @@ function find_connected_components(
 // ---------------------------------------------------------------------------
 function layout_component(
   nodes: Record<string, GraphNode>,
-  wires: Record<string, Wire>,
   bindings: Record<string, Binding>,
   comp: string[],
 ): ComponentLayout {
@@ -75,12 +69,6 @@ function layout_component(
   for (const id of comp) {
     out_adj.set(id, []);
     in_deg.set(id, 0);
-  }
-  for (const w of Object.values(wires)) {
-    out_adj.get(w.source_node_id)?.push(w.target_node_id);
-    if (in_deg.has(w.target_node_id)) {
-      in_deg.set(w.target_node_id, in_deg.get(w.target_node_id)! + 1);
-    }
   }
   for (const b of Object.values(bindings)) {
     if (b.type !== 'data-flow') continue;
@@ -244,7 +232,6 @@ function pack_components(
 // ---------------------------------------------------------------------------
 export function auto_layout(
   nodes: Record<string, GraphNode>,
-  wires: Record<string, Wire>,
   bindings: Record<string, Binding>,
   viewport_width: number,
   viewport_height: number,
@@ -254,13 +241,13 @@ export function auto_layout(
   camera_pos: Vec2;
 } {
   // 1. Connected components
-  const comps = find_connected_components(nodes, wires, bindings);
+  const comps = find_connected_components(nodes, bindings);
 
   // 2. Layout each component at its own origin
   const layouts: ComponentLayout[] = [];
   for (const comp of comps) {
     if (comp.length === 0) continue;
-    layouts.push(layout_component(nodes, wires, bindings, comp));
+    layouts.push(layout_component(nodes, bindings, comp));
   }
 
   if (layouts.length === 0) {

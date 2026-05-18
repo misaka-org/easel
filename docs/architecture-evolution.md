@@ -25,7 +25,7 @@
 - [x] `zoom_to_selection()` / `fit_to_view()` / `center_on_point()` 通用方法
 - [x] `controls.ts` 改用 CameraController（zoom_in/out/reset/fit）
 - [x] `easel.camera` 对外暴露
-- [ ] `zoom_to_rect()` — 未实现
+- [x] `zoom_to_rect()` — 已实现（通过 fit_to_view / zoom_to_selection）
 
 ### 阶段 2：Store 抽象
 
@@ -68,10 +68,10 @@
 
 ### 阶段 5：收尾
 
-- [ ] `try_connect_wire` 改创 data-flow binding（已完成）
-- [ ] 全部读端优先 binding（已完成）
-- [ ] 移除 `State.wires`（待 `wires` 无任何引用的稳定期后清理）
-- [ ] 外部接口文档同步
+- [x] `try_connect_wire` 改创 data-flow binding
+- [x] 全部读端优先 binding
+- [x] 移除 `State.wires`、`Wire` 类型、`store.wires` 表
+- [ ] 外部接口文档同步（README、docs/*.md 整理）
 - [ ] 外部接口文档同步
 - [ ] 性能回归测试（渲染 + 交互 + 执行引擎）
 

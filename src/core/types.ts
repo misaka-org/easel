@@ -50,15 +50,6 @@ export type GraphNode = {
   readonly custom_data: Record<string, unknown>;
 };
 
-export type Wire = {
-  readonly id: string;
-  readonly source_node_id: string;
-  readonly source_port_id: string;
-  readonly target_node_id: string;
-  readonly target_port_id: string;
-};
-
-
 /** 
  * Generic binding between two nodes.
  * `type` discriminates the binding's semantics:
@@ -134,7 +125,6 @@ export type Interaction =
 
 export type GraphState = {
   readonly nodes: Record<string, GraphNode>;
-  readonly wires: Record<string, Wire>;
   readonly bindings?: Record<string, Binding>;
 };
 
@@ -147,7 +137,6 @@ export type Modifiers = {
 
 export type State = {
   readonly nodes: Record<string, GraphNode>;
-  readonly wires: Record<string, Wire>;
   readonly bindings: Record<string, Binding>;
   readonly camera: Camera;
   readonly interaction: Interaction;

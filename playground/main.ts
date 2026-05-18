@@ -1,4 +1,4 @@
-﻿import { effect } from '@vue/reactivity';
+import { effect } from '@vue/reactivity';
 import { Easel, ExecuteContext, type NodeSpec } from '@/index';
 import { add_node, update_node_data } from '@/core/node_ops';
 import { create_initial_state } from '@/core/state';
@@ -204,7 +204,7 @@ const init = () => {
 
     // Sync inner I/O nodes to parent node ports
     const inner_nodes = state.value.nodes;
-    const inner_wires = state.value.wires;
+    const inner_wires = state.value.bindings;
 
     const parent_state = parent.parent_state;
     const next_parent_state = update_node_data(parent_state, parent.parent_node_id, n => ({
@@ -357,7 +357,7 @@ const init = () => {
       const s = state.value;
       const text_content = [
         `Nodes: ${Object.keys(s.nodes).length}`,
-        `Wires: ${Object.keys(s.wires).length}`,
+        `Wires: ${Object.keys(s.bindings).length}`,
         `Camera: [${s.camera.position.x.toFixed(
           1,
         )}, ${s.camera.position.y.toFixed(1)}] @ ${s.camera.zoom.toFixed(2)}x`,

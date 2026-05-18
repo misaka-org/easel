@@ -1,4 +1,4 @@
-﻿import { vec2_create } from '@/core/math';
+import { vec2_create } from '@/core/math';
 import { add_node } from '@/core/node_ops';
 import type { State } from '@/core/types';
 import type { Dispatch } from '@/runtime/registry';
@@ -68,15 +68,15 @@ export const evaluate_math_graph = (state: State): State => {
 
   for (const node of Object.values(state.nodes)) {
     if (node.type === 'math') {
-      const wire_a = Object.values(state.wires).find(
-        w => w.target_node_id === node.id && w.target_port_id === 'a',
+      const wire_a = Object.values(state.bindings).find(
+        b => b.type === 'data-flow' && b.target_id === node.id && b.target_handle === 'a',
       );
-      const wire_b = Object.values(state.wires).find(
-        w => w.target_node_id === node.id && w.target_port_id === 'b',
+      const wire_b = Object.values(state.bindings).find(
+        b => b.type === 'data-flow' && b.target_id === node.id && b.target_handle === 'b',
       );
 
-      const val_a = wire_a ? get_port_value(wire_a.source_node_id, wire_a.source_port_id) : 0;
-      const val_b = wire_b ? get_port_value(wire_b.source_node_id, wire_b.source_port_id) : 0;
+      const val_a = wire_a ? get_port_value(wire_a.source_id, wire_a.source_handle) : 0;
+      const val_b = wire_b ? get_port_value(wire_b.source_id, wire_b.source_handle) : 0;
 
       let res = 0;
       if (node.custom_data['operation'] === 'add') res = val_a + val_b;

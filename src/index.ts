@@ -1,6 +1,6 @@
 // Core exports
 export { create_initial_state } from './core/state';
-export { serialize_state, deserialize_state } from './core/serialization';
+
 export {
   add_node,
   move_node,
@@ -9,7 +9,7 @@ export {
   update_widget_value,
   remove_node,
 } from './core/node_ops';
-export { add_wire, remove_wire, clear_wires } from './core/wire_ops';
+
 export * from './core/math';
 export * from './core/types';
 
@@ -53,6 +53,7 @@ export type {
 export { history_plugin } from './plugins/history';
 export { auto_pan_plugin } from './plugins/auto_pan';
 export { executor_plugin } from './plugins/executor_plugin';
+export { is_port_connected, find_binding_by_target, find_binding_by_source } from './core/binding_ops';
 export { guidelines_plugin } from './plugins/guidelines';
 export { toolbar_plugin } from './plugins/toolbar';
 export { node_picker_plugin } from './plugins/node_picker';

@@ -4,7 +4,7 @@ import { update_node_data, update_widget_value, remove_node } from '@/core/node_
 import { get_widget_type } from './register';
 import { ICON_X } from '@/icons';
 import { set_inner_html } from '@/utils/dom';
-import { is_port_connected, find_connection } from '@/core/binding_ops';
+import { is_port_connected } from '@/core/binding_ops';
 
 export class DefaultNode extends EaselNode {
   private header!: HTMLElement;

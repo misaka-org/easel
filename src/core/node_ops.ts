@@ -118,12 +118,6 @@ export const update_widget_value = (
 export const remove_node = (state: State, node_id: string): State => {
   const { [node_id]: _, ...rest_nodes } = state.nodes;
 
-  const wires = Object.fromEntries(
-    Object.entries(state.wires).filter(
-      ([_, wire]) => wire.source_node_id !== node_id && wire.target_node_id !== node_id,
-    ),
-  );
-
   const bindings = Object.fromEntries(
     Object.entries(state.bindings).filter(
       ([_, b]) => b.source_id !== node_id && b.target_id !== node_id,
@@ -133,7 +127,6 @@ export const remove_node = (state: State, node_id: string): State => {
   return {
     ...state,
     nodes: rest_nodes,
-    wires,
     bindings,
     selected_node_ids: state.selected_node_ids.filter(id => id !== node_id),
   };

@@ -1,4 +1,4 @@
-﻿import type { EaselPlugin } from '@/runtime/easel';
+import type { EaselPlugin } from '@/runtime/easel';
 import { apply_styles } from '@/utils/css';
 import { auto_layout } from '@/runtime/auto_layout';
 import type { ContextMenuItem, ContextMenuContext } from '@/plugins/context_menu/types';
@@ -24,7 +24,7 @@ export const controls_plugin: EaselPlugin = easel => {
   const do_layout = () => {
     const vp = easel.container.getBoundingClientRect();
     const s = easel.state.value;
-    const result = auto_layout(s.nodes, s.wires, s.bindings ?? {}, vp.width, vp.height);
+    const result = auto_layout(s.nodes, s.bindings ?? {}, vp.width, vp.height);
     const new_nodes = { ...s.nodes };
     for (const [id, pos] of Object.entries(result.positions)) {
       new_nodes[id] = { ...new_nodes[id], position: pos };

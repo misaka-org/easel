@@ -50,17 +50,12 @@ export abstract class EaselNode {
   get_context_menu_items?(ctx: ContextMenuContext): readonly ContextMenuItem[];
 
   get_input_value(state: State, port_id: string): any {
-    const conn = Object.values(state.bindings).find(
+    const b = Object.values(state.bindings).find(
       b => b.type === 'data-flow' && b.target_id === this.node_id && b.target_handle === port_id,
-    ) ?? Object.values(state.wires).find(
-      w => w.target_node_id === this.node_id && w.target_port_id === port_id,
     );
-    if (!conn) return undefined;
-    const is_binding = 'source_handle' in conn;
-    const source_id = is_binding ? (conn as any).source_id : (conn as any).source_node_id;
-    const source_port = is_binding ? (conn as any).source_handle : (conn as any).source_port_id;
-    const source_node = state.nodes[source_id];
-    return source_node?.custom_data[source_port];
+    if (!b) return undefined;
+    const source_node = state.nodes[b.source_id];
+    return source_node?.custom_data[b.source_handle];
   }
 
   get_widget_value(state: State, widget_id: string): any {

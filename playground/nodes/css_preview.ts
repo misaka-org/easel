@@ -1,4 +1,4 @@
-﻿import { EaselNode, type NodeSpec } from '@/index';
+import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 import { set_inner_html } from '@/utils/dom';
@@ -63,7 +63,7 @@ export class CSSPreviewNode extends EaselNode {
     this.container.appendChild(this.header);
     this.container.appendChild(this.body);
 
-    this.update(node_data, { wires: {} } as State);
+    this.update(node_data, {} as State);
   }
 
   update(node_data: GraphNode, state: State): void {
@@ -76,10 +76,10 @@ export class CSSPreviewNode extends EaselNode {
     set_inner_html(this.header, title_html);
 
     const is_connected = (p_id: string) =>
-      Object.values(state.wires).some(
-        w =>
-          (w.target_node_id === this.node_id && w.target_port_id === p_id) ||
-          (w.source_node_id === this.node_id && w.source_port_id === p_id),
+      Object.values(state.bindings).some(
+        b => b.type === 'data-flow' &&
+          ((b.target_id === this.node_id && b.target_handle === p_id) ||
+           (b.source_id === this.node_id && b.source_handle === p_id)),
       );
 
     const ports_html = (node_data.inputs || [])

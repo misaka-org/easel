@@ -33,16 +33,13 @@ export class GraphExecutor {
 
   compile(): E.Either<Error, void> {
     const store = this.easel.store;
-    const wires = [
-      ...store.wires.list(),
-      ...store.bindings.list().filter(b => b.type === 'data-flow').map(b => ({
-        id: b.id,
-        source_node_id: b.source_id,
-        source_port_id: b.source_handle,
-        target_node_id: b.target_id,
-        target_port_id: b.target_handle,
-      })),
-    ];
+    const wires = store.bindings.list().filter(b => b.type === 'data-flow').map(b => ({
+      id: b.id,
+      source_node_id: b.source_id,
+      source_port_id: b.source_handle,
+      target_node_id: b.target_id,
+      target_port_id: b.target_handle,
+    }));
 
     const in_degrees: Record<string, number> = {};
     const adj: Record<string, string[]> = {};
@@ -392,7 +389,12 @@ export class GraphExecutor {
     const inputs: Record<string, unknown> = {};
     const store = this.easel.store;
     const node = store.nodes.get(node_id);
-    const wires = store.wires.list();
+    const wires = store.bindings.list().filter(b => b.type === 'data-flow').map(b => ({
+      source_node_id: b.source_id,
+      target_node_id: b.target_id,
+      source_port_id: b.source_handle,
+      target_port_id: b.target_handle,
+    }));
 
     if (node?.widgets) {
       for (const w of node.widgets) inputs[w.id] = w.value;

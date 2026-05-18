@@ -1,7 +1,8 @@
-﻿import { EaselNode, type NodeSpec } from '@/index';
+import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 import { update_widget_value } from '@/core/node_ops';
+import { is_port_connected } from '@/index';
 import { set_inner_html } from '@/utils/dom';
 
 export class ColorSourceNode extends EaselNode {
@@ -58,7 +59,7 @@ export class ColorSourceNode extends EaselNode {
       }
     });
 
-    this.update(node_data, { wires: {} } as State);
+    this.update(node_data, {} as State);
   }
 
   update(node_data: GraphNode, state: State): void {
@@ -70,16 +71,9 @@ export class ColorSourceNode extends EaselNode {
     `;
     set_inner_html(this.header, title_html);
 
-    const is_port_connected = (p_id: string) =>
-      Object.values(state.wires).some(
-        w =>
-          (w.target_node_id === this.node_id && w.target_port_id === p_id) ||
-          (w.source_node_id === this.node_id && w.source_port_id === p_id),
-      );
-
     const ports_html = (node_data.outputs || [])
       .map(p => {
-        const cc = is_port_connected(p.id) ? 'connected' : '';
+        const cc = is_port_connected(state, this.node_id, p.id, 'output') ? 'connected' : '';
         return `<div class="port-row"><div></div><div class="port" data-port-id="${p.id}" data-port-type="output"><span class="port-label">${p.label}</span><div class="port-dot port-type-text ${cc}"></div></div></div>`;
       })
       .join('');

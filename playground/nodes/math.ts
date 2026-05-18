@@ -1,4 +1,4 @@
-﻿import { EaselNode, type NodeSpec } from '@/index';
+import { EaselNode, type NodeSpec } from '@/index';
 import type { GraphNode, State } from '@/core/types';
 import type { ExecuteContext } from '@/index';
 import { set_inner_html } from '@/utils/dom';
@@ -35,7 +35,7 @@ export class MathNode extends EaselNode {
 
     this.container.appendChild(this.header);
     this.container.appendChild(this.body);
-    this.update(node_data, { wires: {} } as State);
+    this.update(node_data, {} as State);
   }
   update(node_data: GraphNode, _state: State): void {
     if (this.header.textContent !== node_data.title) {

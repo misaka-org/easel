@@ -359,7 +359,7 @@ function canvas_ops_provider(easel: any): ContextMenuProvider {
           label: 'Clear Wires',
           group: 'canvas',
           action: () => {
-            easel.dispatch((s: any) => ({ ...s, wires: {} }));
+            easel.dispatch((s: any) => ({ ...s, bindings: {} }));
           },
         },
       );

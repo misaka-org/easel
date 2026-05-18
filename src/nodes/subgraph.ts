@@ -35,7 +35,7 @@ export class SubgraphNode extends EaselNode {
       }
     });
 
-    this.update(node_data, { wires: {} } as State);
+    this.update(node_data, {} as State);
   }
 
   update(node_data: GraphNode, _state: State): void {
