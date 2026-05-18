@@ -21,7 +21,7 @@ export const find_binding_by_target = (
   target_node_id: string,
   target_port_id: string,
 ): Binding | undefined => {
-  return Object.values(state.bindings).find(
+  return Object.values(state.bindings ?? {}).find(
     b => b.type === 'data-flow' && b.target_id === target_node_id && b.target_handle === target_port_id,
   );
 };
@@ -31,7 +31,7 @@ export const find_binding_by_source = (
   source_node_id: string,
   source_port_id: string,
 ): Binding | undefined => {
-  return Object.values(state.bindings).find(
+  return Object.values(state.bindings ?? {}).find(
     b => b.type === 'data-flow' && b.source_id === source_node_id && b.source_handle === source_port_id,
   );
 };

@@ -68,10 +68,10 @@ export const evaluate_math_graph = (state: State): State => {
 
   for (const node of Object.values(state.nodes)) {
     if (node.type === 'math') {
-      const wire_a = Object.values(state.bindings).find(
+      const wire_a = Object.values(state.bindings ?? {}).find(
         b => b.type === 'data-flow' && b.target_id === node.id && b.target_handle === 'a',
       );
-      const wire_b = Object.values(state.bindings).find(
+      const wire_b = Object.values(state.bindings ?? {}).find(
         b => b.type === 'data-flow' && b.target_id === node.id && b.target_handle === 'b',
       );
 

@@ -80,7 +80,7 @@ export class TextViewNode extends EaselNode {
 
     // Ports
     const is_port_connected = (p_id: string) =>
-      Object.values(state.bindings).some(
+      Object.values(state.bindings ?? {}).some(
         b =>
           b.type === 'data-flow' &&
           ((b.target_id === this.node_id && b.target_handle === p_id) ||

@@ -70,7 +70,7 @@ export class TextInputNode extends EaselNode {
 
     // Ports
     const is_port_connected = (p_id: string) =>
-      Object.values(state.bindings).some(
+      Object.values(state.bindings ?? {}).some(
         b =>
           b.type === 'data-flow' &&
           ((b.target_id === this.node_id && b.target_handle === p_id) ||
@@ -96,7 +96,7 @@ export class TextInputNode extends EaselNode {
     // Widgets
     const widgets_html = (node_data.widgets || [])
       .map(w => {
-        const is_connected = Object.values(state.bindings).some(
+        const is_connected = Object.values(state.bindings ?? {}).some(
           b => b.type === 'data-flow' && b.target_id === this.node_id && b.target_handle === w.id,
         );
         const disabled = is_connected ? 'disabled' : '';
@@ -114,7 +114,7 @@ export class TextInputNode extends EaselNode {
     // Schema: only changes when widget structure or connection state changes (not on every value edit)
     const widgets_schema = (node_data.widgets || [])
       .map(w => {
-        const is_connected = Object.values(state.bindings).some(
+        const is_connected = Object.values(state.bindings ?? {}).some(
           b => b.type === 'data-flow' && b.target_id === this.node_id && b.target_handle === w.id,
         );
         return `${w.id}:${is_connected}`;

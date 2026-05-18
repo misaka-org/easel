@@ -1,6 +1,7 @@
 import { vec2_create } from '@/core/math';
 import { add_node } from '@/core/node_ops';
-import { add_wire } from '@/core/wire_ops';
+import { add_binding } from '@/core/binding_ops';
+import { create_data_flow_binding } from '@/core/types';
 import type { Dispatch } from '@/runtime/registry';
 
 export const load_realtime_scene = (dispatch: Dispatch) => {
@@ -136,68 +137,26 @@ export const load_realtime_scene = (dispatch: Dispatch) => {
 
   // Wires: color sources -> builder
   dispatch(s =>
-    add_wire(s, {
-      id: 'w_c1',
-      source_node_id: 'c1',
-      source_port_id: 'out',
-      target_node_id: 'builder',
-      target_port_id: 'c1',
-    }),
+    add_binding(s, create_data_flow_binding('c1', 'out', 'builder', 'c1')),
   );
   dispatch(s =>
-    add_wire(s, {
-      id: 'w_c2',
-      source_node_id: 'c2',
-      source_port_id: 'out',
-      target_node_id: 'builder',
-      target_port_id: 'c2',
-    }),
+    add_binding(s, create_data_flow_binding('c2', 'out', 'builder', 'c2')),
   );
   dispatch(s =>
-    add_wire(s, {
-      id: 'w_c3',
-      source_node_id: 'c3',
-      source_port_id: 'out',
-      target_node_id: 'builder',
-      target_port_id: 'c3',
-    }),
+    add_binding(s, create_data_flow_binding('c3', 'out', 'builder', 'c3')),
   );
   dispatch(s =>
-    add_wire(s, {
-      id: 'w_c4',
-      source_node_id: 'c4',
-      source_port_id: 'out',
-      target_node_id: 'builder',
-      target_port_id: 'c4',
-    }),
+    add_binding(s, create_data_flow_binding('c4', 'out', 'builder', 'c4')),
   );
   dispatch(s =>
-    add_wire(s, {
-      id: 'w_a',
-      source_node_id: 'angle',
-      source_port_id: 'query',
-      target_node_id: 'builder',
-      target_port_id: 'angle',
-    }),
+    add_binding(s, create_data_flow_binding('angle', 'query', 'builder', 'angle')),
   );
   dispatch(s =>
-    add_wire(s, {
-      id: 'w_t',
-      source_node_id: 'type_g',
-      source_port_id: 'query',
-      target_node_id: 'builder',
-      target_port_id: 'type_g',
-    }),
+    add_binding(s, create_data_flow_binding('type_g', 'query', 'builder', 'type_g')),
   );
 
   // Wire: builder -> preview
   dispatch(s =>
-    add_wire(s, {
-      id: 'w_out',
-      source_node_id: 'builder',
-      source_port_id: 'css_out',
-      target_node_id: 'preview',
-      target_port_id: 'css_in',
-    }),
+    add_binding(s, create_data_flow_binding('builder', 'css_out', 'preview', 'css_in')),
   );
 };

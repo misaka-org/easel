@@ -1,6 +1,7 @@
 import { vec2_create } from '@/core/math';
 import { add_node } from '@/core/node_ops';
-import { add_wire } from '@/core/wire_ops';
+import { add_binding } from '@/core/binding_ops';
+import { create_data_flow_binding } from '@/core/types';
 import type { Dispatch } from '@/runtime/registry';
 
 export const load_ip_api_scene = (dispatch: Dispatch) => {
@@ -59,22 +60,10 @@ export const load_ip_api_scene = (dispatch: Dispatch) => {
 
   // Wire the graph: TextInput → IpApi → TextView
   dispatch(s =>
-    add_wire(s, {
-      id: 'w1',
-      source_node_id: 'input1',
-      source_port_id: 'query',
-      target_node_id: 'api1',
-      target_port_id: 'query',
-    }),
+    add_binding(s, create_data_flow_binding('input1', 'query', 'api1', 'query')),
   );
 
   dispatch(s =>
-    add_wire(s, {
-      id: 'w2',
-      source_node_id: 'api1',
-      source_port_id: 'result',
-      target_node_id: 'view1',
-      target_port_id: 'content',
-    }),
+    add_binding(s, create_data_flow_binding('api1', 'result', 'view1', 'content')),
   );
 };

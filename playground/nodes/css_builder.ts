@@ -70,7 +70,7 @@ export class CSSBuilderNode extends EaselNode {
     set_inner_html(this.header, title_html);
 
     const is_connected = (p_id: string) =>
-      Object.values(state.bindings).some(
+      Object.values(state.bindings ?? {}).some(
         b => b.type === 'data-flow' &&
           ((b.target_id === this.node_id && b.target_handle === p_id) ||
            (b.source_id === this.node_id && b.source_handle === p_id)),

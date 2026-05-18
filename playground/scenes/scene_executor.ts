@@ -1,6 +1,7 @@
 import { vec2_create } from '@/core/math';
 import { add_node } from '@/core/node_ops';
-import { add_wire } from '@/core/wire_ops';
+import { add_binding } from '@/core/binding_ops';
+import { create_data_flow_binding } from '@/core/types';
 import type { Dispatch } from '@/runtime/registry';
 
 export const load_executor_scene = (dispatch: Dispatch) => {
@@ -61,39 +62,15 @@ export const load_executor_scene = (dispatch: Dispatch) => {
   );
 
   dispatch(s =>
-    add_wire(s, {
-      id: 'w1',
-      source_node_id: 'n1',
-      source_port_id: 'out',
-      target_node_id: 'n2',
-      target_port_id: 'prompt',
-    }),
+    add_binding(s, create_data_flow_binding('n1', 'out', 'n2', 'prompt')),
   );
   dispatch(s =>
-    add_wire(s, {
-      id: 'w2',
-      source_node_id: 'n1',
-      source_port_id: 'out',
-      target_node_id: 'n3',
-      target_port_id: 'prompt',
-    }),
+    add_binding(s, create_data_flow_binding('n1', 'out', 'n3', 'prompt')),
   );
   dispatch(s =>
-    add_wire(s, {
-      id: 'w3',
-      source_node_id: 'n2',
-      source_port_id: 'out_list',
-      target_node_id: 'n4',
-      target_port_id: 'prompt',
-    }),
+    add_binding(s, create_data_flow_binding('n2', 'out_list', 'n4', 'prompt')),
   );
   dispatch(s =>
-    add_wire(s, {
-      id: 'w4',
-      source_node_id: 'n3',
-      source_port_id: 'out_list',
-      target_node_id: 'n4',
-      target_port_id: 'ref',
-    }),
+    add_binding(s, create_data_flow_binding('n3', 'out_list', 'n4', 'ref')),
   );
 };

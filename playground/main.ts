@@ -188,13 +188,13 @@ const init = () => {
 
     const inner_graph = (node.custom_data['graph'] as {
       nodes: any;
-      wires: any;
-    }) || { nodes: {}, wires: {} };
+      bindings: any;
+    }) || { nodes: {}, bindings: {} };
 
     dispatch(() => ({
       ...create_initial_state(),
       nodes: inner_graph.nodes,
-      wires: inner_graph.wires,
+      bindings: inner_graph.bindings,
     }));
   });
 
@@ -204,14 +204,14 @@ const init = () => {
 
     // Sync inner I/O nodes to parent node ports
     const inner_nodes = state.value.nodes;
-    const inner_wires = state.value.bindings;
+    const inner_bindings = state.value.bindings;
 
     const parent_state = parent.parent_state;
     const next_parent_state = update_node_data(parent_state, parent.parent_node_id, n => ({
       ...n,
       custom_data: {
         ...n.custom_data,
-        graph: { nodes: inner_nodes, wires: inner_wires },
+        graph: { nodes: inner_nodes, bindings: inner_bindings },
       },
     }));
 
@@ -294,7 +294,7 @@ const init = () => {
                   custom_data: {},
                 },
               },
-              wires: {},
+              bindings: {},
             },
           },
         }),
