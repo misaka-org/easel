@@ -1,4 +1,4 @@
-﻿import type { Vec2 } from './math';
+import type { Vec2 } from './math';
 
 export type Port = {
   readonly id: string;
@@ -89,6 +89,19 @@ export const create_data_flow_binding = (
   source_handle: source_port_id,
   target_id: target_node_id,
   target_handle: target_port_id,
+});
+
+/** Create a group-child binding. */
+export const create_group_child_binding = (
+  group_id: string,
+  child_id: string,
+): Binding => ({
+  id: `gb_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+  type: 'group-child',
+  source_id: group_id,
+  source_handle: 'parent',
+  target_id: child_id,
+  target_handle: 'child',
 });
 
 export type Camera = {

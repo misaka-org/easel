@@ -39,7 +39,8 @@ export const render_nodes = (easel: Easel): void => {
   // DOM element lifecycle effect
   frame_effect(() => {
     const state = state_ref.value;
-    const current_ids = new Set(Object.keys(state.nodes));
+    const store = easel.store;
+    const current_ids = new Set(store.nodes.keys());
 
     Array.from(node_instances.entries()).forEach(([id, cache]) => {
       if (!current_ids.has(id)) {
@@ -77,7 +78,7 @@ export const render_nodes = (easel: Easel): void => {
         el.className = 'node';
         el.dataset['id'] = id;
 
-        const node_data = state.nodes[id];
+        const node_data = store.nodes.get(id);
         const node_ctor = get_node_constructor(node_data!.type) || DefaultNode;
         const inst = new node_ctor(el, dispatch, id, context);
         inst.mount(node_data!);
@@ -86,7 +87,7 @@ export const render_nodes = (easel: Easel): void => {
 
         const node_resize_observer = new ResizeObserver(entries => {
           for (const entry of entries) {
-            const current_node = state_ref.value.nodes[id];
+            const current_node = store.nodes.get(id);
             if (!current_node || current_node.collapsed) continue;
             const el_target = entry.target as HTMLElement;
             const w = el_target.offsetWidth;
@@ -114,7 +115,7 @@ export const render_nodes = (easel: Easel): void => {
 
         const runner = frame_effect(() => {
           const st = state_ref.value;
-          const node = st.nodes[id];
+          const node = easel.store.nodes.get(id);
           if (!node) {
             runner.effect.stop(); // node was removed
             return;
@@ -176,7 +177,7 @@ export const render_nodes = (easel: Easel): void => {
     const viewport_world_size = vec2_create(viewport_size.x / zoom, viewport_size.y / zoom);
 
     Array.from(node_instances.entries()).forEach(([id, cache]) => {
-      const node = state.nodes[id];
+      const node = easel.store.nodes.get(id);
       if (!node) return;
 
       const is_visible = aabb_intersect(

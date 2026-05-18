@@ -50,7 +50,7 @@
 - [x] `Store.bindings: Table<Binding>`
 - [x] `Wire` 保留作为 `Binding` 的工厂别名
 - [x] `render_wires.ts` 双读 wires + data-flow bindings
-- [ ] GroupNode children 管理迁移到 `type === 'group-child'` 的 binding
+- [x] GroupNode children 管理迁移到 `type === 'group-child'` 的 binding
 - [ ] 废弃直接 `Wire` 类型
 
 ### 阶段 4：工具切换 (Tool System)

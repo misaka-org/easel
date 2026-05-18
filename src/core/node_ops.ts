@@ -1,4 +1,4 @@
-import type { State, GraphNode } from './types';
+import type { State, GraphNode, Binding } from './types';
 import type { Vec2 } from './math';
 import { vec2_add } from './math';
 import * as O from 'fp-ts/Option';
@@ -13,12 +13,22 @@ export const add_node = (state: State, node: GraphNode): State => ({
   nodes: { ...state.nodes, [node.id]: node },
 });
 
+/** 从 bindings 中获取 node_id 的所有 group-child 子节点 ID。 */
+export const get_children_ids = (
+  bindings: Record<string, Binding>,
+  node_id: string,
+): string[] =>
+  Object.values(bindings)
+    .filter(b => b.type === 'group-child' && b.source_id === node_id)
+    .map(b => b.target_id);
+
 /**
  * 检查 parent_id 是否是 child_id 在组层次结构中的祖先。
  * 用于防止循环嵌套（A -> B -> A）。
  */
 export const is_ancestor = (
   nodes: Record<string, GraphNode>,
+  bindings: Record<string, Binding>,
   parent_id: string,
   child_id: string,
   visited = new Set<string>(),
@@ -27,10 +37,10 @@ export const is_ancestor = (
   visited.add(child_id);
   const child = nodes[child_id];
   if (!child) return false;
-  const children = child.custom_data?.['children'] as string[] | undefined;
-  if (!children) return false;
+  const children = get_children_ids(bindings, child_id);
+  if (children.length === 0) return false;
   if (children.includes(parent_id)) return true;
-  return children.some(c => is_ancestor(nodes, parent_id, c, visited));
+  return children.some(c => is_ancestor(nodes, bindings, parent_id, c, visited));
 };
 
 export const move_node = (
@@ -56,13 +66,11 @@ export const move_node = (
         },
       };
 
-      const children = node.custom_data?.['children'] as string[] | undefined;
-      if (children && Array.isArray(children)) {
-        for (const child_id of children) {
-          // 跳过会导致循环引用的 child（parent 是 child 的祖先）
-          if (!is_ancestor(state.nodes, node_id, child_id)) {
-            next_state = move_node(next_state, child_id, delta, visited);
-          }
+      const children = get_children_ids(state.bindings, node_id);
+      for (const child_id of children) {
+        // 跳过会导致循环引用的 child（parent 是 child 的祖先）
+        if (!is_ancestor(state.nodes, state.bindings, node_id, child_id)) {
+          next_state = move_node(next_state, child_id, delta, visited);
         }
       }
       return next_state;

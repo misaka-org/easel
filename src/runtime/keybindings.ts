@@ -1,3 +1,4 @@
+import { create_group_child_binding } from '@/core/types';
 import { remove_node, add_node } from '@/core/node_ops';
 import { vec2_create } from '@/core/math';
 import type { Dispatch } from './registry';
@@ -110,7 +111,7 @@ export function register_core_keybindings(kb: KeybindingManager, dispatch: Dispa
         const hues = [0, 30, 60, 120, 210, 270, 315];
         const hue = hues[Math.floor(Math.random() * hues.length)];
 
-        const new_state = add_node(s, {
+        let next = add_node(s, {
           id: group_id,
           type: 'group',
           position: pos,
@@ -118,11 +119,18 @@ export function register_core_keybindings(kb: KeybindingManager, dispatch: Dispa
           title: 'Group',
           inputs: [],
           outputs: [],
-          custom_data: { children: selected, hue },
+          custom_data: { hue },
           resizable: true,
         });
 
-        return { ...new_state, selected_node_ids: [group_id] };
+        // 创建 group-child bindings
+        let bindings = { ...next.bindings };
+        for (const child_id of selected) {
+          const b = create_group_child_binding(group_id, child_id);
+          bindings = { ...bindings, [b.id]: b };
+        }
+
+        return { ...next, bindings, selected_node_ids: [group_id] };
       });
     },
     description: 'Group selected nodes (Ctrl+G)',

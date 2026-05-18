@@ -32,22 +32,23 @@ export class GraphExecutor {
   }
 
   compile(): E.Either<Error, void> {
-    const nodes = this.easel.state.value.nodes;
-    const wires = Object.values(this.easel.state.value.wires);
+    const store = this.easel.store;
+    const wires = store.wires.list();
 
     const in_degrees: Record<string, number> = {};
     const adj: Record<string, string[]> = {};
     const missing_reqs: Record<string, string> = {};
 
-    for (const id of Object.keys(nodes)) {
+    for (const id of store.nodes.keys()) {
       in_degrees[id] = 0;
       adj[id] = [];
-      const req_err = this.check_requirements(nodes[id], wires);
+      const node = store.nodes.get(id)!;
+      const req_err = this.check_requirements(node, wires);
       if (req_err) missing_reqs[id] = req_err;
     }
 
     for (const wire of wires) {
-      if (nodes[wire.source_node_id] && nodes[wire.target_node_id]) {
+      if (store.nodes.has(wire.source_node_id) && store.nodes.has(wire.target_node_id)) {
         in_degrees[wire.target_node_id]++;
         adj[wire.source_node_id].push(wire.target_node_id);
       }
@@ -56,7 +57,7 @@ export class GraphExecutor {
     const node_states: Record<string, ExecutionNodeState> = {};
     const ready_queue: string[] = [];
 
-    for (const id of Object.keys(nodes)) {
+    for (const id of store.nodes.keys()) {
       if (missing_reqs[id]) {
         node_states[id] = { status: 'error', progress: 0, error: missing_reqs[id], outputs: {} };
       } else {
@@ -309,7 +310,7 @@ export class GraphExecutor {
     this.update_node_state(id, { status: 'running', progress: 0 });
 
     const inst = this.easel.get_node_instance(id);
-    const node = this.easel.state.value.nodes[id];
+    const node = this.easel.store.nodes.get(id);
 
     try {
       let outputs: Record<string, unknown> = {};
@@ -380,8 +381,9 @@ export class GraphExecutor {
 
   private gather_inputs(node_id: string): Record<string, unknown> {
     const inputs: Record<string, unknown> = {};
-    const node = this.easel.state.value.nodes[node_id];
-    const wires = Object.values(this.easel.state.value.wires);
+    const store = this.easel.store;
+    const node = store.nodes.get(node_id);
+    const wires = store.wires.list();
 
     if (node?.widgets) {
       for (const w of node.widgets) inputs[w.id] = w.value;
@@ -420,7 +422,7 @@ export class GraphExecutor {
     try {
       let outputs: Record<string, unknown> = {};
       if (inst && typeof inst.execute === 'function') {
-        const node = this.easel.state.value.nodes[id];
+        const node = this.easel.store.nodes.get(id);
         const inputs = this.gather_inputs(id);
 
         // Separate cache (persists across compilations) 閳?skip execution when inputs unchanged

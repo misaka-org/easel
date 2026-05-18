@@ -1,8 +1,8 @@
-﻿import { Store } from './store';
+import { Store } from './store';
 import { setup_events } from './events';
 import { render_nodes } from './render';
 import { render_wires } from './render_wires';
-import { with_guidelines } from '@/plugins/guidelines';
+import { guidelines_plugin } from '@/plugins/guidelines';
 import { get_base_css, apply_theme, default_theme, type Theme } from './theme';
 import { CameraController } from './camera';
 import EventEmitter from 'eventemitter3';
@@ -98,7 +98,7 @@ export class Easel {
     this.state = easel_store.state;
     this.store = easel_store;
 
-    // Auto-cleanup wires when a node is deleted
+    // Auto-cleanup wires + bindings when a node is deleted
     this.store.nodes.on_before_change((event) => {
       if (event.type === 'delete' && event.prev) {
         for (const wire of this.store.wires.list()) {
@@ -106,15 +106,19 @@ export class Easel {
             this.store.wires.delete(wire.id);
           }
         }
+        for (const b of this.store.bindings.list()) {
+          if (b.source_id === event.id || b.target_id === event.id) {
+            this.store.bindings.delete(b.id);
+          }
+        }
       }
     });
 
     this.app_events = new EventEmitter<EaselEvents>();
 
-    const current_dispatch = with_guidelines(canvas_el, this.state, easel_store.dispatch);
     this.dispatch = updater => {
       const prev = this.state.value;
-      current_dispatch(updater);
+      easel_store.dispatch(updater);
       const next = this.state.value;
       if (prev !== next) {
         this.app_events.emit('state_changed', { prev, next });
@@ -126,12 +130,15 @@ export class Easel {
     );
     this.container = canvas_el;
 
+    // core plugins (always on)
+    guidelines_plugin(this);
+
     options.plugins?.forEach(plugin => plugin(this));
 
     register_core_keybindings(this.keybindings, this.dispatch);
 
     render_nodes(this);
-    render_wires(this.container, this.state);
+    render_wires(this.container, this.store);
     setup_events(this.container, this.dispatch, this.app_events, this.keybindings);
   }
 

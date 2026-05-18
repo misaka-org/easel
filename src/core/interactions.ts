@@ -170,8 +170,10 @@ const handlers_move: Record<
     const collect = (id: string) => {
       if (to_move.has(id)) return;
       to_move.add(id);
-      const children = i.original_nodes[id]?.custom_data?.['children'] as string[] | undefined;
-      if (children) children.forEach(collect);
+      const children = Object.values(state.bindings)
+        .filter(b => b.type === 'group-child' && b.source_id === id)
+        .map(b => b.target_id);
+      children.forEach(collect);
     };
     i.node_ids.forEach(collect);
 

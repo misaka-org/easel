@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Store — 响应式数据层。
  *
  * 核心抽象：
@@ -13,7 +13,7 @@
 
 import { shallowRef, type ShallowRef } from '@vue/reactivity';
 import { create_initial_state } from '@/core/state';
-import type { State, GraphNode, Wire, Binding } from '@/core/types';
+import type { State, GraphNode, Wire, Binding, Camera } from '@/core/types';
 
 // ── Change Event Types ──────────────────────────────────────────
 
@@ -116,6 +116,15 @@ export class Table<T extends { readonly id: string }> {
 
 export type Dispatch = (updater: (state: State) => State) => void;
 
+// ── Serialized Store ────────────────────────────────────────────
+
+export type SerializedStore = {
+  nodes: Record<string, GraphNode>;
+  wires: Record<string, Wire>;
+  bindings?: Record<string, Binding>;
+  camera?: Camera;
+};
+
 // ── Store ───────────────────────────────────────────────────────
 
 export type StoreOptions = {
@@ -130,12 +139,19 @@ export class Store {
   readonly wires: Table<Wire>;
   readonly bindings: Table<Binding>;
 
+  private _in_transaction = false;
+  private _pending_updaters: Array<(s: State) => State> = [];
+
   constructor(opts: StoreOptions = {}) {
     const initial = opts.initial_state ?? create_initial_state();
     const state_ref = shallowRef<State>(initial);
 
     const dispatch: Dispatch = (updater) => {
-      state_ref.value = updater(state_ref.value);
+      if (this._in_transaction) {
+        this._pending_updaters.push(updater);
+      } else {
+        state_ref.value = updater(state_ref.value);
+      }
     };
 
     this.state = state_ref;
@@ -157,5 +173,51 @@ export class Store {
         dispatch(s => ({ ...s, bindings: fn(s.bindings) }));
       },
     );
+  }
+
+  /** 批量事务：fn 内的所有 put/delete 合并为一次 state 更新。 */
+  transact(fn: () => void): void {
+    this._in_transaction = true;
+    this._pending_updaters = [];
+    try {
+      fn();
+    } finally {
+      this._in_transaction = false;
+      if (this._pending_updaters.length > 0) {
+        this.state.value = this._pending_updaters.reduce(
+          (s, fn) => fn(s),
+          this.state.value,
+        );
+        this._pending_updaters = [];
+      }
+    }
+  }
+
+  /** 序列化全部表（仅数据，不含 interaction 等临时状态）。 */
+  serialize(): SerializedStore {
+    const s = this.state.value;
+    const out: SerializedStore = {
+      nodes: { ...s.nodes },
+      wires: { ...s.wires },
+    };
+    if (s.bindings && Object.keys(s.bindings).length > 0) {
+      out.bindings = { ...s.bindings };
+    }
+    out.camera = { ...s.camera };
+    return out;
+  }
+
+  /** 从序列化数据创建 Store。 */
+  static deserialize(data: SerializedStore): Store {
+    const base = create_initial_state();
+    return new Store({
+      initial_state: {
+        ...base,
+        nodes: data.nodes,
+        wires: data.wires,
+        bindings: data.bindings ?? base.bindings,
+        camera: data.camera ?? base.camera,
+      },
+    });
   }
 }

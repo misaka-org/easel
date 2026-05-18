@@ -1,6 +1,7 @@
-﻿import type { State, GraphNode, Binding } from '@/core/types';
+import type { State, GraphNode, Binding } from '@/core/types';
 import { vec2_sub, vec2_scale } from '@/core/math';
 import { frame_effect } from './frame_effect';
+import type { Store } from './store';
 
 // Layout constants matching CSS defaults for DefaultNode / SubgraphNode
 const LAYOUT = {
@@ -126,26 +127,24 @@ function calc_rel_pos(
 
 
 /** Yield all connections (wires + data-flow bindings) as a uniform iterable. */
-function* all_connections(state: State) {
-  for (const wire of Object.values(state.wires)) {
+function* all_connections(store: Store) {
+  for (const wire of store.wires.list()) {
     yield wire;
   }
-  if (state.bindings) {
-    for (const b of Object.values(state.bindings) as Binding[]) {
-      if (b.type === "data-flow") {
-        yield {
-          id: b.id,
-          source_node_id: b.source_id,
-          source_port_id: b.source_handle,
-          target_node_id: b.target_id,
-          target_port_id: b.target_handle,
-        };
-      }
+  for (const b of store.bindings.list()) {
+    if (b.type === 'data-flow') {
+      yield {
+        id: b.id,
+        source_node_id: b.source_id,
+        source_port_id: b.source_handle,
+        target_node_id: b.target_id,
+        target_port_id: b.target_handle,
+      };
     }
   }
 }
 
-export const render_wires = (container: HTMLElement, state_ref: { value: State }): void => {
+export const render_wires = (container: HTMLElement, store: Store): void => {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.classList.add('wires-container');
   container.appendChild(svg);
@@ -218,16 +217,16 @@ export const render_wires = (container: HTMLElement, state_ref: { value: State }
   };
 
   frame_effect(() => {
-    const state = state_ref.value;
+    const state = store.state.value;
 
     svg.style.transform = `translate(${state.camera.position.x}px, ${state.camera.position.y}px) scale(${state.camera.zoom})`;
     svg.style.strokeWidth = `${2 / state.camera.zoom}px`;
 
-    const current_wire_ids = new Set(Object.keys(state.wires));
-    const current_binding_ids = new Set(
-      state.bindings ? Object.keys(state.bindings).filter(id => state.bindings[id]?.type === "data-flow") : []
+    const wire_ids = new Set(store.wires.keys());
+    const binding_ids = new Set(
+      store.bindings.list().filter(b => b.type === 'data-flow').map(b => b.id)
     );
-    const current_ids = new Set([...current_wire_ids, ...current_binding_ids]);
+    const current_ids = new Set([...wire_ids, ...binding_ids]);
 
     Array.from(wire_elements.entries()).forEach(([id, el]) => {
       if (!current_ids.has(id)) {
@@ -236,7 +235,7 @@ export const render_wires = (container: HTMLElement, state_ref: { value: State }
       }
     });
 
-    for (const conn of all_connections(state)) {
+    for (const conn of all_connections(store)) {
       const { id, source_node_id, source_port_id, target_node_id, target_port_id } = conn;
       if (!current_ids.has(id)) continue;
 
@@ -248,7 +247,7 @@ export const render_wires = (container: HTMLElement, state_ref: { value: State }
         wire_elements.set(id, el);
       }
 
-      const source_node = state.nodes[source_node_id];
+      const source_node = store.nodes.get(source_node_id);
       const source_port = source_node?.outputs.find(p => p.id === source_port_id);
       const type = source_port?.value_type;
 
