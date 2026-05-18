@@ -324,7 +324,25 @@ function canvas_ops_provider(easel: any): ContextMenuProvider {
     priority: -10,
     get_items: ctx => {
       if (ctx.node_id) return [];
-      return [
+      const items: ContextMenuItem[] = [];
+
+      // Tool switching
+      const current_tool = easel.state?.value?.active_tool || 'select';
+      const tools = easel.tools?.list() ?? [];
+      if (tools.length > 0) {
+        items.push({
+          id: 'tools_submenu',
+          label: 'Tools',
+          group: 'canvas',
+          submenu: tools.map((t: any) => ({
+            id: `tool_${t.id}`,
+            label: t.id === current_tool ? `✓ ${t.label}` : t.label,
+            action: () => easel.tools?.activate(t.id),
+          })),
+        });
+      }
+
+      items.push(
         {
           id: 'reset_camera',
           label: 'Reset Camera',
@@ -344,7 +362,9 @@ function canvas_ops_provider(easel: any): ContextMenuProvider {
             easel.dispatch((s: any) => ({ ...s, wires: {} }));
           },
         },
-      ];
+      );
+
+      return items;
     },
   };
 }

@@ -20,29 +20,30 @@
 
 ### 阶段 1：Camera 系统增强
 
-- [ ] 新增 `src/runtime/camera.ts` — CameraController 类（animateTo + rAF）
+- [x] 新增 `src/runtime/camera.ts` — CameraController 类（animateTo + rAF）
 - [x] 内置 easing 函数（easeInOutCubic, easeOutQuint, linear）
-- [ ] `zoomToRect()` / `zoomToSelection()` / `fitToView()` / `centerOnPoint()` 通用方法
-- [ ] `controls.ts` 改用 CameraController（zoom_in/out/reset/fit）
-- [ ] `easel.camera` 对外暴露
+- [x] `zoom_to_selection()` / `fit_to_view()` / `center_on_point()` 通用方法
+- [x] `controls.ts` 改用 CameraController（zoom_in/out/reset/fit）
+- [x] `easel.camera` 对外暴露
+- [ ] `zoom_to_rect()` — 未实现
 
 ### 阶段 2：Store 抽象
 
-- [ ] `Table<T>` 类 — 基于 `shallowRef<Record<string, T>>`，支持 get/put/list/delete/has
-- [ ] `Store` 类 — 聚合 Table，支持 transact() 批量事务
-- [ ] 序列化自动遍历全部表（取代手写 serialize_state）
-- [ ] 全部读取路径迁移：`easel.state.value.nodes[id]` → `easel.store.nodes.get(id)`
-- [ ] 渲染层（render.ts / render_wires.ts）适配新 Store API
-- [ ] 废弃 `src/core/state.ts` 或整合为 Store 的工厂函数
+- [x] `Table<T>` 类 — 基于 `shallowRef<Record<string, T>>`，支持 get/put/list/delete/has
+- [x] `Store` 类 — 聚合 Table，支持 transact() 批量事务
+- [x] 序列化自动遍历全部表（取代手写 serialize_state）
+- [x] 全部读取路径迁移：`easel.state.value.nodes[id]` → `easel.store.nodes.get(id)`
+- [x] 渲染层（render.ts / render_wires.ts）适配新 Store API
+- [x] `create_initial_state` 保留为 Store 工厂函数（无需废弃）
 
 ### 阶段 2b：事件钩子 (Side Effects)
 
-- [ ] `Store.onBeforeChange(table, handler)` — 返回 false 阻止变更，可修改 payload
-- [ ] `Store.onAfterChange(table, handler)` — 级联反应
+- [x] `Store.onBeforeChange(table, handler)` — 返回 false 阻止变更，可修改 payload
+- [x] `Store.onAfterChange(table, handler)` — 级联反应
 - [x] handler 注册返回取消函数
-- [ ] 迁移 `with_guidelines` 到 store hook
-- [x] 节点删除自动清理关联 wire（通过 on_before_change 实现）
-- [ ] 删除 `src/runtime/easel.ts` 中的 `with_guidelines` 包装
+- [x] 迁移 `with_guidelines` 到 store hook（guidelines_plugin）
+- [x] 节点删除自动清理关联 wire + binding（通过 on_before_change 实现）
+- [x] 删除 `src/runtime/easel.ts` 中的 `with_guidelines` 包装
 
 ### 阶段 3：Binding 关系系统
 
@@ -51,21 +52,23 @@
 - [x] `Wire` 保留作为 `Binding` 的工厂别名
 - [x] `render_wires.ts` 双读 wires + data-flow bindings
 - [x] GroupNode children 管理迁移到 `type === 'group-child'` 的 binding
-- [ ] 废弃直接 `Wire` 类型
+- [ ] 废弃直接 `Wire` 类型（等 Tool System 完成后清理）
 
 ### 阶段 4：工具切换 (Tool System)
 
-- [ ] `Tool` 类型定义 — onPointerDown/Move/Up/Wheel + onEnter/Exit
-- [ ] `State.active_tool: string` 字段
-- [ ] `ToolManager` — 注册/激活/事件路由
-- [ ] 拆分 `interactions.ts` 为独立 Tool 文件（SelectTool / HandTool / WireTool）
-- [ ] `Interaction` union type 保留为工具的 private state
-- [ ] 插件注册自定义工具的 API
-- [ ] 上下文菜单添加工具切换项
+- [x] `Tool` 类型定义 — onPointerDown/Move/Up/Wheel + onEnter/Exit
+- [x] `State.active_tool: string` 字段
+- [x] `ToolManager` — 注册/激活/事件路由
+- [x] 拆分 `interactions.ts` 为独立 Tool 文件（SelectTool / HandTool / WireTool）
+- [x] `Interaction` union type 保留为工具的 private state
+- [x] 插件注册自定义工具的 API（ToolManager.register）
+- [x] 上下文菜单添加工具切换项
+- [x] SelectTool 内建连线（点 port 自动 wiring）
+- [ ] WireTool 保留为纯连线锁死模式（可选）
 
 ### 阶段 5：收尾
 
-- [ ] 清理废弃 API（旧 Wire 类型、with_guidelines、serialize_state）
+- [ ] 清理废弃 API（旧 Wire 类型、serialize_state）
 - [ ] 外部接口文档同步
 - [ ] 性能回归测试（渲染 + 交互 + 执行引擎）
 

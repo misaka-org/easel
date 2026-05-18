@@ -1,4 +1,4 @@
-﻿import type { State } from './types';
+import type { State } from './types';
 import { vec2_create } from './math';
 
 export const create_initial_state = (): State => ({
@@ -9,4 +9,5 @@ export const create_initial_state = (): State => ({
   interaction: { mode: 'idle' },
   selected_node_ids: [],
   modifiers: { ctrl: false, shift: false, alt: false, meta: false },
+  active_tool: 'select',
 });

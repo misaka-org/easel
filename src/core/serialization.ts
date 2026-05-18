@@ -1,4 +1,4 @@
-﻿import type { State } from './types';
+import type { State } from './types';
 import { create_initial_state } from './state';
 
 export const serialize_state = (state: State): string => {
@@ -21,6 +21,7 @@ export const deserialize_state = (json: string): State => {
       wires: data.wires || {},
       bindings: data.bindings || {},
       camera: data.camera || { position: { x: 0, y: 0 }, zoom: 1 },
+      active_tool: 'select',
     };
   } catch (e) {
     console.error('Failed to deserialize state', e);

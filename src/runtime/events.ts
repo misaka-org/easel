@@ -7,16 +7,27 @@ import {
   update_modifiers,
 } from '@/core/interactions';
 import type { State, Modifiers } from '@/core/types';
+import type { ToolResult } from '@/core/tool';
 import * as O from 'fp-ts/Option';
 import type { KeybindingManager } from './keybindings';
+import type { ToolManager } from './tool_manager';
 
 type Dispatch = (updater: (state: State) => State) => void;
+
+/** 处理 ToolResult，如果带 transition 则切换工具。 */
+function apply_result(dispatch: Dispatch, tools: ToolManager, result: ToolResult, state: State): void {
+  dispatch(() => result.state);
+  if (result.transition && result.transition !== state.active_tool) {
+    tools.activate(result.transition);
+  }
+}
 
 export const setup_events = (
   container: HTMLElement,
   dispatch: Dispatch,
   app_events: any,
   keybindings?: KeybindingManager,
+  tools?: ToolManager,
 ): void => {
   const forward = (name: string) => (e: Event) => app_events.emit(name, e);
   container.addEventListener('contextmenu', forward('contextmenu'));
@@ -77,7 +88,7 @@ export const setup_events = (
     app_events.emit('pointerdown', e);
     const target = (e.composedPath()[0] || e.target) as HTMLElement;
     const action_el = target.closest('[data-action]');
-    // 一劳永逸：如果点击落在 plugin UI、交互元素或非 resize 的 data-action 内，不触发画布事件
+    // 如果点击落在 plugin UI、交互元素或非 resize 的 data-action 内，不触发画布事件
     if (
       target.closest('button, input, textarea, select') ||
       target.closest(
@@ -88,11 +99,18 @@ export const setup_events = (
       return;
     }
     container.setPointerCapture(e.pointerId);
-    dispatch(state => pointer_down(state, get_pointer_params(e)));
+    dispatch(state => {
+      if (!tools) return pointer_down(state, get_pointer_params(e));
+      const result = tools.handle_pointer_down(state, get_pointer_params(e));
+      if (result) {
+        apply_result(dispatch, tools, result, state);
+        return result.state;
+      }
+      return state;
+    });
   });
 
-  // rAF-gate: first pointermove in a frame dispatches immediately,
-  // subsequent moves within the same frame coalesce into one dispatch.
+  // rAF-gate
   let move_raf = 0;
   let pending_move_params: ReturnType<typeof get_pointer_params> | null = null;
 
@@ -105,13 +123,24 @@ export const setup_events = (
       return;
     }
 
-    // First move in frame: immediate dispatch for responsive feel
-    dispatch(state => pointer_move(state, params));
+    const do_move = (p: ReturnType<typeof get_pointer_params>) => {
+      dispatch(state => {
+        if (!tools) return pointer_move(state, p);
+        const result = tools.handle_pointer_move(state, p);
+        if (result) {
+          apply_result(dispatch, tools, result, state);
+          return result.state;
+        }
+        return state;
+      });
+    };
+
+    do_move(params);
 
     move_raf = requestAnimationFrame(() => {
       move_raf = 0;
       if (pending_move_params) {
-        dispatch(state => pointer_move(state, pending_move_params!));
+        do_move(pending_move_params);
         pending_move_params = null;
       }
     });
@@ -133,16 +162,23 @@ export const setup_events = (
     app_events.emit('pointerup', e);
     container.releasePointerCapture(e.pointerId);
     dispatch(state => {
-      const mode = state.interaction.mode;
-      const dragging_nodes = mode === 'dragging' ? state.interaction.node_ids : [];
-      const resizing_node = mode === 'resizing' ? state.interaction.node_id : null;
+      const prev_mode = state.interaction.mode;
+      const dragging_nodes = prev_mode === 'dragging' ? state.interaction.node_ids : [];
+      const resizing_node = prev_mode === 'resizing' ? state.interaction.node_id : null;
 
-      const next_state = pointer_up(state, get_pointer_params(e));
+      const params = get_pointer_params(e);
+      let next_state: State;
+      if (!tools) {
+        next_state = pointer_up(state, params);
+      } else {
+        const result = tools.handle_pointer_up(state, params);
+        next_state = result ? result.state : { ...state, interaction: { mode: 'idle' } };
+      }
 
-      if (mode === 'dragging' && dragging_nodes.length > 0) {
+      if (prev_mode === 'dragging' && dragging_nodes.length > 0) {
         setTimeout(() => app_events.emit('nodes_dropped', dragging_nodes), 0);
       }
-      if (mode === 'resizing' && resizing_node) {
+      if (prev_mode === 'resizing' && resizing_node) {
         setTimeout(() => app_events.emit('nodes_dropped', [resizing_node]), 0);
       }
 
@@ -150,9 +186,6 @@ export const setup_events = (
     });
   });
 
-  /** True when the wheel event originated inside a scrollable element that has
-   *  overflow content.  Prevents the canvas from stealing scroll events from
-   *  plugin panels, pickers, and other overlay UIs. */
   const is_over_scrollable = (e: WheelEvent): boolean => {
     const path = e.composedPath();
     for (const el of path) {
@@ -172,19 +205,25 @@ export const setup_events = (
   container.addEventListener(
     'wheel',
     e => {
-      // Don't zoom when the event targets a scrollable element inside a plugin
-      // panel — let native scroll happen instead.
       if (is_over_scrollable(e)) return;
 
       e.preventDefault();
-      dispatch(state =>
-        wheel_zoom(state, {
+      dispatch(state => {
+        const wheel_params = {
           screen_position: get_pointer_params(e).screen_position,
-          delta_x: e.deltaX,
-          delta_y: e.deltaY,
+          delta_x: e.deltaX, delta_y: e.deltaY,
           modifiers: get_modifiers(e),
-        }),
-      );
+        };
+        if (tools) {
+          const result = tools.handle_wheel(state, wheel_params);
+          if (result) {
+            apply_result(dispatch, tools, result, state);
+            return result.state;
+          }
+        }
+        // 默认 wheel: zoom/pan
+        return wheel_zoom(state, wheel_params);
+      });
     },
     { passive: false },
   );

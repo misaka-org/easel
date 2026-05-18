@@ -153,4 +153,5 @@ export type State = {
   readonly interaction: Interaction;
   readonly selected_node_ids: readonly string[];
   readonly modifiers: Modifiers;
+  readonly active_tool: string;
 };
