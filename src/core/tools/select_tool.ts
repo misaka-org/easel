@@ -159,21 +159,16 @@ export const select_tool: Tool = {
     return { state: { ...next, interaction: { mode: 'idle' } } };
   },
 
-  on_wheel: (state, event) => {
-    const factor = event.delta_y > 0 ? 0.9 : 1.1;
-    const zoom = Math.max(0.1, Math.min(10, state.camera.zoom * factor));
-    const mx = event.screen_position.x;
-    const my = event.screen_position.y;
-    const oc = state.camera.position;
-    const oz = state.camera.zoom;
-    return {
-      state: {
-        ...state,
-        camera: {
-          position: { x: mx - (mx - oc.x) * (zoom / oz), y: my - (my - oc.y) * (zoom / oz) },
-          zoom,
+  on_wheel: (state, event) => ({
+    state: {
+      ...state,
+      camera: {
+        ...state.camera,
+        position: {
+          x: state.camera.position.x - event.delta_x,
+          y: state.camera.position.y - event.delta_y,
         },
       },
-    };
-  },
+    },
+  }),
 };
