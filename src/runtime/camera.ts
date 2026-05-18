@@ -152,19 +152,19 @@ export class CameraController {
   zoom_in(factor = 1.2): void {
     const s = this.read_state();
     const new_zoom = Math.min(10, s.camera.zoom * factor);
-    this.animate_to({ zoom: new_zoom });
+    this.animate_to(this.zoom_target(new_zoom));
   }
 
   /** Zoom out by factor (default 1.2) anchored at viewport center. */
   zoom_out(factor = 1.2): void {
     const s = this.read_state();
     const new_zoom = Math.max(0.1, s.camera.zoom / factor);
-    this.animate_to({ zoom: new_zoom });
+    this.animate_to(this.zoom_target(new_zoom));
   }
 
   /** Reset zoom to 1, anchored at viewport center. */
   zoom_reset(): void {
-    this.animate_to({ zoom: 1 });
+    this.animate_to(this.zoom_target(1));
   }
 
   /** Zoom to currently selected nodes, or fit all if none selected. */
@@ -196,6 +196,22 @@ export class CameraController {
 
   // ── Internal ──────────────────────────────────────────────────
 
+  /** Compute the camera position that keeps viewport center fixed when zoom changes. */
+  private zoom_target(target_zoom: number): { position: Vec2; zoom: number } {
+    const s = this.read_state();
+    const old_zoom = s.camera.zoom;
+    const old_pos = s.camera.position;
+    const vp = this.get_viewport_size();
+    const cx = vp.w / 2;
+    const cy = vp.h / 2;
+    return {
+      position: vec2_create(
+        cx - (cx - old_pos.x) * (target_zoom / old_zoom),
+        cy - (cy - old_pos.y) * (target_zoom / old_zoom),
+      ),
+      zoom: target_zoom,
+    };
+  }
   private get_viewport_size(): { w: number; h: number } {
     return { w: window.innerWidth, h: window.innerHeight };
   }
