@@ -13,7 +13,7 @@
 
 import { shallowRef, type ShallowRef } from '@vue/reactivity';
 import { create_initial_state } from '@/core/state';
-import type { State, GraphNode, Wire } from '@/core/types';
+import type { State, GraphNode, Wire, Binding } from '@/core/types';
 
 // ── Change Event Types ──────────────────────────────────────────
 
@@ -128,6 +128,7 @@ export class Store {
 
   readonly nodes: Table<GraphNode>;
   readonly wires: Table<Wire>;
+  readonly bindings: Table<Binding>;
 
   constructor(opts: StoreOptions = {}) {
     const initial = opts.initial_state ?? create_initial_state();
@@ -148,6 +149,13 @@ export class Store {
     this.wires = new Table<Wire>(
       () => state_ref.value.wires,
       (fn) => { dispatch(s => ({ ...s, wires: fn(s.wires) })); },
+    );
+
+    this.bindings = new Table<Binding>(
+      () => state_ref.value.bindings,
+      (fn) => {
+        dispatch(s => ({ ...s, bindings: fn(s.bindings) }));
+      },
     );
   }
 }

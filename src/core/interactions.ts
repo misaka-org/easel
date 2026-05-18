@@ -1,8 +1,10 @@
-import type { State, Modifiers, Interaction } from './types';
+﻿import type { State, Modifiers, Interaction } from './types';
 import type { Vec2 } from './math';
 import { vec2_sub, vec2_add, vec2_scale, vec2_create, aabb_intersect } from './math';
 import { move_nodes } from './node_ops';
 import { add_wire, remove_wire } from './wire_ops';
+import { add_binding, remove_binding, find_binding_by_target } from './binding_ops';
+import { create_data_flow_binding } from './types';
 import * as O from 'fp-ts/Option';
 import { pipe } from 'fp-ts/function';
 
@@ -101,11 +103,17 @@ const try_grab_wire = (state: State, event: PointerEventParams) =>
       if (port_type === 'input') {
         const connected = Object.values(state.wires).find(
           w => w.target_node_id === node_id && w.target_port_id === port_id,
-        );
+        ) ?? find_binding_by_target(state, node_id, port_id);
         if (connected) {
-          const clean_state = remove_wire(state, connected.id);
+          const is_wire = 'source_node_id' in connected;
+          const clean_state = is_wire ? remove_wire(state, connected.id) : remove_binding(state, connected.id);
           return O.some(
-            start_wiring(clean_state, connected.source_node_id, connected.source_port_id, event),
+            start_wiring(
+              clean_state,
+              is_wire ? connected.source_node_id : connected.source_id,
+              is_wire ? connected.source_port_id : connected.source_handle,
+              event,
+            ),
           );
         }
       } else if (port_type === 'output') {
@@ -271,8 +279,12 @@ const try_connect_wire = (
       ) {
         const existing = Object.values(state.wires).find(
           w => w.target_node_id === target_node_id && w.target_port_id === target_port_id,
-        );
-        const clean_state = existing ? remove_wire(state, existing.id) : state;
+        ) ?? find_binding_by_target(state, target_node_id, target_port_id);
+        const clean_state = existing
+          ? 'target_node_id' in existing
+            ? remove_wire(state, existing.id)
+            : remove_binding(state, existing.id)
+          : state;
 
         return O.some(
           add_wire(clean_state, {

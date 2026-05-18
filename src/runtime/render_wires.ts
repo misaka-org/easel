@@ -1,4 +1,4 @@
-﻿import type { State, GraphNode } from '@/core/types';
+﻿import type { State, GraphNode, Binding } from '@/core/types';
 import { vec2_sub, vec2_scale } from '@/core/math';
 import { frame_effect } from './frame_effect';
 
@@ -124,6 +124,27 @@ function calc_rel_pos(
   return undefined;
 }
 
+
+/** Yield all connections (wires + data-flow bindings) as a uniform iterable. */
+function* all_connections(state: State) {
+  for (const wire of Object.values(state.wires)) {
+    yield wire;
+  }
+  if (state.bindings) {
+    for (const b of Object.values(state.bindings) as Binding[]) {
+      if (b.type === "data-flow") {
+        yield {
+          id: b.id,
+          source_node_id: b.source_id,
+          source_port_id: b.source_handle,
+          target_node_id: b.target_id,
+          target_port_id: b.target_handle,
+        };
+      }
+    }
+  }
+}
+
 export const render_wires = (container: HTMLElement, state_ref: { value: State }): void => {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.classList.add('wires-container');
@@ -211,9 +232,9 @@ export const render_wires = (container: HTMLElement, state_ref: { value: State }
       }
     });
 
-    Array.from(current_ids).forEach(id => {
+    for (const id of current_ids) {
       const wire = state.wires[id];
-      if (!wire) return;
+      if (!wire) continue;
 
       let el = wire_elements.get(id);
       if (!el) {
@@ -239,15 +260,15 @@ export const render_wires = (container: HTMLElement, state_ref: { value: State }
       if (p1 && p2) {
         // Skip draw_bezier + setAttribute when neither endpoint moved
         const pos_key = `${p1.x.toFixed(1)},${p1.y.toFixed(1)},${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
-        if (last_wire_pos.get(id) === pos_key) return;
+        if (last_wire_pos.get(id) === pos_key) continue;
         last_wire_pos.set(id, pos_key);
         el.setAttribute('d', draw_bezier(p1.x, p1.y, p2.x, p2.y));
       } else {
         if (last_wire_pos.has(id)) last_wire_pos.delete(id);
         el.setAttribute('d', '');
       }
-    });
 
+  }
     if (state.interaction.mode === 'wiring') {
       active_wire_path.style.display = 'block';
       const p1 = get_port_position(

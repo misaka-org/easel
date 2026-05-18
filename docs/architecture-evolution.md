@@ -1,4 +1,4 @@
-﻿# 架构演进计划
+# 架构演进计划
 
 > 对标 tldraw，结合 easel 实际场景的渐进式架构优化。
 
@@ -46,10 +46,10 @@
 
 ### 阶段 3：Binding 关系系统
 
-- [ ] 新增 `Binding` 类型（id, type, source_id, source_handle, target_id, target_handle, meta?）
-- [ ] `Store.bindings: Table<Binding>`
-- [ ] `Wire` 保留作为 `Binding` 的工厂别名（`createDataFlowBinding(...)`）
-- [ ] `render_wires.ts` 从 bindings 表读取 `type === 'data-flow'`
+- [x] 新增 `Binding` 类型（id, type, source_id, source_handle, target_id, target_handle, meta?）
+- [x] `Store.bindings: Table<Binding>`
+- [x] `Wire` 保留作为 `Binding` 的工厂别名
+- [x] `render_wires.ts` 双读 wires + data-flow bindings
 - [ ] GroupNode children 管理迁移到 `type === 'group-child'` 的 binding
 - [ ] 废弃直接 `Wire` 类型
 
@@ -183,10 +183,10 @@ class Store {
 
 ### 阶段 3：Binding 关系系统
 
-- [ ] 新增 `Binding` 类型（id, type, source_id, source_handle, target_id, target_handle, meta?）
-- [ ] `Store.bindings: Table<Binding>`
-- [ ] `Wire` 保留作为 `Binding` 的工厂别名（`createDataFlowBinding(...)`）
-- [ ] `render_wires.ts` 从 bindings 表读取 `type === 'data-flow'`
+- [x] 新增 `Binding` 类型（id, type, source_id, source_handle, target_id, target_handle, meta?）
+- [x] `Store.bindings: Table<Binding>`
+- [x] `Wire` 保留作为 `Binding` 的工厂别名
+- [x] `render_wires.ts` 双读 wires + data-flow bindings
 - [ ] GroupNode children 管理迁移到 `type === 'group-child'` 的 binding
 - [ ] 废弃直接 `Wire` 类型
 
@@ -316,10 +316,10 @@ store.onBeforeChange('node', (event) => {
 
 ### 阶段 3：Binding 关系系统
 
-- [ ] 新增 `Binding` 类型（id, type, source_id, source_handle, target_id, target_handle, meta?）
-- [ ] `Store.bindings: Table<Binding>`
-- [ ] `Wire` 保留作为 `Binding` 的工厂别名（`createDataFlowBinding(...)`）
-- [ ] `render_wires.ts` 从 bindings 表读取 `type === 'data-flow'`
+- [x] 新增 `Binding` 类型（id, type, source_id, source_handle, target_id, target_handle, meta?）
+- [x] `Store.bindings: Table<Binding>`
+- [x] `Wire` 保留作为 `Binding` 的工厂别名
+- [x] `render_wires.ts` 双读 wires + data-flow bindings
 - [ ] GroupNode children 管理迁移到 `type === 'group-child'` 的 binding
 - [ ] 废弃直接 `Wire` 类型
 
@@ -426,10 +426,10 @@ type Binding = {
 
 ### 阶段 3：Binding 关系系统
 
-- [ ] 新增 `Binding` 类型（id, type, source_id, source_handle, target_id, target_handle, meta?）
-- [ ] `Store.bindings: Table<Binding>`
-- [ ] `Wire` 保留作为 `Binding` 的工厂别名（`createDataFlowBinding(...)`）
-- [ ] `render_wires.ts` 从 bindings 表读取 `type === 'data-flow'`
+- [x] 新增 `Binding` 类型（id, type, source_id, source_handle, target_id, target_handle, meta?）
+- [x] `Store.bindings: Table<Binding>`
+- [x] `Wire` 保留作为 `Binding` 的工厂别名
+- [x] `render_wires.ts` 双读 wires + data-flow bindings
 - [ ] GroupNode children 管理迁移到 `type === 'group-child'` 的 binding
 - [ ] 废弃直接 `Wire` 类型
 
@@ -558,10 +558,10 @@ Camera 数据仍存在 Store 里（`store.camera`），CameraController 只是�
 
 ### 阶段 3：Binding 关系系统
 
-- [ ] 新增 `Binding` 类型（id, type, source_id, source_handle, target_id, target_handle, meta?）
-- [ ] `Store.bindings: Table<Binding>`
-- [ ] `Wire` 保留作为 `Binding` 的工厂别名（`createDataFlowBinding(...)`）
-- [ ] `render_wires.ts` 从 bindings 表读取 `type === 'data-flow'`
+- [x] 新增 `Binding` 类型（id, type, source_id, source_handle, target_id, target_handle, meta?）
+- [x] `Store.bindings: Table<Binding>`
+- [x] `Wire` 保留作为 `Binding` 的工厂别名
+- [x] `render_wires.ts` 双读 wires + data-flow bindings
 - [ ] GroupNode children 管理迁移到 `type === 'group-child'` 的 binding
 - [ ] 废弃直接 `Wire` 类型
 
@@ -709,10 +709,10 @@ type State = {
 
 ### 阶段 3：Binding 关系系统
 
-- [ ] 新增 `Binding` 类型（id, type, source_id, source_handle, target_id, target_handle, meta?）
-- [ ] `Store.bindings: Table<Binding>`
-- [ ] `Wire` 保留作为 `Binding` 的工厂别名（`createDataFlowBinding(...)`）
-- [ ] `render_wires.ts` 从 bindings 表读取 `type === 'data-flow'`
+- [x] 新增 `Binding` 类型（id, type, source_id, source_handle, target_id, target_handle, meta?）
+- [x] `Store.bindings: Table<Binding>`
+- [x] `Wire` 保留作为 `Binding` 的工厂别名
+- [x] `render_wires.ts` 双读 wires + data-flow bindings
 - [ ] GroupNode children 管理迁移到 `type === 'group-child'` 的 binding
 - [ ] 废弃直接 `Wire` 类型
 

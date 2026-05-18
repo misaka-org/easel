@@ -1,13 +1,16 @@
-﻿/**
+/**
  * Store + Table unit tests.
  */
 import { describe, it, expect } from 'vitest';
 import { Store, Table } from '../store';
+import { pointer_down } from '@/core/interactions';
+import * as O from 'fp-ts/Option';
 import { create_initial_state } from '@/core/state';
 import { vec2_create } from '@/core/math';
 import type { GraphNode } from '@/core/types';
+import { create_data_flow_binding } from '@/core/types';
 
-// ── Helpers ────────────────────────────────────────────────────
+// ?? Helpers ????????????????????????????????????????????????????
 
 const make_node = (id: string, overrides?: Partial<GraphNode>): GraphNode => ({
   id,
@@ -21,7 +24,7 @@ const make_node = (id: string, overrides?: Partial<GraphNode>): GraphNode => ({
   ...overrides,
 });
 
-// ── Store ──────────────────────────────────────────────────────
+// ?? Store ??????????????????????????????????????????????????????
 
 describe('Store', () => {
   it('should create with initial state', () => {
@@ -57,7 +60,6 @@ describe('Store', () => {
     expect(store.state.value.nodes['a']).toBeDefined();
     expect(store.state.value.nodes['a']!.id).toBe('a');
   });
-});
 
   it('should auto-cleanup wires when a node is deleted via on_before_change', () => {
     const store = new Store();
@@ -71,7 +73,6 @@ describe('Store', () => {
       target_port_id: 'in1',
     });
 
-    // Register auto-cleanup like easel.ts does
     store.nodes.on_before_change((event) => {
       if (event.type === 'delete' && event.prev) {
         for (const wire of store.wires.list()) {
@@ -106,7 +107,32 @@ describe('Store', () => {
     expect(store.nodes.has('orphan')).toBe(false);
   });
 
-// ── Table ──────────────────────────────────────────────────────
+  it('should allow wiring from output port even when input port has a binding', () => {
+    const store = new Store();
+    store.nodes.put('a', make_node('a'));
+    store.nodes.put('b', make_node('b'));
+
+    const binding = create_data_flow_binding('a', 'out1', 'b', 'in1');
+    store.bindings.put(binding.id, binding);
+
+    const state = store.state.value;
+    const ev = {
+      screen_position: vec2_create(0, 0),
+      target_node_id: O.some('b'),
+      target_port_id: O.some('out1'),
+      target_port_type: O.some('output' as const),
+      target_action: O.none,
+      modifiers: { ctrl: false, shift: false, alt: false, meta: false },
+    };
+
+    const result = pointer_down(state, ev);
+    expect(result.interaction.mode).toBe('wiring');
+    expect(result.interaction.source_node_id).toBe('b');
+    expect(result.interaction.source_port_id).toBe('out1');
+  });
+});
+
+// ?? Table ??????????????????????????????????????????????????????
 
 describe('Table', () => {
   it('should put and get items', () => {
@@ -166,7 +192,7 @@ describe('Table', () => {
 
     const events: string[] = [];
     table.on_before_change((event) => {
-      events.push(`before:${event.type}:${event.id}`);
+      events.push('before:' + event.type + ':' + event.id);
     });
 
     table.put('x', make_node('x'));
@@ -182,7 +208,7 @@ describe('Table', () => {
 
     const events: string[] = [];
     table.on_after_change((event) => {
-      events.push(`after:${event.type}:${event.id}`);
+      events.push('after:' + event.type + ':' + event.id);
     });
 
     table.put('x', make_node('x'));
