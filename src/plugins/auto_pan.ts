@@ -1,6 +1,5 @@
 import type { EaselPlugin } from '@/runtime/easel';
 import { vec2_create, vec2_add } from '@/core/math';
-import { pointer_move } from '@/core/interactions';
 import * as O from 'fp-ts/Option';
 
 export const auto_pan_plugin: EaselPlugin = easel => {
@@ -82,7 +81,7 @@ export const auto_pan_plugin: EaselPlugin = easel => {
             };
 
             // Re-trigger pointer_move to recalculate logic with the new start_pos and camera
-            return pointer_move(next_state, {
+            const pm_result = easel.tools.handle_pointer_move(next_state, {
               screen_position: vec2_create(mouse_x, mouse_y),
               target_node_id: O.none,
               target_port_id: O.none,
@@ -90,6 +89,7 @@ export const auto_pan_plugin: EaselPlugin = easel => {
               target_action: O.none,
               modifiers: state.modifiers,
             });
+            return pm_result ? pm_result.state : next_state;
           });
         }
       }

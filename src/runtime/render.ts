@@ -6,8 +6,7 @@ import { frame_effect } from './frame_effect';
 
 import type { Easel } from './easel';
 
-// 存储每个 node 的 ResizeObserver 以便 unmount 时 disconnect
-const node_observers = new Map<string, ResizeObserver>();
+
 
 export const render_nodes = (easel: Easel): void => {
   const container = easel.container;
@@ -26,6 +25,27 @@ export const render_nodes = (easel: Easel): void => {
   selection_box.className = 'selection-box';
   selection_box.style.display = 'none';
   container.appendChild(selection_box);
+
+  // 单例 ResizeObserver — 所有节点共享
+  const node_resize_observer = new ResizeObserver(entries => {
+    for (const entry of entries) {
+      const el_target = entry.target as HTMLElement;
+      const id = el_target.dataset['id'];
+      if (!id) continue;
+      const n = easel.store.nodes.get(id);
+      if (!n || n.collapsed) continue;
+      const w = el_target.offsetWidth;
+      const h = el_target.offsetHeight;
+      if (w === 0 && h === 0) continue;
+      if (n.size && (Math.abs(n.size.x - w) > 2 || Math.abs(n.size.y - h) > 2)) {
+        dispatch(s =>
+          s.nodes[id]
+            ? { ...s, nodes: { ...s.nodes, [id]: { ...s.nodes[id]!, size: vec2_create(w, h) } } }
+            : s,
+        );
+      }
+    }
+  });
 
   let viewport_size = vec2_create(window.innerWidth, window.innerHeight);
   const resize_observer = new ResizeObserver(entries => {
@@ -50,8 +70,7 @@ export const render_nodes = (easel: Easel): void => {
         prev_node_data.delete(id);
         stop(cache.runner);
         cache.inst.unmount();
-        node_observers.get(id)?.disconnect();
-        node_observers.delete(id);
+        node_resize_observer.unobserve(cache.el);
         container_element.removeChild(cache.el);
         node_instances.delete(id);
       }
@@ -85,33 +104,7 @@ export const render_nodes = (easel: Easel): void => {
 
         container_element.appendChild(el);
 
-        const node_resize_observer = new ResizeObserver(entries => {
-          for (const entry of entries) {
-            const current_node = store.nodes.get(id);
-            if (!current_node || current_node.collapsed) continue;
-            const el_target = entry.target as HTMLElement;
-            const w = el_target.offsetWidth;
-            const h = el_target.offsetHeight;
-            if (w === 0 && h === 0) continue; // Skip updates when hidden by culling
-            const current_size = current_node.size;
-            if (
-              current_size &&
-              (Math.abs(current_size.x - w) > 2 || Math.abs(current_size.y - h) > 2)
-            ) {
-              dispatch(s =>
-                s.nodes[id]
-                  ? {
-                      ...s,
-                      nodes: { ...s.nodes, [id]: { ...s.nodes[id]!, size: vec2_create(w, h) } },
-                    }
-                  : s,
-              );
-            }
-          }
-        });
         node_resize_observer.observe(el);
-
-        node_observers.set(id, node_resize_observer);
 
         const runner = frame_effect(() => {
           const st = state_ref.value;

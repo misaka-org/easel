@@ -90,31 +90,36 @@ export class GroupNode extends EaselNode {
       let new_bindings = { ...state.bindings };
       let changed = false;
 
-      for (const id of Object.keys(state.nodes)) {
+      // 1) 检查拖放的节点是否进入 group——只扫 dropped_ids
+      for (const id of dropped_ids) {
         if (id === this.node_id) continue;
         const node = state.nodes[id];
         if (!node) continue;
-
         const is_inside = aabb_contains(group_rect.pos, group_rect.size, node.position, node.size);
-
         if (is_inside && !existing.has(id)) {
           if (!is_ancestor(state.nodes, state.bindings, this.node_id, id)) {
             const binding = create_group_child_binding(this.node_id, id);
             new_bindings = { ...new_bindings, [binding.id]: binding };
             changed = true;
           }
-        } else if (
-          !is_inside &&
-          existing.has(id) &&
-          (dropped_ids.includes(id) || dropped_ids.includes(this.node_id))
-        ) {
-          const to_remove = Object.values(new_bindings).find(
-            b => b.type === 'group-child' && b.source_id === this.node_id && b.target_id === id,
-          );
-          if (to_remove) {
-            const { [to_remove.id]: _, ...rest } = new_bindings;
-            new_bindings = rest;
-            changed = true;
+        }
+      }
+
+      // 2) 检查已有子节点是否移出 group——只扫 existing children (按 id 查 node)
+      if (dropped_ids.length > 0) {
+        for (const child_id of existing) {
+          const node = state.nodes[child_id];
+          if (!node) continue;
+          const is_inside = aabb_contains(group_rect.pos, group_rect.size, node.position, node.size);
+          if (!is_inside) {
+            const to_remove = Object.values(new_bindings).find(
+              b => b.type === 'group-child' && b.source_id === this.node_id && b.target_id === child_id,
+            );
+            if (to_remove) {
+              const { [to_remove.id]: _, ...rest } = new_bindings;
+              new_bindings = rest;
+              changed = true;
+            }
           }
         }
       }

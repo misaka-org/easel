@@ -22,7 +22,10 @@ export const find_binding_by_target = (
   target_port_id: string,
 ): Binding | undefined => {
   return Object.values(state.bindings ?? {}).find(
-    b => b.type === 'data-flow' && b.target_id === target_node_id && b.target_handle === target_port_id,
+    b =>
+      b.type === 'data-flow' &&
+      b.target_id === target_node_id &&
+      b.target_handle === target_port_id,
   );
 };
 
@@ -32,12 +35,20 @@ export const find_binding_by_source = (
   source_port_id: string,
 ): Binding | undefined => {
   return Object.values(state.bindings ?? {}).find(
-    b => b.type === 'data-flow' && b.source_id === source_node_id && b.source_handle === source_port_id,
+    b =>
+      b.type === 'data-flow' &&
+      b.source_id === source_node_id &&
+      b.source_handle === source_port_id,
   );
 };
 
 /** 检查 port 是否有连线（data-flow binding）。 */
-export const is_port_connected = (state: State, node_id: string, port_id: string, port_type: 'input' | 'output'): boolean => {
+export const is_port_connected = (
+  state: State,
+  node_id: string,
+  port_id: string,
+  port_type: 'input' | 'output',
+): boolean => {
   if (port_type === 'input') return !!find_binding_by_target(state, node_id, port_id);
   return !!find_binding_by_source(state, node_id, port_id);
 };

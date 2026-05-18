@@ -144,7 +144,7 @@ export class Easel {
 
     render_nodes(this);
     render_wires(this.container, this.store);
-    setup_events(this.container, this.dispatch, this.app_events, this.keybindings, this.tools);
+    setup_events(this.container, this.dispatch, this.app_events, this.tools, this.keybindings);
   }
 
   set_theme = (new_theme: Partial<Theme>) => {

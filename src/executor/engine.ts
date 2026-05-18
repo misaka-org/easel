@@ -416,11 +416,11 @@ export class GraphExecutor {
   }
 
   /** Deterministic fingerprint of input values 閳?two compilations with same inputs produce same fingerprint */
+  /** Deterministic fingerprint — 排序键拼接，避免 JSON.stringify 开销。 */
   private inputs_fingerprint(inputs: Record<string, unknown>): string {
-    const keys = Object.keys(inputs).sort();
-    const ordered: Record<string, unknown> = {};
-    for (const k of keys) ordered[k] = inputs[k];
-    return JSON.stringify(ordered);
+    return Object.keys(inputs).sort()
+      .map(k => k + '\x00' + typeof inputs[k] + '\x00' + String(inputs[k]))
+      .join('\x01');
   }
 
   private async execute_node(id: string) {

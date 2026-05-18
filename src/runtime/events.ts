@@ -1,11 +1,5 @@
 import { vec2_create } from '@/core/math';
-import {
-  pointer_down,
-  pointer_move,
-  pointer_up,
-  wheel_zoom,
-  update_modifiers,
-} from '@/core/interactions';
+import { wheel_zoom, update_modifiers } from '@/core/interactions';
 import type { State, Modifiers } from '@/core/types';
 import type { ToolResult } from '@/core/tool';
 import * as O from 'fp-ts/Option';
@@ -26,8 +20,8 @@ export const setup_events = (
   container: HTMLElement,
   dispatch: Dispatch,
   app_events: any,
+  tools: ToolManager,
   keybindings?: KeybindingManager,
-  tools?: ToolManager,
 ): void => {
   const forward = (name: string) => (e: Event) => app_events.emit(name, e);
   container.addEventListener('contextmenu', forward('contextmenu'));
@@ -100,7 +94,6 @@ export const setup_events = (
     }
     container.setPointerCapture(e.pointerId);
     dispatch(state => {
-      if (!tools) return pointer_down(state, get_pointer_params(e));
       const result = tools.handle_pointer_down(state, get_pointer_params(e));
       if (result) {
         apply_result(dispatch, tools, result, state);
@@ -125,7 +118,6 @@ export const setup_events = (
 
     const do_move = (p: ReturnType<typeof get_pointer_params>) => {
       dispatch(state => {
-        if (!tools) return pointer_move(state, p);
         const result = tools.handle_pointer_move(state, p);
         if (result) {
           apply_result(dispatch, tools, result, state);
@@ -167,13 +159,8 @@ export const setup_events = (
       const resizing_node = prev_mode === 'resizing' ? state.interaction.node_id : null;
 
       const params = get_pointer_params(e);
-      let next_state: State;
-      if (!tools) {
-        next_state = pointer_up(state, params);
-      } else {
-        const result = tools.handle_pointer_up(state, params);
-        next_state = result ? result.state : { ...state, interaction: { mode: 'idle' } };
-      }
+      const result = tools.handle_pointer_up(state, params);
+      const next_state: State = result ? result.state : { ...state, interaction: { mode: 'idle' } };
 
       if (prev_mode === 'dragging' && dragging_nodes.length > 0) {
         setTimeout(() => app_events.emit('nodes_dropped', dragging_nodes), 0);
@@ -214,12 +201,10 @@ export const setup_events = (
           delta_x: e.deltaX, delta_y: e.deltaY,
           modifiers: get_modifiers(e),
         };
-        if (tools) {
-          const result = tools.handle_wheel(state, wheel_params);
-          if (result) {
-            apply_result(dispatch, tools, result, state);
-            return result.state;
-          }
+        const result = tools.handle_wheel(state, wheel_params);
+        if (result) {
+          apply_result(dispatch, tools, result, state);
+          return result.state;
         }
         // 默认 wheel: zoom/pan
         return wheel_zoom(state, wheel_params);

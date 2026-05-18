@@ -22,12 +22,18 @@ function mknode(id: string, opts?: { inputs?: Port[]; outputs?: Port[] }): Graph
 describe('create_subgraph_from_selection', () => {
   it('stores internal nodes and wires in custom_data.graph', () => {
     let s = create_initial_state();
-    s = add_node(s, mknode('a', {
-      outputs: [{ id: 'out', label: 'Out', type: 'output', value_type: 'number' }],
-    }));
-    s = add_node(s, mknode('b', {
-      inputs: [{ id: 'in', label: 'In', type: 'input', value_type: 'number' }],
-    }));
+    s = add_node(
+      s,
+      mknode('a', {
+        outputs: [{ id: 'out', label: 'Out', type: 'output', value_type: 'number' }],
+      }),
+    );
+    s = add_node(
+      s,
+      mknode('b', {
+        inputs: [{ id: 'in', label: 'In', type: 'input', value_type: 'number' }],
+      }),
+    );
 
     const w1 = create_data_flow_binding('a', 'out', 'b', 'in');
     s = { ...s, bindings: { [w1.id]: w1 }, selected_node_ids: ['a', 'b'] };
@@ -40,7 +46,10 @@ describe('create_subgraph_from_selection', () => {
     const sg = result.nodes[sg_id];
     expect(sg.type).toBe('subgraph');
 
-    const graph = sg.custom_data['graph'] as { nodes: Record<string, GraphNode>; bindings: Record<string, Binding> };
+    const graph = sg.custom_data['graph'] as {
+      nodes: Record<string, GraphNode>;
+      bindings: Record<string, Binding>;
+    };
     expect(graph.nodes['a']).toBeDefined();
     expect(graph.nodes['b']).toBeDefined();
 
@@ -59,12 +68,18 @@ describe('create_subgraph_from_selection', () => {
 
   it('routes external wire through subgraph port + stub', () => {
     let s = create_initial_state();
-    s = add_node(s, mknode('a', {
-      outputs: [{ id: 'out', label: 'Out', type: 'output', value_type: 'number' }],
-    }));
-    s = add_node(s, mknode('c', {
-      inputs: [{ id: 'data', label: 'Data', type: 'input', value_type: 'number' }],
-    }));
+    s = add_node(
+      s,
+      mknode('a', {
+        outputs: [{ id: 'out', label: 'Out', type: 'output', value_type: 'number' }],
+      }),
+    );
+    s = add_node(
+      s,
+      mknode('c', {
+        inputs: [{ id: 'data', label: 'Data', type: 'input', value_type: 'number' }],
+      }),
+    );
 
     const w1 = create_data_flow_binding('a', 'out', 'c', 'data');
     s = { ...s, bindings: { [w1.id]: w1 }, selected_node_ids: ['a'] };
@@ -80,7 +95,10 @@ describe('create_subgraph_from_selection', () => {
     expect(ext).toBeDefined();
     expect(ext!.target_handle).toBe('data');
 
-    const graph = sg.custom_data['graph'] as { nodes: Record<string, GraphNode>; bindings: Record<string, Binding> };
+    const graph = sg.custom_data['graph'] as {
+      nodes: Record<string, GraphNode>;
+      bindings: Record<string, Binding>;
+    };
     // Internal: a → stub_out
     const stub_out = Object.values(graph.nodes).find(n => n.type === 'subgraph_output')!;
     const internal = Object.values(graph.bindings).find(
@@ -91,15 +109,24 @@ describe('create_subgraph_from_selection', () => {
 
   it('entering subgraph produces state with correct wires', () => {
     let s = create_initial_state();
-    s = add_node(s, mknode('a', {
-      outputs: [{ id: 'out', label: 'Out', type: 'output', value_type: 'number' }],
-    }));
-    s = add_node(s, mknode('b', {
-      inputs: [{ id: 'in', label: 'In', type: 'input', value_type: 'number' }],
-    }));
-    s = add_node(s, mknode('c', {
-      inputs: [{ id: 'data', label: 'Data', type: 'input', value_type: 'number' }],
-    }));
+    s = add_node(
+      s,
+      mknode('a', {
+        outputs: [{ id: 'out', label: 'Out', type: 'output', value_type: 'number' }],
+      }),
+    );
+    s = add_node(
+      s,
+      mknode('b', {
+        inputs: [{ id: 'in', label: 'In', type: 'input', value_type: 'number' }],
+      }),
+    );
+    s = add_node(
+      s,
+      mknode('c', {
+        inputs: [{ id: 'data', label: 'Data', type: 'input', value_type: 'number' }],
+      }),
+    );
 
     // a→b (internal), a→c (external)
     const w1 = create_data_flow_binding('a', 'out', 'b', 'in');
@@ -109,7 +136,10 @@ describe('create_subgraph_from_selection', () => {
     const result = create_subgraph_from_selection(s);
     const sg_id = Object.keys(result.nodes).find(k => k.startsWith('subgraph_'))!;
     const sg = result.nodes[sg_id];
-    const graph = sg.custom_data['graph'] as { nodes: Record<string, GraphNode>; bindings: Record<string, Binding> };
+    const graph = sg.custom_data['graph'] as {
+      nodes: Record<string, GraphNode>;
+      bindings: Record<string, Binding>;
+    };
 
     // Simulate subgraph_plugin enter_subgraph
     const inner = { ...create_initial_state(), nodes: graph.nodes, bindings: graph.bindings };

@@ -150,7 +150,14 @@ describe('node_ops', () => {
 
     it('detects child in parent children list (cycle prevention)', () => {
       const bindings = {
-        gc1: { id: 'gc1', type: 'group-child', source_id: 'a', source_handle: '', target_id: 'b', target_handle: '' },
+        gc1: {
+          id: 'gc1',
+          type: 'group-child',
+          source_id: 'a',
+          source_handle: '',
+          target_id: 'b',
+          target_handle: '',
+        },
       };
       const nodes = { a: node_a(), b: node_b() };
       expect(is_ancestor(nodes, bindings, 'b', 'a')).toBe(true);
@@ -158,8 +165,22 @@ describe('node_ops', () => {
 
     it('detects circular reference', () => {
       const bindings = {
-        gc1: { id: 'gc1', type: 'group-child', source_id: 'a', source_handle: '', target_id: 'b', target_handle: '' },
-        gc2: { id: 'gc2', type: 'group-child', source_id: 'b', source_handle: '', target_id: 'a', target_handle: '' },
+        gc1: {
+          id: 'gc1',
+          type: 'group-child',
+          source_id: 'a',
+          source_handle: '',
+          target_id: 'b',
+          target_handle: '',
+        },
+        gc2: {
+          id: 'gc2',
+          type: 'group-child',
+          source_id: 'b',
+          source_handle: '',
+          target_id: 'a',
+          target_handle: '',
+        },
       };
       const nodes = { a: node_a(), b: node_b() };
       expect(is_ancestor(nodes, bindings, 'a', 'b')).toBe(true);
@@ -168,7 +189,14 @@ describe('node_ops', () => {
 
     it('returns false when no cycle', () => {
       const bindings = {
-        gc1: { id: 'gc1', type: 'group-child', source_id: 'a', source_handle: '', target_id: 'b', target_handle: '' },
+        gc1: {
+          id: 'gc1',
+          type: 'group-child',
+          source_id: 'a',
+          source_handle: '',
+          target_id: 'b',
+          target_handle: '',
+        },
       };
       const nodes = { a: node_a(), b: node_b() };
       expect(is_ancestor(nodes, bindings, 'a', 'b')).toBe(false);

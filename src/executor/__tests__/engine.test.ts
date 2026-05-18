@@ -20,10 +20,11 @@ const mock_table = () => ({
   on_after_change: () => (() => {}),
 });
 
-function mockEasel(nodeOverrides = {}) {
+function mockEasel(nodeOverrides: Record<string, any> = {}, bindingOverrides: Record<string, any> = {}) {
   const base = create_initial_state();
   const nodes = { ...base.nodes, ...nodeOverrides };
-  const store = new Store({ initial_state: { ...base, nodes } });
+  const bindings = { ...base.bindings, ...bindingOverrides };
+  const store = new Store({ initial_state: { ...base, nodes, bindings } });
   const camera = new CameraController(() => store.state.value, store.dispatch);
   return {
     state: store.state,
@@ -156,15 +157,7 @@ describe('executor', () => {
           target_handle: 'in',
         },
       };
-      const state = { ...create_initial_state(), nodes: { a, b }, bindings: bindings_ab };
-      const stateRef = shallowRef(state);
-      const exec = new GraphExecutor({
-        state: stateRef,
-        get_node_instance: () => undefined,
-        store: { state: stateRef, dispatch: (fn: any) => { stateRef.value = fn(stateRef.value); }, nodes: mock_table() as any, bindings: mock_table() as any, serialize: () => ({}), transact: (fn: any) => fn() },
-        camera: { set() {}, animate_to() {}, cancel() {}, zoom_in() {}, zoom_out() {}, zoom_reset() {}, fit_to_view() {}, get is_animating() { return false; } } as any,
-        set_theme() {},
-      } as any);
+      const exec = new GraphExecutor(mockEasel({ a, b }, bindings_ab));
       exec.compile();
       expect(exec.state.value.ready_queue).toEqual(['a']);
       expect(exec.state.value.status).toBe('idle');
@@ -224,21 +217,10 @@ describe('executor', () => {
           target_handle: 'in',
         },
       };
-      const state = { ...create_initial_state(), nodes: { a, b }, bindings: bindings_ab };
-      const stateRef = shallowRef(state);
+      const easel = mockEasel({ a, b }, bindings_ab);
+      (easel as any).get_node_instance = () => inst;
 
-      const exec = new GraphExecutor({
-        state: stateRef,
-        get_node_instance: () => inst,
-        store: { state: stateRef, dispatch: (fn: any) => { stateRef.value = fn(stateRef.value); }, nodes: mock_table() as any, bindings: mock_table() as any, serialize: () => ({}), transact: (fn: any) => fn() },
-        camera: { set() {}, animate_to() {}, cancel() {}, zoom_in() {}, zoom_out() {}, zoom_reset() {}, fit_to_view() {}, get is_animating() { return false; } } as any,
-        set_theme() {},
-        dispatch: (fn: any) => {
-          stateRef.value = fn(stateRef.value);
-        },
-        app_events: { on() {}, emit() {}, off() {} },
-        node_events: new Map(),
-      } as any);
+      const exec = new GraphExecutor(easel);
       exec.compile();
       await exec['realtime_execute_downstream']('a');
       expect(exec.state.value.status).toBe('completed');
@@ -318,21 +300,10 @@ describe('executor', () => {
           target_handle: 'in_b',
         },
       };
-      const state = { ...create_initial_state(), nodes: { a, b }, bindings: bindings_ab };
-      const stateRef = shallowRef(state);
+      const easel = mockEasel({ a, b }, bindings_ab);
+      (easel as any).get_node_instance = (id: string) => (id === 'a' ? instA : instB);
 
-      const exec = new GraphExecutor({
-        state: stateRef,
-        get_node_instance: (id: string) => (id === 'a' ? instA : instB),
-        store: { state: stateRef, dispatch: (fn: any) => { stateRef.value = fn(stateRef.value); }, nodes: mock_table() as any, bindings: mock_table() as any, serialize: () => ({}), transact: (fn: any) => fn() },
-        camera: { set() {}, animate_to() {}, cancel() {}, zoom_in() {}, zoom_out() {}, zoom_reset() {}, fit_to_view() {}, get is_animating() { return false; } } as any,
-        set_theme() {},
-        dispatch: (fn: any) => {
-          stateRef.value = fn(stateRef.value);
-        },
-        app_events: { on() {}, emit() {}, off() {} },
-        node_events: new Map(),
-      } as any);
+      const exec = new GraphExecutor(easel);
       exec.compile();
       exec.run();
       await new Promise(r => setTimeout(r, 0));

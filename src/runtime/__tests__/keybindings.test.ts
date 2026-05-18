@@ -248,8 +248,14 @@ describe('register_core_keybindings', () => {
     expect(capturedState).not.toBeNull();
     const groupNode = Object.values(capturedState.nodes).find((n: any) => n.type === 'group');
     expect(groupNode).toBeDefined();
-    expect((groupNode as any).custom_data.children).toContain('n1');
-    expect((groupNode as any).custom_data.children).toContain('n2');
+    // group-child bindings 代替了 custom_data.children
+    const group_id = (groupNode as any).id;
+    const child_ids = Object.values(capturedState.bindings)
+      .filter((b: any) => b.type === 'group-child' && b.source_id === group_id)
+      .map((b: any) => b.target_id);
+    expect(child_ids).toContain('n1');
+    expect(child_ids).toContain('n2');
     expect(capturedState.selected_node_ids.length).toBe(1);
+    expect(capturedState.selected_node_ids[0]).toBe(group_id);
   });
 });

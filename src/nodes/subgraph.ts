@@ -1,5 +1,7 @@
 import { EaselNode } from '@/runtime/registry';
+import type { ExecuteContext } from '@/runtime/registry';
 import type { GraphNode, State } from '@/core/types';
+import { execute_subgraph } from './subgraph_executor';
 import { remove_node } from '@/core/node_ops';
 import { ICON_CHEVRON_RIGHT, ICON_X } from '@/icons';
 import { set_inner_html } from '@/utils/dom';
@@ -90,6 +92,10 @@ export class SubgraphNode extends EaselNode {
     }
   }
 
+  async execute(ctx: ExecuteContext): Promise<Record<string, unknown>> {
+    return execute_subgraph(ctx);
+  }
+
   unmount(): void {
     this.header.remove();
     this.body.remove();
@@ -120,6 +126,10 @@ export class SubgraphInputNode extends EaselNode {
     set_inner_html(this.body, html);
   }
 
+  async execute(_ctx: ExecuteContext): Promise<Record<string, unknown>> {
+    return {};
+  }
+
   unmount(): void {
     this.body.remove();
   }
@@ -127,6 +137,11 @@ export class SubgraphInputNode extends EaselNode {
 
 export class SubgraphOutputNode extends EaselNode {
   private body!: HTMLElement;
+
+  async execute(ctx: ExecuteContext): Promise<Record<string, unknown>> {
+    return { ...ctx.inputs };
+  }
+
 
   mount(node_data: GraphNode): void {
     this.container.classList.add('subgraph-output-stub');

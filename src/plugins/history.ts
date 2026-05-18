@@ -115,52 +115,39 @@ export const history_plugin: EaselPlugin = easel => {
   const jump_to = (index: number) => {
     is_undoing = true;
     current_index = index;
-    original_dispatch(s => ({
+    easel.dispatch(() => ({
       ...history[current_index]!,
-      camera: s.camera,
+      camera: easel.state.value.camera,
       interaction: { mode: 'idle' },
     }));
     is_undoing = false;
     render_list();
   };
 
-  const original_dispatch = easel.dispatch;
+  // 通过 state_changed 事件记录快照，不再猴子补丁 easel.dispatch
+  easel.app_events.on('state_changed', ({ next }) => {
+    if (is_undoing) return;
+    if (next.interaction.mode !== 'idle') return;
 
-  easel.dispatch = updater => {
-    if (is_undoing) {
-      original_dispatch(updater);
-      return;
+    const last_recorded = history[current_index];
+    const changed =
+      last_recorded?.nodes !== next.nodes || last_recorded?.bindings !== next.bindings;
+    if (!changed) return;
+
+    history.splice(current_index + 1);
+    const snapshot: State = {
+      ...create_initial_state(),
+      ...next,
+      interaction: { mode: 'idle' } as const,
+    };
+    history.push(snapshot);
+    if (history.length > MAX_HISTORY) {
+      history.shift();
+    } else {
+      current_index = history.length - 1;
     }
-
-    const prev_state = easel.state.value;
-    original_dispatch(updater);
-    const next_state = easel.state.value;
-
-    if (prev_state !== next_state) {
-      if (next_state.interaction.mode === 'idle') {
-        const last_recorded = history[current_index];
-        const state_changed =
-          last_recorded?.nodes !== next_state.nodes || last_recorded?.bindings !== next_state.bindings;
-
-        if (state_changed) {
-          history.splice(current_index + 1);
-          // 存储快照时排除 transient 字段以减小内存
-          const snapshot: State = {
-            ...create_initial_state(),
-            ...next_state,
-            interaction: { mode: 'idle' } as const,
-          };
-          history.push(snapshot);
-          if (history.length > MAX_HISTORY) {
-            history.shift();
-          } else {
-            current_index = history.length - 1;
-          }
-          render_list();
-        }
-      }
-    }
-  };
+    render_list();
+  });
 
   render_list();
 

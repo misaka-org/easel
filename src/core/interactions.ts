@@ -103,7 +103,9 @@ const try_grab_wire = (state: State, event: PointerEventParams) =>
       if (port_type === 'input') {
         const b = find_binding_by_target(state, node_id, port_id);
         if (b) {
-          return O.some(start_wiring(remove_binding(state, b.id), b.source_id, b.source_handle, event));
+          return O.some(
+            start_wiring(remove_binding(state, b.id), b.source_id, b.source_handle, event),
+          );
         }
       } else if (port_type === 'output') {
         return O.some(start_wiring(state, node_id, port_id, event));
@@ -161,7 +163,9 @@ const handlers_move: Record<
       if (to_move.has(id)) return;
       to_move.add(id);
       const children = Object.values(state.bindings)
-        .filter(b => (b.type === 'group-child' || b.type === 'subgraph-child') && b.source_id === id)
+        .filter(
+          b => (b.type === 'group-child' || b.type === 'subgraph-child') && b.source_id === id,
+        )
         .map(b => b.target_id);
       children.forEach(collect);
     };
@@ -268,7 +272,12 @@ const try_connect_wire = (
         const existing = find_binding_by_target(state, target_node_id, target_port_id);
         const clean_state = existing ? remove_binding(state, existing.id) : state;
 
-        const binding = create_data_flow_binding(source_node_id, source_port_id, target_node_id, target_port_id);
+        const binding = create_data_flow_binding(
+          source_node_id,
+          source_port_id,
+          target_node_id,
+          target_port_id,
+        );
         return O.some(add_binding(clean_state, binding));
       }
       return O.none;
