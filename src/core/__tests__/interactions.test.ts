@@ -499,7 +499,7 @@ describe('interactions', () => {
       title: 'N2',
       inputs: [],
       outputs: [],
-      widgets: [{ id: 'w1', label: 'Widget In', type: 'widget', value_type: 'text' }],
+      widgets: [{ id: 'w1', label: 'Widget In', type: 'text', value: '', value_type: 'text' }],
       custom_data: {},
     });
     s = {

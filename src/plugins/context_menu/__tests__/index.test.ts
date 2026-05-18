@@ -69,11 +69,16 @@ describe('build_ns_menu', () => {
 describe('built-in providers', () => {
   function createMockEasel(extra = {}) {
     const container = document.createElement('div');
+    const mt = () => ({ get: () => undefined, list: () => [], keys: () => [], put: () => true, delete() {}, has: () => false, on_before_change: () => (() => {}), on_after_change: () => (() => {}) });
     return {
       container,
       plugin_data: {},
       dispatch: vi.fn(),
       app_events: { on: vi.fn(), emit: vi.fn(), off: vi.fn() },
+      node_events: new Map(),
+      store: { state: { value: {} }, dispatch: vi.fn(), nodes: mt(), wires: mt(), bindings: mt(), serialize: () => ({}), transact: (fn) => fn() },
+      camera: { set: vi.fn(), animate_to: vi.fn(), cancel: vi.fn(), zoom_in: vi.fn(), zoom_out: vi.fn(), zoom_reset: vi.fn(), fit_to_view: vi.fn(), is_animating: false },
+      set_theme: vi.fn(),
       state: {
         value: {
           nodes: {},

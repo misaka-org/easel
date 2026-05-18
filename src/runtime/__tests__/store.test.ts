@@ -127,8 +127,10 @@ describe('Store', () => {
 
     const result = pointer_down(state, ev);
     expect(result.interaction.mode).toBe('wiring');
-    expect(result.interaction.source_node_id).toBe('b');
-    expect(result.interaction.source_port_id).toBe('out1');
+    if (result.interaction.mode === 'wiring') {
+      expect(result.interaction.source_node_id).toBe('b');
+      expect(result.interaction.source_port_id).toBe('out1');
+    }
   });
 });
 
