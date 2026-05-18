@@ -1,10 +1,9 @@
-﻿import type { State, Modifiers, Interaction } from './types';
+import type { State, Modifiers, Interaction } from './types';
 import type { Vec2 } from './math';
 import { vec2_sub, vec2_add, vec2_scale, vec2_create, aabb_intersect } from './math';
 import { move_nodes } from './node_ops';
 import { add_wire, remove_wire } from './wire_ops';
-import { add_binding, remove_binding, find_binding_by_target } from './binding_ops';
-import { create_data_flow_binding } from './types';
+import { remove_binding, find_binding_by_target } from './binding_ops';
 import * as O from 'fp-ts/Option';
 import { pipe } from 'fp-ts/function';
 

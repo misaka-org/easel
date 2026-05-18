@@ -223,7 +223,11 @@ export const render_wires = (container: HTMLElement, state_ref: { value: State }
     svg.style.transform = `translate(${state.camera.position.x}px, ${state.camera.position.y}px) scale(${state.camera.zoom})`;
     svg.style.strokeWidth = `${2 / state.camera.zoom}px`;
 
-    const current_ids = new Set(Object.keys(state.wires));
+    const current_wire_ids = new Set(Object.keys(state.wires));
+    const current_binding_ids = new Set(
+      state.bindings ? Object.keys(state.bindings).filter(id => state.bindings[id]?.type === "data-flow") : []
+    );
+    const current_ids = new Set([...current_wire_ids, ...current_binding_ids]);
 
     Array.from(wire_elements.entries()).forEach(([id, el]) => {
       if (!current_ids.has(id)) {
@@ -232,9 +236,9 @@ export const render_wires = (container: HTMLElement, state_ref: { value: State }
       }
     });
 
-    for (const id of current_ids) {
-      const wire = state.wires[id];
-      if (!wire) continue;
+    for (const conn of all_connections(state)) {
+      const { id, source_node_id, source_port_id, target_node_id, target_port_id } = conn;
+      if (!current_ids.has(id)) continue;
 
       let el = wire_elements.get(id);
       if (!el) {
@@ -244,8 +248,8 @@ export const render_wires = (container: HTMLElement, state_ref: { value: State }
         wire_elements.set(id, el);
       }
 
-      const source_node = state.nodes[wire.source_node_id];
-      const source_port = source_node?.outputs.find(p => p.id === wire.source_port_id);
+      const source_node = state.nodes[source_node_id];
+      const source_port = source_node?.outputs.find(p => p.id === source_port_id);
       const type = source_port?.value_type;
 
       if (type) {
@@ -254,8 +258,8 @@ export const render_wires = (container: HTMLElement, state_ref: { value: State }
         delete el.dataset.valueType;
       }
 
-      const p1 = get_port_position(wire.source_node_id, wire.source_port_id, 'output', state);
-      const p2 = get_port_position(wire.target_node_id, wire.target_port_id, 'input', state);
+      const p1 = get_port_position(source_node_id, source_port_id, 'output', state);
+      const p2 = get_port_position(target_node_id, target_port_id, 'input', state);
 
       if (p1 && p2) {
         // Skip draw_bezier + setAttribute when neither endpoint moved

@@ -104,6 +104,7 @@ function layout_component(
   }
 
   // BFS with longest-path rule
+  const queued = new Set(queue);
   let front = 0;
   while (front < queue.length) {
     const id = queue[front++];
@@ -113,7 +114,10 @@ function layout_component(
       const existing = layer.get(nb);
       if (existing === undefined || next_l > existing) {
         layer.set(nb, next_l);
-        queue.push(nb);
+        if (!queued.has(nb)) {
+          queued.add(nb);
+          queue.push(nb);
+        }
       }
     }
   }
