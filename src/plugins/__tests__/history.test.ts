@@ -13,7 +13,7 @@ describe("history plugin logic", () => {
 
   it("records snapshot when nodes change and idle", () => {
     const hist: State[] = [create_initial_state()];
-    let idx = 0;
+    const idx = 0;
 
     const s = add_node(create_initial_state(), {
       id: "n1", type: "test",
@@ -26,7 +26,6 @@ describe("history plugin logic", () => {
 
     hist.splice(idx + 1);
     hist.push(snap(s));
-    idx = hist.length - 1;
 
     expect(hist.length).toBe(2);
     expect(hist[1]!.nodes["n1"]).toBeDefined();
@@ -52,8 +51,7 @@ describe("history plugin logic", () => {
       title: "A", inputs: [], outputs: [], widgets: [], custom_data: {},
     });
     hist.push(snap(s1));
-    let idx = 1;
-    idx = 0;
+    const idx = 0;
     expect(hist[idx]!.nodes["a"]).toBeUndefined();
   });
 
@@ -65,15 +63,12 @@ describe("history plugin logic", () => {
       title: "A", inputs: [], outputs: [], widgets: [], custom_data: {},
     });
     hist.push(snap(s1));
-    let idx = 1;
-    idx = 0;
-    idx = 1;
+    const idx = 1;
     expect(hist[idx]!.nodes["a"]).toBeDefined();
   });
 
   it("discards future after undo + new action", () => {
     const hist: State[] = [create_initial_state()];
-    let idx = 0;
     for (let i = 0; i < 3; i++) {
       const s = add_node(hist[hist.length - 1]!, {
         id: "n" + i, type: "test",
@@ -81,10 +76,9 @@ describe("history plugin logic", () => {
         title: "N" + i, inputs: [], outputs: [], widgets: [], custom_data: {},
       });
       hist.push(snap(s));
-      idx = hist.length - 1;
     }
     expect(hist.length).toBe(4);
-    idx = 1;
+    const idx = 1;
     hist.splice(idx + 1);
     expect(hist.length).toBe(2);
   });

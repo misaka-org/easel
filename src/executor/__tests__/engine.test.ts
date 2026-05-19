@@ -1,5 +1,4 @@
 import { describe, it, expect, vi } from 'vitest';
-import { shallowRef } from '@vue/reactivity';
 import { GraphExecutor } from '@/executor/engine';
 import { create_initial_state } from '@/core/state';
 import { vec2_create } from '@/core/math';
@@ -8,17 +7,6 @@ import { CameraController } from '@/runtime/camera';
 import * as E from 'fp-ts/Either';
 import type { Easel } from '@/runtime/easel';
 
-// Minimal mock table factory — used by inline mocks that bypass mockEasel
-const mock_table = () => ({
-  get: () => undefined,
-  list: () => [],
-  keys: () => [],
-  put: () => true,
-  delete: () => {},
-  has: () => false,
-  on_before_change: () => (() => {}),
-  on_after_change: () => (() => {}),
-});
 
 function mockEasel(nodeOverrides: Record<string, any> = {}, bindingOverrides: Record<string, any> = {}) {
   const base = create_initial_state();
@@ -80,7 +68,7 @@ describe('executor', () => {
     it('completes a -> b chain', async () => {
       const a = node('a', { outputs: [{ id: 'out', label: 'Out', type: 'output' }] });
       const b = node('b', { inputs: [{ id: 'in', label: 'In', type: 'input' }] });
-      const bindings = {
+      const bindings_ab_2 = {
         b1: {
           id: 'b1',
           type: 'data-flow',
@@ -90,16 +78,7 @@ describe('executor', () => {
           target_handle: 'in',
         },
       };
-      const nodes = { a, b };
-      const state = { ...create_initial_state(), nodes, bindings };
-      const stateRef = shallowRef(state);
-      const exec = new GraphExecutor({
-        state: stateRef,
-        get_node_instance: () => undefined,
-        store: { state: stateRef, dispatch: (fn: any) => { stateRef.value = fn(stateRef.value); }, nodes: mock_table() as any, bindings: mock_table() as any },
-        camera: { set() {}, animate_to() {}, cancel() {}, zoom_in() {}, zoom_out() {}, zoom_reset() {}, fit_to_view() {}, get is_animating() { return false; } } as any,
-        set_theme() {},
-      } as any);
+      const exec = new GraphExecutor(mockEasel({ a, b }, bindings_ab_2));
       exec.compile();
       exec.run();
       await new Promise(r => setTimeout(r, 0));
