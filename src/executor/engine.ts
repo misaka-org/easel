@@ -19,6 +19,8 @@ export class GraphExecutor {
   private abort_controller: AbortController | null = null;
   realtime: Ref<boolean>;
   private realtime_debounce_timer: ReturnType<typeof setTimeout> | null = null;
+  // LRU eviction threshold — set to 0 to disable caching.
+  max_cache_size = 200;
   // Persists across compilations 閳?caches outputs keyed by (node_id, inputs_fingerprint)
   private input_cache = new Map<
     string,
@@ -128,7 +130,30 @@ export class GraphExecutor {
     this.state.value = { ...this.state.value, status: 'stopped' };
   }
 
-  /** Clear all cached execution results. Forces re-execution on next run. */
+
+  /** LRU cache get — moves entry to most-recent position. */
+  private cache_get(id: string): { fingerprint: string; outputs: Record<string, unknown> } | undefined {
+    const entry = this.input_cache.get(id);
+    if (entry) {
+      this.input_cache.delete(id);
+      this.input_cache.set(id, entry);
+    }
+    return entry;
+  }
+
+  /** LRU cache set — evicts oldest when over max_cache_size. */
+  private cache_set(id: string, entry: { fingerprint: string; outputs: Record<string, unknown> }): void {
+    if (this.max_cache_size <= 0) return;
+    this.input_cache.delete(id);
+    this.input_cache.set(id, entry);
+    while (this.input_cache.size > this.max_cache_size) {
+      const oldest = this.input_cache.keys().next().value;
+      if (oldest !== undefined) this.input_cache.delete(oldest);
+      else break;
+    }
+  }
+
+  /** Clear all cached execution results. */
   clear_cache(): void {
     this.input_cache.clear();
   }
@@ -324,7 +349,7 @@ export class GraphExecutor {
         const inputs = this.gather_inputs(id);
 
         const fingerprint = this.inputs_fingerprint(inputs);
-        const cached = this.input_cache.get(id);
+        const cached = this.cache_get(id);
         if (cached && cached.fingerprint === fingerprint) {
           outputs = GraphExecutor.deep_clone(cached.outputs);
           this.update_node_state(id, { status: 'completed', progress: 100, outputs });
@@ -351,7 +376,7 @@ export class GraphExecutor {
 
       const fresh_inputs = this.gather_inputs(id);
       const fresh_fingerprint = this.inputs_fingerprint(fresh_inputs);
-      this.input_cache.set(id, {
+      this.cache_set(id, {
         fingerprint: fresh_fingerprint,
         outputs: GraphExecutor.deep_clone(outputs),
       });
@@ -438,7 +463,7 @@ export class GraphExecutor {
 
         // Separate cache (persists across compilations) 閳?skip execution when inputs unchanged
         const fingerprint = this.inputs_fingerprint(inputs);
-        const cached = this.input_cache.get(id);
+        const cached = this.cache_get(id);
         if (cached && cached.fingerprint === fingerprint) {
           outputs = GraphExecutor.deep_clone(cached.outputs);
           this.update_node_state(id, { status: 'completed', progress: 100, outputs });
@@ -465,7 +490,7 @@ export class GraphExecutor {
       // Cache fresh outputs so unchanged inputs skip execution on future runs
       const fresh_inputs = this.gather_inputs(id);
       const fresh_fingerprint = this.inputs_fingerprint(fresh_inputs);
-      this.input_cache.set(id, {
+      this.cache_set(id, {
         fingerprint: fresh_fingerprint,
         outputs: GraphExecutor.deep_clone(outputs),
       });

@@ -51,12 +51,11 @@ export const render_nodes = (easel: Easel): void => {
   const resize_observer = new ResizeObserver(entries => {
     for (const entry of entries) {
       viewport_size = vec2_create(entry.contentRect.width, entry.contentRect.height);
-      // Trigger a re-evaluation if needed, but simple assignments will be picked up on next interaction
     }
   });
   resize_observer.observe(container);
 
-  // DOM element lifecycle effect
+  // DOM lifecycle + camera/culling — single merged frame_effect
   frame_effect(() => {
     const state = state_ref.value;
     const store = easel.store;
@@ -64,7 +63,6 @@ export const render_nodes = (easel: Easel): void => {
 
     Array.from(node_instances.entries()).forEach(([id, cache]) => {
       if (!current_ids.has(id)) {
-        // Emit 'removed' before cleanup so React/Vue components can unmount
         easel.node_events.get(id)?.emit('removed');
         easel.node_events.delete(id);
         prev_node_data.delete(id);
@@ -110,11 +108,10 @@ export const render_nodes = (easel: Easel): void => {
           const st = state_ref.value;
           const node = easel.store.nodes.get(id);
           if (!node) {
-            runner.effect.stop(); // node was removed
+            runner.effect.stop();
             return;
           }
 
-          // Emit 'data' when node content changes
           const prev = prev_node_data.get(id);
           if (prev !== node) {
             if (prev) {
@@ -153,16 +150,14 @@ export const render_nodes = (easel: Easel): void => {
         node_instances.set(id, { el, inst, runner });
       }
     });
-  });
 
-  // Camera, Culling and LOD effect
-  frame_effect(() => {
-    const state = state_ref.value;
+    // ── Camera transform & background ──
     const zoom = state.camera.zoom;
     container_element.style.transform = `translate(${state.camera.position.x}px, ${state.camera.position.y}px) scale(${zoom})`;
     container.style.backgroundPosition = `${state.camera.position.x}px ${state.camera.position.y}px`;
     container.style.backgroundSize = `${20 * zoom}px ${20 * zoom}px`;
 
+    // ── Culling & LOD ──
     const viewport_world_pos = vec2_create(
       -state.camera.position.x / zoom,
       -state.camera.position.y / zoom,
