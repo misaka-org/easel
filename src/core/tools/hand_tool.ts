@@ -44,8 +44,7 @@ export const hand_tool: Tool = {
   /** HandTool 缩放与非 ctrl wheel 平移。 */
   on_wheel: (state, event) => {
     if (event.modifiers.ctrl || event.modifiers.meta) {
-      const factor = event.delta_y > 0 ? 0.9 : 1.1;
-      const zoom = Math.max(0.1, Math.min(10, state.camera.zoom * factor));
+      const zoom = Math.max(0.1, Math.min(10, state.camera.zoom * Math.exp(-event.delta_y / 200)));
       const mx = event.screen_position.x;
       const my = event.screen_position.y;
       const oc = state.camera.position;

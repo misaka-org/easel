@@ -328,8 +328,7 @@ export const pointer_up = (state: State, event?: PointerEventParams): State => {
 
 export const wheel_zoom = (state: State, event: WheelEventParams): State => {
   if (event.modifiers.ctrl || event.modifiers.meta) {
-    const zoom_factor = event.delta_y > 0 ? 0.9 : 1.1;
-    const zoom = Math.max(0.1, Math.min(10, state.camera.zoom * zoom_factor));
+    const zoom = Math.max(0.1, Math.min(10, state.camera.zoom * Math.exp(-event.delta_y / 200)));
 
     const mouse_x = event.screen_position.x;
     const mouse_y = event.screen_position.y;
