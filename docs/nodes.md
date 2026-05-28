@@ -37,7 +37,7 @@ class GroupNode extends EaselNode {
 
 ## SubgraphNode
 
-子图节点，包含内部图，支持嵌套浏览。
+子图节点，包含内部图，支持嵌套浏览和透明执行。
 
 - `custom_data.graph` 存储内部图（nodes + wires）
 - Header 右侧进入按钮，发射 `enter_subgraph` 事件

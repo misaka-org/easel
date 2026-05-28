@@ -16,8 +16,9 @@ y 方向 5 组：target.top/bottom/centerY -> dragged.top/bottom/centerY
 
 ## 实现
 
-包装 `easel.dispatch`，在 state 更新后：
-1. 检测拖拽节点与其他节点的距离
+通过 `store.onAfterChange('node', handler)` 注册 store hook：
+
+1. 节点位置变化时检测被拖拽节点与其他节点的距离
 2. 找到最近的对齐点（< 10px）
 3. 自动修正位置
 4. SVG 叠加层绘制参考线

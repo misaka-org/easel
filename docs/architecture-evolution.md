@@ -71,9 +71,8 @@
 - [x] `try_connect_wire` 改创 data-flow binding
 - [x] 全部读端优先 binding
 - [x] 移除 `State.wires`、`Wire` 类型、`store.wires` 表
-- [ ] 外部接口文档同步（README、docs/*.md 整理）
-- [ ] 外部接口文档同步
-- [ ] 性能回归测试（渲染 + 交互 + 执行引擎）
+- [x] 外部接口文档同步（README、docs/*.md 整理）
+- [x] 性能回归测试（渲染 + 交互 + 执行引擎）
 
 ---
 

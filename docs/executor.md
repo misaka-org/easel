@@ -1,6 +1,6 @@
 # 图执行引擎 (GraphExecutor)
 
-拓扑排序的异步节点执行引擎，带输入缓存和实时模式。
+拓扑排序的异步节点执行引擎，带 LRU 输入缓存、子图透明执行和实时模式。
 
 ## 基本用法
 
@@ -28,6 +28,21 @@ run()     -> 从 ready_queue 取零入度节点，并行执行
 - 每个节点的输入按 key 排序 JSON 指纹化
 - 指纹匹配时跳过执行，从缓存取输出
 - 缓存跨编译持久化，通过 `clear_cache()` 清空
+- **LRU 驱逐**：`max_cache_size`（默认 200），超出时淘汰最久未用的条目
+- `cache_get()` 将访问的条目移到最近使用位置
+- `cache_set()` 写满时驱逐最旧条目
+- 设置 `max_cache_size = 0` 可完全禁用缓存
+
+## 子图透明执行
+
+SubgraphNode 对执行引擎透明：
+
+- `execute_subgraph()` 读取节点的 `custom_data.graph`（内部 nodes + wires）
+- 拓扑排序内部节点，注入 inputs/widget values，并行执行
+- 递归支持嵌套子图
+- `AbortSignal` 穿透：外部 abort 信号传入内部所有节点
+- 某个内部节点报错不阻塞其他并行分支
+- 找不到 node type 的节点安全跳过
 
 ## 实时模式
 
