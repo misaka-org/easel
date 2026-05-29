@@ -12,7 +12,10 @@ import { ToolManager } from './tool_manager';
 import EventEmitter from 'eventemitter3';
 import type { State, GraphNode } from '@/core/types';
 import type { ShallowRef, ReactiveEffectRunner } from '@vue/reactivity';
-import type { EaselNode, Dispatch } from './registry';
+import type { EaselNode } from './registry';
+import type { Dispatch } from './store';
+import type { EaselEvents } from './event_types';
+export type { EaselEvents };
 import { KeybindingManager, register_core_keybindings } from './keybindings';
 import { Register, register_builtin_widgets } from './register';
 import { vec2_create } from '@/core/math';
@@ -21,21 +24,6 @@ import { GroupNode } from '@/nodes/group';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- 空接口用于 declaration merging，插件通过扩充该接口添加自定义数据
 export interface EaselPluginData {}
-
-export interface EaselEvents {
-  state_changed: (payload: { prev: State; next: State }) => void;
-  pointerdown: (e: PointerEvent) => void;
-  pointermove: (e: PointerEvent) => void;
-  pointerup: (e: PointerEvent) => void;
-  keydown: (e: KeyboardEvent) => void;
-  keyup: (e: KeyboardEvent) => void;
-  contextmenu: (e: MouseEvent) => void;
-  node_dblclick: (payload: { node_id: string; target: HTMLElement }) => void;
-  nodes_dropped: (node_ids: string[]) => void;
-  enter_subgraph: (payload: { node_id: string }) => void;
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-  create_group: (payload: {}) => void;
-}
 
 /** Per-node event payloads. Each node instance gets its own EventEmitter. */
 export type NodeEventPayloads = {

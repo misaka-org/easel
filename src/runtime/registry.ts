@@ -1,21 +1,27 @@
+import EventEmitter from 'eventemitter3';
 import type { GraphNode, State } from '@/core/types';
 import type { ContextMenuContext, ContextMenuItem } from '@/plugins/context_menu/types';
 import { vec2_create, type Vec2 } from '@/core/math';
 import type { Port, Widget } from '@/core/types';
+import type { Dispatch } from './store';
+import type { EaselEvents, NodeEventPayloads } from './easel';
 
-export type Dispatch = (updater: (state: State) => State) => void;
+export type EaselNodeContext = {
+  readonly app_events: EventEmitter<EaselEvents>;
+  readonly node_events: Map<string, EventEmitter<NodeEventPayloads>>;
+};
 
 export abstract class EaselNode {
   protected container: HTMLElement;
   protected dispatch: Dispatch;
   protected node_id: string;
-  protected context: Record<string, any>;
+  protected context: EaselNodeContext;
 
   constructor(
     container: HTMLElement,
     dispatch: Dispatch,
     node_id: string,
-    context: Record<string, any>,
+    context: EaselNodeContext,
   ) {
     this.container = container;
     this.dispatch = dispatch;
@@ -96,7 +102,7 @@ export type EaselNodeConstructor = new (
   container: HTMLElement,
   dispatch: Dispatch,
   node_id: string,
-  context: Record<string, any>,
+  context: EaselNodeContext,
 ) => EaselNode;
 
 const registry = new Map<string, EaselNodeConstructor>();

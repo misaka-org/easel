@@ -9,8 +9,7 @@ import type { Tool, ToolResult } from '@/core/tool';
 import type { PointerEventParams, WheelEventParams } from '@/core/interactions';
 import { select_tool } from '@/core/tools/select_tool';
 import { hand_tool } from '@/core/tools/hand_tool';
-
-export type Dispatch = (updater: (state: State) => State) => void;
+import type { Dispatch } from './store';
 
 export class ToolManager {
   private tools = new Map<string, Tool>();

@@ -1,7 +1,7 @@
 import { vec2_create } from '@/core/math';
 import { add_node } from '@/core/node_ops';
 import type { State } from '@/core/types';
-import type { Dispatch } from '@/runtime/registry';
+import type { Dispatch } from '@/runtime/store';
 
 export const load_math_scene = (dispatch: Dispatch) => {
   dispatch(s =>

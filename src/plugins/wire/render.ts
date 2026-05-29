@@ -12,38 +12,7 @@ import type { State, Port } from '@/core/types';
 import { vec2_sub, vec2_scale } from '@/core/math';
 import { frame_effect } from '@/runtime/frame_effect';
 
-// ── 本地类型定义（GraphNode 已从 core/types 移除）─────────────────
-
-type WidgetValue = string | number | boolean;
-type WidgetOption = { readonly label: string; readonly value: string };
-type Widget = {
-  readonly id: string;
-  readonly type: string;
-  readonly label: string;
-  readonly value: WidgetValue;
-  readonly min?: number;
-  readonly max?: number;
-  readonly step?: number;
-  readonly options?: readonly string[] | readonly WidgetOption[];
-  readonly value_type?: string;
-  readonly accepts?: readonly string[];
-  readonly required?: boolean;
-};
-
-type GraphNode = {
-  readonly id: string;
-  readonly type: string;
-  readonly position: import('@/core/math').Vec2;
-  readonly size: import('@/core/math').Vec2;
-  readonly title: string;
-  readonly inputs: readonly Port[];
-  readonly outputs: readonly Port[];
-  readonly widgets?: readonly Widget[];
-  readonly style_mode?: 'default' | 'borderless';
-  readonly resizable?: boolean;
-  readonly collapsed?: boolean;
-  readonly custom_data: Record<string, unknown>;
-};
+import type { GraphNode, Widget } from '@/core/types';
 
 // Layout constants matching CSS defaults for DefaultNode / SubgraphNode
 const LAYOUT = {
@@ -283,7 +252,7 @@ export const render_wires = (easel: Easel): void => {
     }
 
     // --- Active wire（正在拖的临时连线）---
-    const ws = (easel.plugin_data.wire as any)?._wire_state;
+    const ws = easel.plugin_data.wire?._wire_state;
     if (ws && ws.is_wiring) {
       active_wire_path.style.display = 'block';
       const p1 = get_port_position(ws.source_node_id, ws.source_port_id, 'output', state);

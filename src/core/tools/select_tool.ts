@@ -116,11 +116,11 @@ export const select_tool: Tool = {
   on_pointer_move: (state, interaction, event): ToolResult => {
     switch (interaction.mode) {
       case 'dragging':
-        return { state: handle_dragging(state, interaction as any, event) };
+        return { state: handle_dragging(state, interaction, event) };
       case 'resizing':
-        return { state: handle_resizing(state, interaction as any, event) };
+        return { state: handle_resizing(state, interaction, event) };
       case 'box_selecting':
-        return { state: handle_box_selecting(state, interaction as any, event) };
+        return { state: handle_box_selecting(state, interaction, event) };
       default:
         return { state };
     }
@@ -129,7 +129,7 @@ export const select_tool: Tool = {
   on_pointer_up: (state, interaction, event): ToolResult => {
     let next = state;
     if (interaction.mode === 'box_selecting' && event) {
-      next = finish_box_selection(state, interaction as any, event);
+      next = finish_box_selection(state, interaction, event);
     }
     return { state: { ...next, interaction: { mode: 'idle' } } };
   },

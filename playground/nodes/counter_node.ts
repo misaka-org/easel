@@ -1,8 +1,8 @@
-﻿import { EaselNode, type NodeSpec } from '@/runtime/registry';
+import { EaselNode, type NodeSpec } from '@/runtime/registry';
 import { update_widget_value } from '@/core/node_ops';
 import type { ContextMenuContext, ContextMenuItem } from '@/plugins/context_menu/types';
 import { ICON_CLOCK, ICON_UNDO, ICON_PLUS, ICON_MINUS, ICON_REFRESH } from '@/icons';
-import type { GraphNode, State } from '@/core/types';
+import type { GraphNode, State, WidgetValue } from '@/core/types';
 
 /**
  * Demo node – shows how a node subclass can provide its own
@@ -20,6 +20,7 @@ export class CounterNode extends EaselNode {
   };
   private body!: HTMLElement;
   private display!: HTMLElement;
+  private _last_value: WidgetValue = 0;
 
   mount(_node_data: GraphNode): void {
     this.body = document.createElement('div');
@@ -42,7 +43,7 @@ export class CounterNode extends EaselNode {
   update(node_data: GraphNode, _state: State): void {
     const val = node_data.widgets?.find(w => w.id === 'value')?.value ?? 0;
     this.display.textContent = String(val);
-    this.context._last_value = val;
+    this._last_value = val;
   }
 
   unmount(): void {
@@ -55,7 +56,7 @@ export class CounterNode extends EaselNode {
   // automatically via duck-typing check.
   // -----------------------------------------------------------------------
   get_context_menu_items(_ctx: ContextMenuContext): readonly ContextMenuItem[] {
-    const val = this.context._last_value ?? 0;
+    const val = this._last_value ?? 0;
 
     return [
       // Non-interactive label showing node status

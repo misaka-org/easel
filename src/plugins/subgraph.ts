@@ -3,15 +3,8 @@ import { create_initial_state } from '@/core/state';
 import { update_node_data } from '@/core/node_ops';
 import type { State, GraphNode, Port } from '@/core/types';
 import { vec2_create } from '@/core/math';
+import type { DataFlowBinding as Binding } from '@/plugins/wire';
 
-// 本地 Binding 类型（与 wire 插件结构兼容）
-type Binding = {
-  readonly id: string;
-  readonly source_id: string;
-  readonly source_handle: string;
-  readonly target_id: string;
-  readonly target_handle: string;
-};
 
 declare module '@/runtime/easel' {
   interface EaselPluginData {
@@ -387,8 +380,8 @@ export const subgraph_plugin: EaselPlugin = easel => {
     graph_stack.push({ parent_node_id: node_id, parent_state: easel.state.value });
 
     const inner_graph = (node.custom_data?.['graph'] as
-      | { nodes: any; edges: any }
-      | undefined) || { nodes: {}, edges: [] };
+      | { nodes: Record<string, GraphNode>; bindings: Binding[] }
+      | undefined) || { nodes: {}, bindings: [] };
 
     // TODO: also restore internal bindings to wire extension table
     easel.dispatch(() => ({
@@ -402,7 +395,7 @@ export const subgraph_plugin: EaselPlugin = easel => {
     if (graph_stack.length === 0) return;
     const parent = graph_stack.pop()!;
     const inner_nodes = easel.state.value.nodes;
-    const inner_edges = easel.plugin_data.wire?.get_bindings() ?? [];
+    const inner_bindings = easel.plugin_data.wire?.get_bindings() ?? [];
 
     const parent_state = update_node_data(
       parent.parent_state,
@@ -411,7 +404,7 @@ export const subgraph_plugin: EaselPlugin = easel => {
         ...n,
         custom_data: {
           ...n.custom_data,
-          graph: { nodes: inner_nodes, edges: inner_edges },
+          graph: { nodes: inner_nodes, bindings: inner_bindings },
         },
       }),
     );

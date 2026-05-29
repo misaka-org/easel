@@ -6,14 +6,12 @@
  */
 
 import type { Easel } from '@/runtime/easel';
-import type { State, Port } from '@/core/types';
+import type { State, Port, Widget } from '@/core/types';
 import type { Tool, ToolResult } from '@/core/tool';
 import type { PointerEventParams } from '@/core/interactions';
 import { create_data_flow_binding } from './index';
 import * as O from 'fp-ts/Option';
 import { pipe } from 'fp-ts/function';
-import { reactive } from '@vue/reactivity';
-
 // ── WireState（临时连线状态，替代 interaction.mode === 'wiring'）───
 
 export type WireState = {
@@ -25,16 +23,7 @@ export type WireState = {
 
 // ── 工厂函数 ────────────────────────────────────────────────────
 
-export const wire_tool = (easel: Easel): Tool => {
-  const wire_state: WireState = reactive({
-    is_wiring: false,
-    source_node_id: '',
-    source_port_id: '',
-    target_pos: { x: 0, y: 0 },
-  });
-
-  // 暴露给 render.ts 读取
-  (easel.plugin_data.wire as any)._wire_state = wire_state;
+export const wire_tool = (easel: Easel, wire_state: WireState): Tool => {
 
   // ── Pure helpers ──────────────────────────────────────────────
 
@@ -115,7 +104,7 @@ export const wire_tool = (easel: Easel): Tool => {
         ) {
           target_port_id = event.target_port_id.value;
           const tp = target_node.inputs.find((p: Port) => p.id === target_port_id);
-          const tw = target_node.widgets?.find((w: Record<string, any>) => w.id === target_port_id);
+      const tw = target_node.widgets?.find((w: Widget) => w.id === target_port_id);
           if (!tp && !tw) return O.none;
           target_accepts = tp
             ? (tp.accepts || [tp.value_type || 'any'])
@@ -132,7 +121,7 @@ export const wire_tool = (easel: Easel): Tool => {
             target_port_id = compatible_input.id;
             target_accepts = compatible_input.accepts || [compatible_input.value_type || 'any'];
           } else {
-            const compatible_widget = target_node.widgets?.find((w: Record<string, any>) => {
+            const compatible_widget = target_node.widgets?.find((w: Widget) => {
               if (!is_free(w.id)) return false;
               const accepts = w.accepts || [w.value_type || 'any'];
               return (

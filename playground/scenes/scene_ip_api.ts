@@ -1,6 +1,6 @@
 import { vec2_create } from '@/core/math';
 import { add_node } from '@/core/node_ops';
-import type { Dispatch } from '@/runtime/registry';
+import type { Dispatch } from '@/runtime/store';
 import type { Easel } from '@/runtime/easel';
 
 export const load_ip_api_scene = (dispatch: Dispatch, easel: Easel) => {

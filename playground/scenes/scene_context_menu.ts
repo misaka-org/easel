@@ -1,4 +1,4 @@
-﻿import type { Dispatch } from '@/runtime/registry';
+import type { Dispatch } from '@/runtime/store';
 import { add_node } from '@/core/node_ops';
 import { vec2_create } from '@/core/math';
 

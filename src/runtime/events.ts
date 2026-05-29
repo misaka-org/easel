@@ -5,8 +5,9 @@ import type { ToolResult } from '@/core/tool';
 import * as O from 'fp-ts/Option';
 import type { KeybindingManager } from './keybindings';
 import type { ToolManager } from './tool_manager';
-
-type Dispatch = (updater: (state: State) => State) => void;
+import type { Dispatch } from './store';
+import EventEmitter from "eventemitter3";
+import type { EaselEvents } from "./event_types";
 
 /** 处理 ToolResult，如果带 transition 则切换工具。 */
 function apply_result(dispatch: Dispatch, tools: ToolManager, result: ToolResult, state: State): void {
@@ -19,11 +20,11 @@ function apply_result(dispatch: Dispatch, tools: ToolManager, result: ToolResult
 export const setup_events = (
   container: HTMLElement,
   dispatch: Dispatch,
-  app_events: any,
+  app_events: EventEmitter<EaselEvents>,
   tools: ToolManager,
   keybindings?: KeybindingManager,
 ): void => {
-  const forward = (name: string) => (e: Event) => app_events.emit(name, e);
+  const forward = (name: keyof EaselEvents) => (e: Event) => app_events.emit(name, e);
   container.addEventListener('contextmenu', forward('contextmenu'));
 
   const get_modifiers = (e: MouseEvent | KeyboardEvent | WheelEvent): Modifiers => ({
@@ -163,7 +164,7 @@ export const setup_events = (
       const next_state: State = result ? result.state : { ...state, interaction: { mode: 'idle' } };
 
       if (prev_mode === 'dragging' && dragging_nodes.length > 0) {
-        setTimeout(() => app_events.emit('nodes_dropped', dragging_nodes), 0);
+        setTimeout(() => app_events.emit('nodes_dropped', [...dragging_nodes]), 0);
       }
       if (prev_mode === 'resizing' && resizing_node) {
         setTimeout(() => app_events.emit('nodes_dropped', [resizing_node]), 0);

@@ -1,9 +1,11 @@
-import type { EaselPlugin } from '@/runtime/easel';
+import type { Easel, EaselPlugin } from '@/runtime/easel';
 import { ContextMenuService } from './service';
 import type { ContextMenuContext, ContextMenuItem, ContextMenuProvider } from './types';
 import { remove_node, add_node, create_subgraph_from_selection, expand_subgraph } from '@/core/node_ops';
 import { vec2_create } from '@/core/math';
 import { get_registered_types, get_node_ns, create_node_data } from '@/runtime/registry';
+import type { State } from '@/core/types';
+import type { Tool } from '@/core/tool';
 
 // 将 context_menu 服务注册到 EaselPluginData，其他插件可直接从 easel.plugin_data 获取
 declare module '../../runtime/easel' {
@@ -134,7 +136,7 @@ function inject_styles(root_node: ShadowRoot | Document): void {
 // ---------------------------------------------------------------------------
 
 /** Node operations: delete, duplicate */
-function node_ops_provider(easel: any): ContextMenuProvider {
+function node_ops_provider(easel: Easel): ContextMenuProvider {
   return {
     id: '__builtin_node_ops',
     priority: 20,
@@ -149,7 +151,7 @@ function node_ops_provider(easel: any): ContextMenuProvider {
           label: 'Delete Node',
           group: 'node_ops',
           action: () => {
-            easel.dispatch((s: any) => remove_node(s, node_id));
+            easel.dispatch((s: State) => remove_node(s, node_id));
           },
         },
         {
@@ -157,7 +159,7 @@ function node_ops_provider(easel: any): ContextMenuProvider {
           label: 'Duplicate',
           group: 'node_ops',
           action: () => {
-            easel.dispatch((s: any) => {
+            easel.dispatch((s: State) => {
               const n = s.nodes[node_id];
               if (!n) return s;
               const new_id = `${n.type}_${Date.now()}`;
@@ -182,7 +184,7 @@ function node_ops_provider(easel: any): ContextMenuProvider {
                 label: 'Expand Subgraph',
                 group: 'node_ops' as const,
                 action: () => {
-                  easel.dispatch((s: any) => expand_subgraph(s, node_id));
+                  easel.dispatch((s: State) => expand_subgraph(s, node_id));
                 },
               },
             ]
@@ -294,7 +296,7 @@ export function build_ns_menu(
 }
 
 /** Add-node submenu (all registered types) */
-function add_node_provider(easel: any): ContextMenuProvider {
+function add_node_provider(easel: Easel): ContextMenuProvider {
   return {
     id: '__builtin_add_node',
     priority: 10,
@@ -310,7 +312,7 @@ function add_node_provider(easel: any): ContextMenuProvider {
           const node_data = create_node_data(type_name, {
             position: vec2_create(ctx.world_pos.x, ctx.world_pos.y),
           });
-          easel.dispatch((st: any) => add_node(st, node_data));
+          easel.dispatch((st: State) => add_node(st, node_data));
         },
       }));
 
@@ -329,7 +331,7 @@ function add_node_provider(easel: any): ContextMenuProvider {
 }
 
 /** Canvas-level operations (only when no node is targeted) */
-function canvas_ops_provider(easel: any): ContextMenuProvider {
+function canvas_ops_provider(easel: Easel): ContextMenuProvider {
   return {
     id: '__builtin_canvas_ops',
     priority: -10,
@@ -345,7 +347,7 @@ function canvas_ops_provider(easel: any): ContextMenuProvider {
           id: 'tools_submenu',
           label: 'Tools',
           group: 'canvas',
-          submenu: tools.map((t: any) => ({
+          submenu: tools.map((t: Tool) => ({
             id: `tool_${t.id}`,
             label: t.id === current_tool ? `✓ ${t.label}` : t.label,
             action: () => easel.tools?.activate(t.id),
@@ -359,7 +361,7 @@ function canvas_ops_provider(easel: any): ContextMenuProvider {
           label: 'Reset Camera',
           group: 'canvas',
           action: () => {
-            easel.dispatch((s: any) => ({
+            easel.dispatch((s: State) => ({
               ...s,
               camera: { position: vec2_create(0, 0), zoom: 1 },
             }));
@@ -383,7 +385,7 @@ function canvas_ops_provider(easel: any): ContextMenuProvider {
 }
 
 /** 选中节点时显示 Create Subgraph */
-function create_subgraph_provider(easel: any): ContextMenuProvider {
+function create_subgraph_provider(easel: Easel): ContextMenuProvider {
   return {
     id: '__builtin_create_subgraph',
     priority: 5,
@@ -402,7 +404,7 @@ function create_subgraph_provider(easel: any): ContextMenuProvider {
           label: 'Create Subgraph',
           group: 'creation',
           action: () => {
-            easel.dispatch((s: any) => create_subgraph_from_selection(s));
+            easel.dispatch((s: State) => create_subgraph_from_selection(s));
           },
         },
       ];
@@ -411,7 +413,7 @@ function create_subgraph_provider(easel: any): ContextMenuProvider {
 }
 
 /** Node instance items: picks up get_context_menu_items() from EaselNode subclasses */
-function node_instance_provider(easel: any): ContextMenuProvider {
+function node_instance_provider(easel: Easel): ContextMenuProvider {
   return {
     id: '__builtin_node_instance',
     priority: -20,

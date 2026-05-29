@@ -1,4 +1,5 @@
 import type { EaselPlugin } from '@/runtime/easel';
+import type { State } from '@/core/types';
 import { get_registered_types, get_node_ns, create_node_data } from '@/runtime/registry';
 import { vec2_create } from '@/core/math';
 import { add_node } from '@/core/node_ops';
@@ -275,7 +276,7 @@ export const node_picker_plugin: EaselPlugin = easel => {
     const node_data = create_node_data(entry.type, {
       position: vec2_create(world_pos.x, world_pos.y),
     });
-    easel.dispatch((st: any) => add_node(st, node_data));
+    easel.dispatch((st: State) => add_node(st, node_data));
   };
 
   const do_close = () => {

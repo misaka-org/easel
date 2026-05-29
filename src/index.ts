@@ -24,9 +24,9 @@ export {
   register_node_type,
   get_node_constructor,
   get_registered_types,
-  type Dispatch,
   type ExecuteContext,
 } from './runtime/registry';
+export type { Dispatch } from './runtime/store';
 export {
   register_node_spec,
   create_node_data,

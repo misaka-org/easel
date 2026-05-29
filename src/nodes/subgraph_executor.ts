@@ -1,6 +1,8 @@
 import type { GraphNode } from '@/core/types';
-import type { ExecuteContext } from '@/runtime/registry';
+import type { ExecuteContext, EaselNodeContext } from '@/runtime/registry';
 import { get_node_constructor } from '@/runtime/registry';
+import EventEmitter from 'eventemitter3';
+import type { EaselEvents, NodeEventPayloads } from '@/runtime/easel';
 
 type Edge = { source_id: string; target_id: string; source_handle: string; target_handle: string };
 
@@ -77,7 +79,11 @@ export async function execute_subgraph(
     const ctor = get_node_constructor(nd.type);
     if (ctor) {
       const tmp_el = document.createElement('div');
-      const inst = new ctor(tmp_el, () => {}, id, {});
+      const mock_ctx: EaselNodeContext = {
+        app_events: new EventEmitter<EaselEvents>(),
+        node_events: new Map<string, EventEmitter<NodeEventPayloads>>(),
+      };
+      const inst = new ctor(tmp_el, () => {}, id, mock_ctx);
       if (typeof inst.execute === 'function') {
         try {
           out[id] = await inst.execute({

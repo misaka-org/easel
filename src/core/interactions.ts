@@ -91,10 +91,13 @@ export const pointer_down = (state: State, event: PointerEventParams): State =>
     O.getOrElse(() => start_selection_or_pan(state, event)),
   );
 
-const handlers_move: Record<
-  Interaction['mode'],
-  (state: State, i: any, event: PointerEventParams) => State
-> = {
+const handlers_move: {
+  [K in Interaction['mode']]: (
+    state: State,
+    i: Extract<Interaction, { mode: K }>,
+    event: PointerEventParams,
+  ) => State;
+} = {
   idle: state => state,
   resizing: (state, i, event) => {
     const delta = vec2_scale(vec2_sub(event.screen_position, i.start_pos), 1 / state.camera.zoom);
@@ -138,8 +141,16 @@ const handlers_move: Record<
   }),
 };
 
-export const pointer_move = (state: State, event: PointerEventParams): State =>
-  handlers_move[state.interaction.mode](state, state.interaction, event);
+export const pointer_move = (state: State, event: PointerEventParams): State => {
+  const interaction = state.interaction;
+  switch (interaction.mode) {
+    case 'idle': return handlers_move.idle(state, interaction, event);
+    case 'dragging': return handlers_move.dragging(state, interaction, event);
+    case 'resizing': return handlers_move.resizing(state, interaction, event);
+    case 'panning': return handlers_move.panning(state, interaction, event);
+    case 'box_selecting': return handlers_move.box_selecting(state, interaction, event);
+  }
+};
 
 const finish_box_selection = (
   state: State,

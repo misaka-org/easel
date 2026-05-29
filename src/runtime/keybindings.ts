@@ -1,7 +1,8 @@
 
 import { remove_node } from '@/core/node_ops';
-import type { Dispatch } from './registry';
+import type { Dispatch } from './store';
 import EventEmitter from 'eventemitter3';
+import type { EaselEvents } from './event_types';
 
 export type KeybindingDef = {
   id: string;
@@ -58,7 +59,7 @@ export class KeybindingManager {
 
 // ===== 内置快捷键注册 =====
 
-export function register_core_keybindings(kb: KeybindingManager, dispatch: Dispatch, app_events: EventEmitter<any>): void {
+export function register_core_keybindings(kb: KeybindingManager, dispatch: Dispatch, app_events: EventEmitter<EaselEvents>): void {
   const delete_handler = () => (s: any) => {
     if (s.selected_node_ids.length === 0) return s;
     return s.selected_node_ids.reduce((acc: any, id: string) => {

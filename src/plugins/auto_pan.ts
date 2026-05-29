@@ -1,6 +1,7 @@
 import type { EaselPlugin } from '@/runtime/easel';
 import { vec2_create, vec2_add } from '@/core/math';
 import * as O from 'fp-ts/Option';
+import type { Interaction } from '@/core/types';
 
 export const auto_pan_plugin: EaselPlugin = easel => {
   let mouse_x = 0;
@@ -39,7 +40,7 @@ export const auto_pan_plugin: EaselPlugin = easel => {
       const s = easel.state.value;
       const mode = s.interaction.mode;
 
-      const is_wiring = (easel.plugin_data.wire as any)?._wire_state?.is_wiring ?? false;
+      const is_wiring = easel.plugin_data.wire?._wire_state?.is_wiring ?? false;
       if (
         mode === 'dragging' ||
         is_wiring ||
@@ -69,7 +70,7 @@ export const auto_pan_plugin: EaselPlugin = easel => {
               inter = {
                 ...inter,
                 start_pos: vec2_add(inter.start_pos, vec2_create(dx, dy)),
-              } as any;
+              } as Extract<Interaction, { mode: 'dragging' }>;
             }
 
             const next_state = {

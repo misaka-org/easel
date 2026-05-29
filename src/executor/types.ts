@@ -15,3 +15,11 @@ export type ExecutionState = {
   readonly in_degrees: Record<string, number>;
   readonly adj: Record<string, string[]>;
 };
+
+/** Lightweight wire reference (no id needed for executor). */
+export type WireBindingRef = {
+  readonly source_id: string;
+  readonly source_handle: string;
+  readonly target_id: string;
+  readonly target_handle: string;
+};

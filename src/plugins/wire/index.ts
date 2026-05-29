@@ -1,6 +1,8 @@
 import type { EaselPlugin, Easel } from '@/runtime/easel';
 import { wire_tool } from './wire_tool';
+import type { WireState } from './wire_tool';
 import { render_wires } from './render';
+import { reactive } from '@vue/reactivity';
 
 // ── DataFlowBinding 类型 ────────────────────────────────────────
 
@@ -74,6 +76,8 @@ export type WirePluginAPI = {
   find_by_source(node_id: string, port_id: string): DataFlowBinding | undefined;
   /** 检查端口是否已连接 */
   is_connected(node_id: string, port_id: string, port_type: 'input' | 'output'): boolean;
+  /** 内部连线拖拽状态（供 render/auto_pan 读取） */
+  readonly _wire_state: WireState;
 };
 
 declare module '@/runtime/easel' {
@@ -88,7 +92,15 @@ export const wire_plugin: EaselPlugin = (easel: Easel) => {
   // 1. 创建扩展表
   const bindings_table = easel.store.create_extension_table<DataFlowBinding>('bindings');
 
-  // 2. 构建 API 对象（先于 wire_tool/render，确保初始化时序正确）
+  // 2. 创建连线拖拽状态（reactive，供 wire_tool/render/auto_pan 共享）
+  const wire_state: WireState = reactive({
+    is_wiring: false,
+    source_node_id: '',
+    source_port_id: '',
+    target_pos: { x: 0, y: 0 },
+  });
+
+  // 3. 构建 API 对象（先于 wire_tool/render，确保初始化时序正确）
   const api: WirePluginAPI = {
     get_bindings: () => bindings_table.list(),
     add_binding: (b) => { bindings_table.put(b.id, b); },
@@ -107,11 +119,12 @@ export const wire_plugin: EaselPlugin = (easel: Easel) => {
       const bindings = Object.fromEntries(bindings_table.list().map(b => [b.id, b]));
       return is_port_connected(bindings, node_id, port_id, port_type);
     },
+    _wire_state: wire_state,
   };
   easel.plugin_data.wire = api;
 
-  // 3. 注册 wire_tool（内部写入 _wire_state 到 api）
-  easel.tools.register(wire_tool(easel));
+  // 4. 注册 wire_tool（传入 wire_state，不再由 wire_tool 内部创建）
+  easel.tools.register(wire_tool(easel, wire_state));
 
   // 4. 节点删除时自动清理连线
   easel.store.nodes.on_before_change((event) => {
@@ -144,7 +157,7 @@ export const wire_plugin: EaselPlugin = (easel: Easel) => {
 
     if (!target_node_id || !target_port_id) return;
 
-    const wire_state = (easel.plugin_data.wire as any)._wire_state;
+    const wire_state = easel.plugin_data.wire?._wire_state;
     if (!wire_state) return;
 
     let should_start_wiring = false;

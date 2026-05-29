@@ -2,7 +2,7 @@ import { ref, type Ref } from '@vue/reactivity';
 import type { Easel } from '@/runtime/easel';
 import type { GraphNode } from '@/core/types';
 import * as E from 'fp-ts/Either';
-import type { ExecutionState, ExecutionNodeState } from './types';
+import type { ExecutionState, ExecutionNodeState, WireBindingRef } from './types';
 
 export const create_initial_execution_state = (): ExecutionState => ({
   status: 'idle',
@@ -35,8 +35,7 @@ export class GraphExecutor {
 
   compile(): E.Either<Error, void> {
     const store = this.easel.store;
-    const wires = (this.easel.plugin_data.wire?.get_bindings() ?? []).map(b => ({
-      id: b.id,
+    const wires: WireBindingRef[] = (this.easel.plugin_data.wire?.get_bindings() ?? []).map(b => ({
       source_id: b.source_id,
       source_handle: b.source_handle,
       target_id: b.target_id,
@@ -88,7 +87,7 @@ export class GraphExecutor {
     return E.right(undefined);
   }
 
-  private check_requirements(node: GraphNode, wires: { source_id: string; source_handle: string; target_id: string; target_handle: string }[]): string | null {
+  private check_requirements(node: GraphNode, wires: WireBindingRef[]): string | null {
     for (const port of node.inputs) {
       if (port.required) {
         const has_wire = wires.some(
@@ -414,7 +413,7 @@ export class GraphExecutor {
     const inputs: Record<string, unknown> = {};
     const store = this.easel.store;
     const node = store.nodes.get(node_id);
-    const wires = (this.easel.plugin_data.wire?.get_bindings() ?? []).map(b => ({
+    const wires: WireBindingRef[] = (this.easel.plugin_data.wire?.get_bindings() ?? []).map(b => ({
       source_id: b.source_id,
       target_id: b.target_id,
       source_handle: b.source_handle,

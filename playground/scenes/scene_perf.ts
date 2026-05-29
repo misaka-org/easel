@@ -1,6 +1,6 @@
 import { vec2_create } from '@/core/math';
 import { add_node } from '@/core/node_ops';
-import type { Dispatch } from '@/runtime/registry';
+import type { Dispatch } from '@/runtime/store';
 
 export const load_perf_scene = (dispatch: Dispatch) => {
   const cols = 30;
