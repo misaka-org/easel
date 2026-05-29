@@ -31,7 +31,21 @@ export type NodeEventPayloads = {
   removed: void;
 };
 
-export type EaselPlugin = (easel: Easel) => void;
+export type PluginDependency = {
+  /** Plugin id that this plugin depends on */
+  id: string;
+  /** If true, plugin cannot function without this dependency. Default false (soft dependency). */
+  hard?: boolean;
+};
+
+export type EaselPlugin = {
+  /** Unique plugin identifier. Convention: @easel/<name> */
+  readonly id: string;
+  /** Plugins that must/should be loaded before this one */
+  readonly dependencies?: readonly PluginDependency[];
+  /** Plugin setup function */
+  setup(easel: Easel): void;
+};
 
 export type MountOptions = {
   theme?: Partial<Theme>;
@@ -56,6 +70,7 @@ export class Easel {
   camera: CameraController;
   tools: ToolManager;
   plugin_data: EaselPluginData = {} as EaselPluginData;
+  _loaded_plugins = new Set<string>();
   keybindings = new KeybindingManager();
   theme: Theme;
 
@@ -114,13 +129,31 @@ export class Easel {
     this.container = canvas_el;
 
     // core plugins (always on)
-    guidelines_plugin(this);
-    toolbar_plugin(this);
-    subgraph_plugin(this);
-    wire_plugin(this);
-    group_plugin(this);
+    const all_plugins = [
+      guidelines_plugin,
+      toolbar_plugin,
+      subgraph_plugin,
+      wire_plugin,
+      group_plugin,
+      ...(options.plugins ?? []),
+    ];
 
-    options.plugins?.forEach(plugin => plugin(this));
+    for (const plugin of all_plugins) {
+      if (plugin.dependencies) {
+        for (const dep of plugin.dependencies) {
+          if (!this._loaded_plugins.has(dep.id)) {
+            if (dep.hard) {
+              throw new Error(
+                `Plugin "${plugin.id}" requires "${dep.id}" (hard dependency) but it is not loaded. ` +
+                `Ensure "${dep.id}" is listed before "${plugin.id}".`
+              );
+            }
+          }
+        }
+      }
+      plugin.setup(this);
+      this._loaded_plugins.add(plugin.id);
+    }
 
     register_core_keybindings(this.keybindings, this.dispatch, this.app_events);
 

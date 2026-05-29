@@ -3,7 +3,7 @@ import { vec2_create, vec2_add } from '@/core/math';
 import * as O from 'fp-ts/Option';
 import type { Interaction } from '@/core/types';
 
-export const auto_pan_plugin: EaselPlugin = easel => {
+export const auto_pan_plugin: EaselPlugin = { id: '@easel/auto-pan', dependencies: [{ id: '@easel/wire', hard: false }], setup(easel) {
   let mouse_x = 0;
   let mouse_y = 0;
   let is_pointer_down = false;
@@ -102,4 +102,5 @@ export const auto_pan_plugin: EaselPlugin = easel => {
       raf_id = null;
     }
   };
+}
 };

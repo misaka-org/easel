@@ -3,7 +3,7 @@ import { frame_effect } from '@/runtime/frame_effect';
 import { apply_styles } from '@/utils/css';
 import { vec2_create } from '@/core/math';
 
-export const minimap_plugin: EaselPlugin = easel => {
+export const minimap_plugin: EaselPlugin = { id: '@easel/minimap', setup(easel) {
   const minimap_container = document.createElement('div');
   minimap_container.className = 'easel-minimap';
   apply_styles(minimap_container, {
@@ -156,4 +156,5 @@ export const minimap_plugin: EaselPlugin = easel => {
     e.preventDefault();
     e.stopPropagation();
   });
+}
 };

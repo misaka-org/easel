@@ -105,14 +105,14 @@ describe('built-in providers', () => {
 
   it('registers service on plugin_data', () => {
     const easel = createMockEasel();
-    context_menu_plugin(easel);
+    context_menu_plugin.setup(easel);
     const service = easel.plugin_data.context_menu;
     expect(service).toBeDefined();
   });
 
   it('node_ops_provider returns delete/duplicate for a regular node', () => {
     const easel = createMockEasel();
-    context_menu_plugin(easel);
+    context_menu_plugin.setup(easel);
     const service = easel.plugin_data.context_menu;
     const items = service.collect({
       node_id: 'test_node',
@@ -127,7 +127,7 @@ describe('built-in providers', () => {
 
   it('node_ops_provider returns empty for subgraph_input node', () => {
     const easel = createMockEasel();
-    context_menu_plugin(easel);
+    context_menu_plugin.setup(easel);
     const service = easel.plugin_data.context_menu;
     const items = service.collect({
       node_id: 'sub_in',
@@ -141,7 +141,7 @@ describe('built-in providers', () => {
 
   it('canvas_ops_provider returns items when no node targeted', () => {
     const easel = createMockEasel();
-    context_menu_plugin(easel);
+    context_menu_plugin.setup(easel);
     const service = easel.plugin_data.context_menu;
     const items = service.collect({
       node_id: undefined,
@@ -155,7 +155,7 @@ describe('built-in providers', () => {
 
   it('canvas_ops_provider returns empty when node targeted', () => {
     const easel = createMockEasel();
-    context_menu_plugin(easel);
+    context_menu_plugin.setup(easel);
     const service = easel.plugin_data.context_menu;
     const items = service.collect({
       node_id: 'some_node',
@@ -176,7 +176,7 @@ describe('built-in providers', () => {
     nodeInstances.set('test_node', { inst: { get_context_menu_items: getContextItems } });
 
     const easel = createMockEasel({ node_instances: nodeInstances });
-    context_menu_plugin(easel);
+    context_menu_plugin.setup(easel);
     const service = easel.plugin_data.context_menu;
     const items = service.collect({
       node_id: 'test_node',
@@ -191,7 +191,7 @@ describe('built-in providers', () => {
 
   it('add_node_provider returns Add Node item with submenu', () => {
     const easel = createMockEasel();
-    context_menu_plugin(easel);
+    context_menu_plugin.setup(easel);
     const service = easel.plugin_data.context_menu;
     const items = service.collect({
       node_id: undefined,

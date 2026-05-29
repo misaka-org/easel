@@ -61,7 +61,9 @@ function snap_node(
  * - snapping via `store.nodes.on_before_change`
  * - guideline overlay via `state_changed` event
  */
-export const guidelines_plugin: EaselPlugin = (easel) => {
+export const guidelines_plugin: EaselPlugin = {
+  id: '@easel/guidelines',
+  setup(easel) {
   // ── SVG overlay ──
   const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   apply_styles(overlay, {
@@ -146,4 +148,5 @@ export const guidelines_plugin: EaselPlugin = (easel) => {
       original_dispatch(() => next);
     }
   };
+  },
 };

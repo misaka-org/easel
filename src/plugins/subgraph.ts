@@ -368,7 +368,9 @@ const expand_subgraph = (easel: Easel, subgraph_id: string): void => {
 
 // ── Plugin ──────────────────────────────────────────────────────
 
-export const subgraph_plugin: EaselPlugin = easel => {
+export const subgraph_plugin: EaselPlugin = {
+  id: '@easel/subgraph',
+  setup(easel) {
   type StackItem = { parent_node_id: string; parent_state: State };
   const graph_stack: StackItem[] = [];
 
@@ -456,4 +458,5 @@ export const subgraph_plugin: EaselPlugin = easel => {
     },
     description: 'Expand selected subgraph',
   });
+  },
 };

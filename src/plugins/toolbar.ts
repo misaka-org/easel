@@ -4,7 +4,9 @@
 
 import type { EaselPlugin } from '@/runtime/easel';
 
-export const toolbar_plugin: EaselPlugin = easel => {
+export const toolbar_plugin: EaselPlugin = {
+  id: '@easel/toolbar',
+  setup(easel) {
   const bar = document.createElement('div');
   bar.className = 'easel-toolbar';
   bar.style.cssText = `
@@ -67,4 +69,5 @@ export const toolbar_plugin: EaselPlugin = easel => {
 
   easel.container.appendChild(bar);
   rebuild();
+  },
 };

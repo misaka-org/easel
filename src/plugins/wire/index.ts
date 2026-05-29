@@ -88,7 +88,9 @@ declare module '@/runtime/easel' {
 
 // ── 插件主体 ────────────────────────────────────────────────────
 
-export const wire_plugin: EaselPlugin = (easel: Easel) => {
+export const wire_plugin: EaselPlugin = {
+  id: '@easel/wire',
+  setup(easel: Easel) {
   // 1. 创建扩展表
   const bindings_table = easel.store.create_extension_table<DataFlowBinding>('bindings');
 
@@ -200,4 +202,5 @@ export const wire_plugin: EaselPlugin = (easel: Easel) => {
     };
     easel.container.addEventListener('pointerup', on_up);
   }, true);
+  },
 };

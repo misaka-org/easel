@@ -39,7 +39,9 @@ declare module '@/runtime/easel' {
 
 // ── 插件主体 ────────────────────────────────────────────────────
 
-export const group_plugin: EaselPlugin = (easel: Easel) => {
+export const group_plugin: EaselPlugin = {
+  id: '@easel/group',
+  setup(easel: Easel) {
   // 1. 创建扩展表
   const table = easel.store.create_extension_table<GroupChildBinding>('group_children');
 
@@ -178,4 +180,5 @@ export const group_plugin: EaselPlugin = (easel: Easel) => {
 
     easel.dispatch(s => ({ ...s, selected_node_ids: [group_id] }));
   });
+  },
 };

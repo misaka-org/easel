@@ -13,7 +13,7 @@ import {
   ICON_GRID,
 } from '@/icons';
 
-export const controls_plugin: EaselPlugin = easel => {
+export const controls_plugin: EaselPlugin = { id: '@easel/controls', dependencies: [{ id: '@easel/wire', hard: false }, { id: '@easel/context-menu', hard: false }], setup(easel) {
   // -----------------------------------------------------------------------
   // Action functions —shared by both UI buttons and context menu
   // -----------------------------------------------------------------------
@@ -227,4 +227,5 @@ export const controls_plugin: EaselPlugin = easel => {
       ],
     });
   }
+}
 };

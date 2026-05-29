@@ -120,7 +120,7 @@ type PickerEntry = {
 // ---------------------------------------------------------------------------
 // Plugin
 // ---------------------------------------------------------------------------
-export const node_picker_plugin: EaselPlugin = easel => {
+export const node_picker_plugin: EaselPlugin = { id: '@easel/node-picker', setup(easel) {
   const root_node = easel.container.getRootNode() as ShadowRoot | Document;
   inject_styles(root_node);
 
@@ -359,4 +359,5 @@ export const node_picker_plugin: EaselPlugin = easel => {
       y: (screen_y - state.camera.position.y) / state.camera.zoom,
     });
   });
+}
 };

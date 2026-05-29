@@ -432,7 +432,7 @@ function node_instance_provider(easel: Easel): ContextMenuProvider {
 // Plugin
 // ---------------------------------------------------------------------------
 
-export const context_menu_plugin: EaselPlugin = easel => {
+export const context_menu_plugin: EaselPlugin = { id: '@easel/context-menu', dependencies: [{ id: '@easel/wire', hard: false }], setup(easel) {
   const root_node = easel.container.getRootNode() as ShadowRoot | Document;
   inject_styles(root_node);
 
@@ -486,4 +486,5 @@ export const context_menu_plugin: EaselPlugin = easel => {
       service.hide();
     }
   });
+}
 };

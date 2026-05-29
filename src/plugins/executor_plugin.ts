@@ -1,4 +1,4 @@
-import type { EaselPlugin } from '@/runtime/easel';
+import type { EaselPlugin, Easel } from '@/runtime/easel';
 import { GraphExecutor } from '@/executor/engine';
 import { frame_effect } from '@/runtime/frame_effect';
 import { effect } from '@vue/reactivity';
@@ -15,7 +15,7 @@ import {
   ICON_TRASH,
 } from '@/icons';
 
-export const executor_plugin: EaselPlugin = easel => {
+function executor_setup(easel: Easel): void {
   const executor = new GraphExecutor(easel);
   const exec_state = executor.state;
 
@@ -362,4 +362,10 @@ export const executor_plugin: EaselPlugin = easel => {
       },
     });
   }
+}
+
+export const executor_plugin: EaselPlugin = {
+  id: '@easel/executor',
+  dependencies: [{ id: '@easel/wire', hard: true }, { id: '@easel/context-menu', hard: false }],
+  setup: executor_setup,
 };

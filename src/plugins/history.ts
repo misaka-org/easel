@@ -5,7 +5,7 @@ import { apply_styles } from '@/utils/css';
 import type { ContextMenuItem, ContextMenuContext } from '@/plugins/context_menu/types';
 import { ICON_CLOCK, ICON_UNDO, ICON_REDO } from '@/icons';
 
-export const history_plugin: EaselPlugin = easel => {
+export const history_plugin: EaselPlugin = { id: '@easel/history', dependencies: [{ id: '@easel/context-menu', hard: false }], setup(easel) {
   const history: State[] = [easel.state.value];
   let current_index = 0;
   let is_undoing = false;
@@ -217,4 +217,5 @@ export const history_plugin: EaselPlugin = easel => {
       ],
     });
   }
+}
 };
