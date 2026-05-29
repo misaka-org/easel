@@ -8,6 +8,7 @@ import type { GraphNode } from '@/core/types';
 import { light_theme, default_theme } from '@/runtime/theme';
 import { minimap_plugin } from '@/plugins/minimap';
 import { controls_plugin } from '@/plugins/controls';
+import { logger_plugin } from '@/plugins/logger';
 import { context_menu_plugin } from '@/plugins/context_menu';
 import { history_plugin } from '@/plugins/history';
 import { auto_pan_plugin } from '@/plugins/auto_pan';
@@ -110,6 +111,7 @@ const init = () => {
       auto_pan_plugin,
       node_picker_plugin,
       executor_plugin,
+      logger_plugin,
     ],
     custom_css: `
       .image-toolbar {
@@ -567,6 +569,22 @@ const init = () => {
     console.log(
       '[ContextMenu Demo] Plugin-level provider registered. Right-click any node to see demo items.',
     );
+  }
+
+  // Demo: logger usage
+  if (easel.plugin_data.logger) {
+    const log = easel.plugin_data.logger;
+    log.info('Easel playground started');
+    log.debug('Initial scene loading...');
+
+    // 监听状态变化记录日志
+    easel.app_events.on('state_changed', ({ prev, next }) => {
+      const node_count = Object.keys(next.nodes).length;
+      const prev_count = Object.keys(prev.nodes).length;
+      if (node_count !== prev_count) {
+        log.info(`Nodes: ${prev_count} → ${node_count}`);
+      }
+    });
   }
 
   // Load initial scene
