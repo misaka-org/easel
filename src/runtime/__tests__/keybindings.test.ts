@@ -136,7 +136,7 @@ describe('register_core_keybindings', () => {
   it('registers Delete, Backspace, and Ctrl+G bindings', () => {
     const kb = new KeybindingManager();
     const dispatch = vi.fn();
-    register_core_keybindings(kb, dispatch, {} as any);
+    register_core_keybindings(kb, dispatch, { emit: vi.fn() } as any);
     expect(kb.dispatch(mockKey('Delete'), false)).toBe(true);
     expect(kb.dispatch(mockKey('Backspace'), false)).toBe(true);
     expect(kb.dispatch(mockKey('g', { ctrl: true }), false)).toBe(true);
@@ -162,7 +162,7 @@ describe('register_core_keybindings', () => {
       capturedState = fn(state);
     };
 
-    register_core_keybindings(kb, dispatch, {} as any);
+    register_core_keybindings(kb, dispatch, { emit: vi.fn() } as any);
     const e = mockKey('Delete');
     kb.dispatch(e, false);
 
@@ -190,7 +190,7 @@ describe('register_core_keybindings', () => {
       capturedState = fn(state);
     };
 
-    register_core_keybindings(kb, dispatch, {} as any);
+    register_core_keybindings(kb, dispatch, { emit: vi.fn() } as any);
     kb.dispatch(mockKey('Delete'), false);
 
     expect(capturedState.nodes['sub_in']).toBeDefined();
@@ -199,16 +199,18 @@ describe('register_core_keybindings', () => {
   it('Ctrl+G no-op when nothing selected', () => {
     const kb = new KeybindingManager();
     const state = create_initial_state();
+    const app_events = { emit: vi.fn() };
 
     let capturedState: any = null;
     const dispatch = (fn: any) => {
       capturedState = fn(state);
     };
 
-    register_core_keybindings(kb, dispatch, {} as any);
+    register_core_keybindings(kb, dispatch, app_events as any);
     kb.dispatch(mockKey('g', { ctrl: true }), false);
 
-    expect(capturedState).toBe(state);
+    expect(capturedState).toBeNull();
+    expect(app_events.emit).toHaveBeenCalledWith('create_group', {});
   });
 
   it('Ctrl+G creates a group node from selected nodes', () => {
@@ -237,25 +239,17 @@ describe('register_core_keybindings', () => {
     });
     state = { ...state, selected_node_ids: ['n1', 'n2'] };
 
+    const app_events = { emit: vi.fn() };
+
     let capturedState: any = null;
     const dispatch = (fn: any) => {
       capturedState = fn(state);
     };
 
-    register_core_keybindings(kb, dispatch, {} as any);
+    register_core_keybindings(kb, dispatch, app_events as any);
     kb.dispatch(mockKey('g', { ctrl: true }), false);
 
-    expect(capturedState).not.toBeNull();
-    const groupNode = Object.values(capturedState.nodes).find((n: any) => n.type === 'group');
-    expect(groupNode).toBeDefined();
-    // group-child bindings 代替了 custom_data.children
-    const group_id = (groupNode as any).id;
-    const child_ids = Object.values(capturedState.bindings)
-      .filter((b: any) => b.type === 'group-child' && b.source_id === group_id)
-      .map((b: any) => b.target_id);
-    expect(child_ids).toContain('n1');
-    expect(child_ids).toContain('n2');
-    expect(capturedState.selected_node_ids.length).toBe(1);
-    expect(capturedState.selected_node_ids[0]).toBe(group_id);
+    expect(capturedState).toBeNull();
+    expect(app_events.emit).toHaveBeenCalledWith('create_group', {});
   });
 });

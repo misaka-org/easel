@@ -155,19 +155,20 @@ export const wire_plugin: EaselPlugin = (easel: Easel) => {
         api.remove_binding(existing.id);
         wire_state.is_wiring = true;
         wire_state.source_node_id = existing.source_id;
-        wire_state.source_handle = existing.source_handle;
+        wire_state.source_port_id = existing.source_handle;
         should_start_wiring = true;
       }
     } else {
       wire_state.is_wiring = true;
       wire_state.source_node_id = target_node_id;
-      wire_state.source_handle = target_port_id;
+      wire_state.source_port_id = target_port_id;
       should_start_wiring = true;
     }
 
     if (!should_start_wiring) return;
 
-    wire_state.target_pos = { x: e.clientX, y: e.clientY };
+    const rect = easel.container.getBoundingClientRect();
+    wire_state.target_pos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
 
     e.stopPropagation();
     e.preventDefault();

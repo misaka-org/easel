@@ -94,7 +94,7 @@ export class IpApiNode extends EaselNode {
     this.update(node_data, {} as State);
   }
 
-  update(node_data: GraphNode, state: State): void {
+  update(node_data: GraphNode, _state: State): void {
     // Header
     const hue = (node_data.custom_data?.['color'] as string) || '#06b6d4';
     const title_html = `

@@ -61,7 +61,7 @@ export class ColorSourceNode extends EaselNode {
     this.update(node_data, {} as State);
   }
 
-  update(node_data: GraphNode, state: State): void {
+  update(node_data: GraphNode, _state: State): void {
     const hue = '#f97316';
     const title_html = `
       <div class="type-indicator" style="background:${hue};flex-shrink:0;margin-right:6px;"></div>

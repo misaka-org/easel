@@ -66,7 +66,7 @@ export class CSSPreviewNode extends EaselNode {
     this.update(node_data, {} as State);
   }
 
-  update(node_data: GraphNode, state: State): void {
+  update(node_data: GraphNode, _state: State): void {
     const hue = '#10b981';
     const title_html = `
       <div class="type-indicator" style="background:${hue};flex-shrink:0;margin-right:6px;"></div>

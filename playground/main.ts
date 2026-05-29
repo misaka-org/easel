@@ -4,7 +4,7 @@ import { add_node } from '@/core/node_ops';
 import { create_initial_state } from '@/core/state';
 import { serialize_state, deserialize_state } from '@/core/serialization';
 import { vec2_create } from '@/core/math';
-import type { GraphNode, State } from '@/core/types';
+import type { GraphNode } from '@/core/types';
 import { light_theme, default_theme } from '@/runtime/theme';
 import { minimap_plugin } from '@/plugins/minimap';
 import { controls_plugin } from '@/plugins/controls';
@@ -145,7 +145,7 @@ const init = () => {
     `,
   });
 
-  const { state, dispatch, app_events, set_theme } = easel;
+  const { state, dispatch, set_theme } = easel;
 
   // Register node types via easel.register (OOP API)
   easel.register.add_node('default', ExecutableDefaultNode);

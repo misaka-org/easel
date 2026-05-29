@@ -12,6 +12,7 @@ import type { PointerEventParams } from '@/core/interactions';
 import { create_data_flow_binding } from './index';
 import * as O from 'fp-ts/Option';
 import { pipe } from 'fp-ts/function';
+import { reactive } from '@vue/reactivity';
 
 // ── WireState（临时连线状态，替代 interaction.mode === 'wiring'）───
 
@@ -25,12 +26,12 @@ export type WireState = {
 // ── 工厂函数 ────────────────────────────────────────────────────
 
 export const wire_tool = (easel: Easel): Tool => {
-  const wire_state: WireState = {
+  const wire_state: WireState = reactive({
     is_wiring: false,
     source_node_id: '',
     source_port_id: '',
     target_pos: { x: 0, y: 0 },
-  };
+  });
 
   // 暴露给 render.ts 读取
   (easel.plugin_data.wire as any)._wire_state = wire_state;
