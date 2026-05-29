@@ -4,7 +4,6 @@ import { update_node_data, update_widget_value, remove_node } from '@/core/node_
 import { get_widget_type } from './register';
 import { ICON_X } from '@/icons';
 import { set_inner_html } from '@/utils/dom';
-import { is_port_connected } from '@/core/binding_ops';
 
 export class DefaultNode extends EaselNode {
   private header!: HTMLElement;
@@ -93,18 +92,14 @@ export class DefaultNode extends EaselNode {
     set_inner_html(this.header, title_html);
   }
 
-  protected update_ports(node_data: GraphNode, state: State): void {
-    const port_connected = (p_id: string, type: 'input' | 'output') =>
-      is_port_connected(state, this.node_id, p_id, type);
-
+  protected update_ports(node_data: GraphNode, _state: State): void {
     const ports_html = [
       ...node_data.inputs.map(p => {
         const type_class = p.value_type ? `port-type-${p.value_type}` : '';
-        const connected_class = port_connected(p.id, 'input') ? 'connected' : '';
         return `
         <div class="port-row">
           <div class="port" data-port-id="${p.id}" data-port-type="input">
-            <div class="port-dot ${type_class} ${connected_class}"></div><span class="port-label">${p.label}</span>
+            <div class="port-dot ${type_class}"></div><span class="port-label">${p.label}</span>
           </div>
           <div></div>
         </div>
@@ -112,12 +107,11 @@ export class DefaultNode extends EaselNode {
       }),
       ...node_data.outputs.map(p => {
         const type_class = p.value_type ? `port-type-${p.value_type}` : '';
-        const connected_class = port_connected(p.id, 'output') ? 'connected' : '';
         return `
         <div class="port-row">
           <div></div>
           <div class="port" data-port-id="${p.id}" data-port-type="output">
-            <span class="port-label">${p.label}</span><div class="port-dot ${type_class} ${connected_class}"></div>
+            <span class="port-label">${p.label}</span><div class="port-dot ${type_class}"></div>
           </div>
         </div>
       `;
@@ -127,15 +121,12 @@ export class DefaultNode extends EaselNode {
     set_inner_html(this.ports_container, ports_html);
   }
 
-  protected update_widgets(node_data: GraphNode, state: State): void {
+  protected update_widgets(node_data: GraphNode, _state: State): void {
     const widgets = node_data.widgets || [];
 
-    // Build schema: widget id + type + connection state
+    // Build schema: widget id + type
     const schema = widgets
-      .map(w => {
-        const connected = is_port_connected(state, this.node_id, w.id, 'input');
-        return `${w.id}:${w.type}:${connected}`;
-      })
+      .map(w => `${w.id}:${w.type}`)
       .join(',');
 
     if (schema !== this.last_widget_schema) {
@@ -161,14 +152,12 @@ export class DefaultNode extends EaselNode {
         // Wrapper row for consistent layout
         const row = document.createElement('div');
         row.className = 'widget-row';
-        const connected = is_port_connected(state, this.node_id, w.id, 'input');
         const type_class = `port-type-${w.type}`;
-        const connected_class = connected ? 'connected' : '';
 
         // Port dot + label on the left, widget input on the right
         const label_html = `
           <div class="port" data-port-id="${w.id}" data-port-type="input">
-            <div class="port-dot ${type_class} ${connected_class}"></div>
+            <div class="port-dot ${type_class}"></div>
             <span class="port-label">${w.label}</span>
           </div>
         `;
@@ -190,8 +179,7 @@ export class DefaultNode extends EaselNode {
         if (!el) continue;
         const def = get_widget_type(w.type);
         if (!def) continue;
-        const connected = is_port_connected(state, this.node_id, w.id, 'input');
-        def.update(el, w, { connected, disabled: connected });
+        def.update(el, w, { connected: false, disabled: false });
       }
     }
   }

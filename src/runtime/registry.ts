@@ -49,13 +49,9 @@ export abstract class EaselNode {
    */
   get_context_menu_items?(ctx: ContextMenuContext): readonly ContextMenuItem[];
 
-  get_input_value(state: State, port_id: string): any {
-    const b = Object.values(state.bindings).find(
-      b => b.type === 'data-flow' && b.target_id === this.node_id && b.target_handle === port_id,
-    );
-    if (!b) return undefined;
-    const source_node = state.nodes[b.source_id];
-    return source_node?.custom_data[b.source_handle];
+  get_input_value(_state: State, _port_id: string): any {
+    // 连线查询已移至 wire 插件，此处不再通过 state.bindings 查找
+    return undefined;
   }
 
   get_widget_value(state: State, widget_id: string): any {

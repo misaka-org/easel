@@ -35,12 +35,12 @@ export class GraphExecutor {
 
   compile(): E.Either<Error, void> {
     const store = this.easel.store;
-    const wires = store.bindings.list().filter(b => b.type === 'data-flow').map(b => ({
+    const wires = (this.easel.plugin_data.wire?.get_bindings() ?? []).map(b => ({
       id: b.id,
-      source_node_id: b.source_id,
-      source_port_id: b.source_handle,
-      target_node_id: b.target_id,
-      target_port_id: b.target_handle,
+      source_id: b.source_id,
+      source_handle: b.source_handle,
+      target_id: b.target_id,
+      target_handle: b.target_handle,
     }));
 
     const in_degrees: Record<string, number> = {};
@@ -56,9 +56,9 @@ export class GraphExecutor {
     }
 
     for (const wire of wires) {
-      if (store.nodes.has(wire.source_node_id) && store.nodes.has(wire.target_node_id)) {
-        in_degrees[wire.target_node_id]++;
-        adj[wire.source_node_id].push(wire.target_node_id);
+      if (store.nodes.has(wire.source_id) && store.nodes.has(wire.target_id)) {
+        in_degrees[wire.target_id]++;
+        adj[wire.source_id].push(wire.target_id);
       }
     }
 
@@ -88,11 +88,11 @@ export class GraphExecutor {
     return E.right(undefined);
   }
 
-  private check_requirements(node: GraphNode, wires: any[]): string | null {
+  private check_requirements(node: GraphNode, wires: { source_id: string; source_handle: string; target_id: string; target_handle: string }[]): string | null {
     for (const port of node.inputs) {
       if (port.required) {
         const has_wire = wires.some(
-          w => w.target_node_id === node.id && w.target_port_id === port.id,
+          w => w.target_id === node.id && w.target_handle === port.id,
         );
         if (!has_wire) return `Missing required input: ${port.label}`;
       }
@@ -414,11 +414,11 @@ export class GraphExecutor {
     const inputs: Record<string, unknown> = {};
     const store = this.easel.store;
     const node = store.nodes.get(node_id);
-    const wires = store.bindings.list().filter(b => b.type === 'data-flow').map(b => ({
-      source_node_id: b.source_id,
-      target_node_id: b.target_id,
-      source_port_id: b.source_handle,
-      target_port_id: b.target_handle,
+    const wires = (this.easel.plugin_data.wire?.get_bindings() ?? []).map(b => ({
+      source_id: b.source_id,
+      target_id: b.target_id,
+      source_handle: b.source_handle,
+      target_handle: b.target_handle,
     }));
 
     if (node?.widgets) {
@@ -426,10 +426,10 @@ export class GraphExecutor {
     }
 
     for (const wire of wires) {
-      if (wire.target_node_id === node_id) {
-        const source_state = this.state.value.node_states[wire.source_node_id];
-        if (source_state?.outputs && wire.source_port_id in source_state.outputs) {
-          inputs[wire.target_port_id] = source_state.outputs[wire.source_port_id];
+      if (wire.target_id === node_id) {
+        const source_state = this.state.value.node_states[wire.source_id];
+        if (source_state?.outputs && wire.source_handle in source_state.outputs) {
+          inputs[wire.target_handle] = source_state.outputs[wire.source_handle];
         }
       }
     }

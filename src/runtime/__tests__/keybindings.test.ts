@@ -136,7 +136,7 @@ describe('register_core_keybindings', () => {
   it('registers Delete, Backspace, and Ctrl+G bindings', () => {
     const kb = new KeybindingManager();
     const dispatch = vi.fn();
-    register_core_keybindings(kb, dispatch);
+    register_core_keybindings(kb, dispatch, {} as any);
     expect(kb.dispatch(mockKey('Delete'), false)).toBe(true);
     expect(kb.dispatch(mockKey('Backspace'), false)).toBe(true);
     expect(kb.dispatch(mockKey('g', { ctrl: true }), false)).toBe(true);
@@ -162,7 +162,7 @@ describe('register_core_keybindings', () => {
       capturedState = fn(state);
     };
 
-    register_core_keybindings(kb, dispatch);
+    register_core_keybindings(kb, dispatch, {} as any);
     const e = mockKey('Delete');
     kb.dispatch(e, false);
 
@@ -190,7 +190,7 @@ describe('register_core_keybindings', () => {
       capturedState = fn(state);
     };
 
-    register_core_keybindings(kb, dispatch);
+    register_core_keybindings(kb, dispatch, {} as any);
     kb.dispatch(mockKey('Delete'), false);
 
     expect(capturedState.nodes['sub_in']).toBeDefined();
@@ -205,7 +205,7 @@ describe('register_core_keybindings', () => {
       capturedState = fn(state);
     };
 
-    register_core_keybindings(kb, dispatch);
+    register_core_keybindings(kb, dispatch, {} as any);
     kb.dispatch(mockKey('g', { ctrl: true }), false);
 
     expect(capturedState).toBe(state);
@@ -242,7 +242,7 @@ describe('register_core_keybindings', () => {
       capturedState = fn(state);
     };
 
-    register_core_keybindings(kb, dispatch);
+    register_core_keybindings(kb, dispatch, {} as any);
     kb.dispatch(mockKey('g', { ctrl: true }), false);
 
     expect(capturedState).not.toBeNull();

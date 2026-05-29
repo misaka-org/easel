@@ -69,17 +69,9 @@ export class TextInputNode extends EaselNode {
     set_inner_html(this.header, title_html);
 
     // Ports
-    const is_port_connected = (p_id: string) =>
-      Object.values(state.bindings ?? {}).some(
-        b =>
-          b.type === 'data-flow' &&
-          ((b.target_id === this.node_id && b.target_handle === p_id) ||
-           (b.source_id === this.node_id && b.source_handle === p_id)),
-      );
-
-    const ports_html = node_data.outputs
+const ports_html = node_data.outputs
       .map(p => {
-        const connected_class = is_port_connected(p.id) ? 'connected' : '';
+        const connected_class = '';
         return `
         <div class="port-row">
           <div></div>
@@ -96,9 +88,7 @@ export class TextInputNode extends EaselNode {
     // Widgets
     const widgets_html = (node_data.widgets || [])
       .map(w => {
-        const is_connected = Object.values(state.bindings ?? {}).some(
-          b => b.type === 'data-flow' && b.target_id === this.node_id && b.target_handle === w.id,
-        );
+        const is_connected = false;
         const disabled = is_connected ? 'disabled' : '';
         return `
           <div class="widget-row">
@@ -114,9 +104,7 @@ export class TextInputNode extends EaselNode {
     // Schema: only changes when widget structure or connection state changes (not on every value edit)
     const widgets_schema = (node_data.widgets || [])
       .map(w => {
-        const is_connected = Object.values(state.bindings ?? {}).some(
-          b => b.type === 'data-flow' && b.target_id === this.node_id && b.target_handle === w.id,
-        );
+        const is_connected = false;
         return `${w.id}:${is_connected}`;
       })
       .join(',');

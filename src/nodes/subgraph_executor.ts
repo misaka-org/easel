@@ -1,28 +1,29 @@
-import type { GraphNode, Binding } from '@/core/types';
+import type { GraphNode } from '@/core/types';
 import type { ExecuteContext } from '@/runtime/registry';
 import { get_node_constructor } from '@/runtime/registry';
+
+type Edge = { source_id: string; target_id: string; source_handle: string; target_handle: string };
 
 /** Execute subgraph internal graph with external inputs. */
 export async function execute_subgraph(
   ctx: ExecuteContext,
 ): Promise<Record<string, unknown>> {
   const graph = ctx.node.custom_data['graph'] as
-    | { nodes: Record<string, GraphNode>; bindings: Record<string, Binding> }
+    | { nodes: Record<string, GraphNode>; edges: Edge[] }
     | undefined;
   if (!graph) return {};
 
-  const { nodes: n, bindings: bnd } = graph;
+  const { nodes: n, edges: edges } = graph;
   const ids = Object.keys(n);
   if (ids.length === 0) return {};
 
   const adj: Record<string, string[]> = {};
   const indeg: Record<string, number> = {};
   for (const id of ids) { adj[id] = []; indeg[id] = 0; }
-  for (const b of Object.values(bnd)) {
-    if (b.type !== 'data-flow') continue;
-    if (adj[b.source_id] && adj[b.target_id]) {
-      adj[b.source_id]!.push(b.target_id);
-      indeg[b.target_id] = (indeg[b.target_id] || 0) + 1;
+  for (const e of edges) {
+    if (adj[e.source_id] && adj[e.target_id]) {
+      adj[e.source_id]!.push(e.target_id);
+      indeg[e.target_id] = (indeg[e.target_id] || 0) + 1;
     }
   }
 
@@ -60,11 +61,11 @@ export async function execute_subgraph(
     if (nd.widgets) {
       for (const w of nd.widgets) inp[w.id] = w.value;
     }
-    for (const b of Object.values(bnd)) {
-      if (b.type !== 'data-flow' || b.target_id !== id) continue;
-      const src = out[b.source_id];
-      if (src && b.source_handle in src) {
-        inp[b.target_handle] = src[b.source_handle];
+    for (const e of edges) {
+      if (e.target_id !== id) continue;
+      const src = out[e.source_id];
+      if (src && e.source_handle in src) {
+        inp[e.target_handle] = src[e.source_handle];
       }
     }
 

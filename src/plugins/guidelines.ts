@@ -112,27 +112,38 @@ export const guidelines_plugin: EaselPlugin = (easel) => {
   });
 
   // ── Snapping hook ──
-  easel.store.nodes.on_before_change((event) => {
-    if (event.type !== 'put') return;
+  // 包裹 dispatch：拖动时 select_tool 直接替换整个 state（不走 Table.put），
+  // 所以不能用 store.nodes.on_before_change，必须拦截 dispatch 本身。
+  const original_dispatch = easel.dispatch;
+  easel.dispatch = (updater) => {
     const state = easel.store.state.value;
-    if (state.interaction.mode !== 'dragging') return;
-    if (state.modifiers.shift) return;
+    if (state.interaction.mode !== 'dragging' || state.modifiers.shift) {
+      original_dispatch(updater);
+      return;
+    }
 
-    const node = event.next!;
+    // 对 updater 返回的新 state 进行 snap 修正
+    const next = updater(state);
     const dragged_id = state.selected_node_ids[0];
-    if (!dragged_id || dragged_id !== event.id) return;
+    if (!dragged_id || !next.nodes[dragged_id]) {
+      original_dispatch(() => next);
+      return;
+    }
 
     const { dx, dy, snap_x, snap_y } = snap_node(
-      node,
-      state.nodes,
+      next.nodes[dragged_id]!,
+      next.nodes,
       state.selected_node_ids,
     );
 
     active_guidelines = { x: snap_x, y: snap_y };
 
     if (dx !== 0 || dy !== 0) {
+      const node = next.nodes[dragged_id]!;
       const snapped = { ...node, position: { x: node.position.x + dx, y: node.position.y + dy } };
-      return { ...event, next: snapped as any };
+      original_dispatch(() => ({ ...next, nodes: { ...next.nodes, [dragged_id]: snapped } }));
+    } else {
+      original_dispatch(() => next);
     }
-  });
+  };
 };

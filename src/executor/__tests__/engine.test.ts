@@ -11,9 +11,9 @@ import type { Easel } from '@/runtime/easel';
 function mockEasel(nodeOverrides: Record<string, any> = {}, bindingOverrides: Record<string, any> = {}) {
   const base = create_initial_state();
   const nodes = { ...base.nodes, ...nodeOverrides };
-  const bindings = { ...base.bindings, ...bindingOverrides };
-  const store = new Store({ initial_state: { ...base, nodes, bindings } });
+  const store = new Store({ initial_state: { ...base, nodes } });
   const camera = new CameraController(() => store.state.value, store.dispatch);
+  const mock_bindings = Object.values(bindingOverrides);
   return {
     state: store.state,
     store,
@@ -23,7 +23,11 @@ function mockEasel(nodeOverrides: Record<string, any> = {}, bindingOverrides: Re
     app_events: { on() {}, emit() {}, off() {} },
     node_events: new Map(),
     container: undefined,
-    plugin_data: {},
+    plugin_data: {
+      wire: {
+        get_bindings: () => mock_bindings,
+      },
+    },
     register: { add_node() {}, add_node_spec() {}, add_node_ns() {}, add_widget() {} },
     node_instances: new Map(),
     set_theme: () => {},

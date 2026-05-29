@@ -131,7 +131,7 @@ export const history_plugin: EaselPlugin = easel => {
 
     const last_recorded = history[current_index];
     const changed =
-      last_recorded?.nodes !== next.nodes || last_recorded?.bindings !== next.bindings;
+      last_recorded?.nodes !== next.nodes;
     if (!changed) return;
 
     history.splice(current_index + 1);

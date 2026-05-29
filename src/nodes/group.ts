@@ -1,8 +1,6 @@
 import { EaselNode } from '@/runtime/registry';
 import type { GraphNode, State } from '@/core/types';
-import { create_group_child_binding } from '@/core/types';
-import { aabb_contains } from '@/core/math';
-import { is_ancestor, update_node_data } from '@/core/node_ops';
+import { update_node_data } from '@/core/node_ops';
 import { apply_styles } from '@/utils/css';
 import { set_inner_html } from '@/utils/dom';
 
@@ -73,63 +71,8 @@ export class GroupNode extends EaselNode {
     });
   };
 
-  on_nodes_dropped = (dropped_ids: string[]) => {
-    this.dispatch(state => {
-      const group = state.nodes[this.node_id];
-      if (!group) return state;
-
-      const group_rect = { pos: group.position, size: group.size };
-
-      // 当前 group-child bindings
-      const existing = new Set(
-        Object.values(state.bindings)
-          .filter(b => b.type === 'group-child' && b.source_id === this.node_id)
-          .map(b => b.target_id),
-      );
-
-      let new_bindings = { ...state.bindings };
-      let changed = false;
-
-      // 1) 检查拖放的节点是否进入 group——只扫 dropped_ids
-      for (const id of dropped_ids) {
-        if (id === this.node_id) continue;
-        const node = state.nodes[id];
-        if (!node) continue;
-        const is_inside = aabb_contains(group_rect.pos, group_rect.size, node.position, node.size);
-        if (is_inside && !existing.has(id)) {
-          if (!is_ancestor(state.nodes, state.bindings, this.node_id, id)) {
-            const binding = create_group_child_binding(this.node_id, id);
-            new_bindings = { ...new_bindings, [binding.id]: binding };
-            changed = true;
-          }
-        }
-      }
-
-      // 2) 检查已有子节点是否移出 group——只扫 existing children (按 id 查 node)
-      if (dropped_ids.length > 0) {
-        for (const child_id of existing) {
-          const node = state.nodes[child_id];
-          if (!node) continue;
-          const is_inside = aabb_contains(group_rect.pos, group_rect.size, node.position, node.size);
-          if (!is_inside) {
-            const to_remove = Object.values(new_bindings).find(
-              b => b.type === 'group-child' && b.source_id === this.node_id && b.target_id === child_id,
-            );
-            if (to_remove) {
-              const { [to_remove.id]: _, ...rest } = new_bindings;
-              new_bindings = rest;
-              changed = true;
-            }
-          }
-        }
-      }
-
-      if (changed) {
-        return { ...state, bindings: new_bindings };
-      }
-      return state;
-    });
-  };
+  // TODO: reimplement group children management with group plugin extension table
+  on_nodes_dropped = (_dropped_ids: string[]) => {};
 
   update(node_data: GraphNode, _state: State): void {
     this.current_title = node_data.title;

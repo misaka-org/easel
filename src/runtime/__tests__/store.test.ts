@@ -3,12 +3,9 @@
  */
 import { describe, it, expect } from 'vitest';
 import { Store, Table } from '../store';
-import { pointer_down } from '@/core/interactions';
-import * as O from 'fp-ts/Option';
 import { create_initial_state } from '@/core/state';
 import { vec2_create } from '@/core/math';
 import type { GraphNode } from '@/core/types';
-import { create_data_flow_binding } from '@/core/types';
 
 // ?? Helpers ????????????????????????????????????????????????????
 
@@ -30,7 +27,6 @@ describe('Store', () => {
   it('should create with initial state', () => {
     const store = new Store();
     expect(store.state.value.nodes).toEqual({});
-    expect(store.state.value.bindings).toEqual({});
     expect(store.state.value.camera.zoom).toBe(1);
   });
 
@@ -44,7 +40,6 @@ describe('Store', () => {
   it('should expose nodes as Table', () => {
     const store = new Store();
     expect(store.nodes).toBeInstanceOf(Table);
-    expect(store.bindings).toBeInstanceOf(Table);
   });
 
   it('should dispatch updates and trigger state change', () => {
@@ -63,42 +58,45 @@ describe('Store', () => {
 
   it('should auto-cleanup wires when a node is deleted via on_before_change', () => {
     const store = new Store();
+    const bindings_table = store.create_extension_table<{
+      id: string; source_id: string; target_id: string
+    }>('bindings');
     store.nodes.put('a', make_node('a'));
     store.nodes.put('b', make_node('b'));
-    store.bindings.put('b1', {
+    bindings_table.put('b1', {
       id: 'b1',
-      type: 'data-flow',
       source_id: 'a',
-      source_handle: 'out1',
       target_id: 'b',
-      target_handle: 'in1',
     });
 
     store.nodes.on_before_change((event) => {
       if (event.type === 'delete' && event.prev) {
-        for (const binding of store.bindings.list()) {
+        for (const binding of bindings_table.list()) {
           if (binding.source_id === event.id || binding.target_id === event.id) {
-            store.bindings.delete(binding.id);
+            bindings_table.delete(binding.id);
           }
         }
       }
     });
 
     store.nodes.delete('a');
-    expect(store.bindings.has('b1')).toBe(false);
+    expect(bindings_table.has('b1')).toBe(false);
     expect(store.nodes.has('a')).toBe(false);
     expect(store.nodes.has('b')).toBe(true);
   });
 
   it('should not prevent node delete when no wires connected', () => {
     const store = new Store();
+    const bindings_table = store.create_extension_table<{
+      id: string; source_id: string; target_id: string
+    }>('bindings');
     store.nodes.put('orphan', make_node('orphan'));
 
     store.nodes.on_before_change((event) => {
       if (event.type === 'delete' && event.prev) {
-        for (const binding of store.bindings.list()) {
+        for (const binding of bindings_table.list()) {
           if (binding.source_id === event.id || binding.target_id === event.id) {
-            store.bindings.delete(binding.id);
+            bindings_table.delete(binding.id);
           }
         }
       }
@@ -108,30 +106,27 @@ describe('Store', () => {
     expect(store.nodes.has('orphan')).toBe(false);
   });
 
-  it('should allow wiring from output port even when input port has a binding', () => {
+
+  it('should serialize and deserialize extension tables', () => {
     const store = new Store();
-    store.nodes.put('a', make_node('a'));
-    store.nodes.put('b', make_node('b'));
+    const table = store.create_extension_table<{
+      id: string; source_id: string; target_id: string
+    }>('bindings');
+    table.put('b1', { id: 'b1', source_id: 'a', target_id: 'b' });
 
-    const binding = create_data_flow_binding('a', 'out1', 'b', 'in1');
-    store.bindings.put(binding.id, binding);
+    const serialized = store.serialize();
+    expect(serialized.extensions).toBeDefined();
+    expect(serialized.extensions!['bindings']).toBeDefined();
+    expect(serialized.extensions!['bindings']['b1']).toEqual({
+      id: 'b1', source_id: 'a', target_id: 'b',
+    });
 
-    const state = store.state.value;
-    const ev = {
-      screen_position: vec2_create(0, 0),
-      target_node_id: O.some('b'),
-      target_port_id: O.some('out1'),
-      target_port_type: O.some('output' as const),
-      target_action: O.none,
-      modifiers: { ctrl: false, shift: false, alt: false, meta: false },
-    };
-
-    const result = pointer_down(state, ev);
-    expect(result.interaction.mode).toBe('wiring');
-    if (result.interaction.mode === 'wiring') {
-      expect(result.interaction.source_node_id).toBe('b');
-      expect(result.interaction.source_port_id).toBe('out1');
-    }
+    const restored = Store.deserialize(serialized);
+    const restored_table = restored.create_extension_table<{
+      id: string; source_id: string; target_id: string
+    }>('bindings');
+    expect(restored_table.get('b1')).toBeDefined();
+    expect(restored_table.get('b1')!.source_id).toBe('a');
   });
 });
 

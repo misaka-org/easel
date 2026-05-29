@@ -13,7 +13,7 @@
 
 import { shallowRef, type ShallowRef } from '@vue/reactivity';
 import { create_initial_state } from '@/core/state';
-import type { State, GraphNode, Binding, Camera } from '@/core/types';
+import type { State, GraphNode, Camera } from '@/core/types';
 
 // ── Change Event Types ──────────────────────────────────────────
 
@@ -120,8 +120,8 @@ export type Dispatch = (updater: (state: State) => State) => void;
 
 export type SerializedStore = {
   nodes: Record<string, GraphNode>;
-  bindings?: Record<string, Binding>;
   camera?: Camera;
+  extensions?: Record<string, Record<string, any>>;
 };
 
 // ── Store ───────────────────────────────────────────────────────
@@ -135,10 +135,11 @@ export class Store {
   readonly dispatch: Dispatch;
 
   readonly nodes: Table<GraphNode>;
-  readonly bindings: Table<Binding>;
 
   private _in_transaction = false;
   private _pending_updaters: Array<(s: State) => State> = [];
+  private _extension_tables: Map<string, Table<any>>;
+  private _extension_data: ShallowRef<Record<string, Record<string, any>>>;
 
   constructor(opts: StoreOptions = {}) {
     const initial = opts.initial_state ?? create_initial_state();
@@ -160,10 +161,8 @@ export class Store {
       (fn) => { dispatch(s => ({ ...s, nodes: fn(s.nodes) })); },
     );
 
-    this.bindings = new Table<Binding>(
-      () => state_ref.value.bindings,
-      (fn) => { dispatch(s => ({ ...s, bindings: fn(s.bindings) })); },
-    );
+    this._extension_tables = new Map();
+    this._extension_data = shallowRef<Record<string, Record<string, any>>>({});
   }
 
   /** 批量事务：fn 内的所有 put/delete 合并为一次 state 更新。 */
@@ -184,29 +183,65 @@ export class Store {
     }
   }
 
-  /** 序列化全部表（仅数据，不含 interaction 等临时状态）。 */
+  /** 创建/获取扩展表。扩展表数据存在 Store 私有的 _extension_data 中，不和 core State 耦合。 */
+  create_extension_table<T extends { readonly id: string }>(name: string): Table<T> {
+    const existing = this._extension_tables.get(name);
+    if (existing) return existing as Table<T>;
+
+    const table = new Table<T>(
+      () => (this._extension_data.value[name] ?? {}) as Record<string, T>,
+      (fn) => {
+        this._extension_data.value = {
+          ...this._extension_data.value,
+          [name]: fn(this._extension_data.value[name] ?? {} as Record<string, T>),
+        };
+      },
+    );
+
+    this._extension_tables.set(name, table);
+    return table;
+  }
+
+  /** 序列化全部表（含扩展表数据）。 */
   serialize(): SerializedStore {
     const s = this.state.value;
     const out: SerializedStore = {
       nodes: { ...s.nodes },
     };
-    if (s.bindings && Object.keys(s.bindings).length > 0) {
-      out.bindings = { ...s.bindings };
-    }
     out.camera = { ...s.camera };
+    const ext = this._extension_data.value;
+    const ext_keys = Object.keys(ext);
+    if (ext_keys.length > 0) {
+      out.extensions = {};
+      for (const key of ext_keys) {
+        if (Object.keys(ext[key]).length > 0) {
+          out.extensions[key] = { ...ext[key] };
+        }
+      }
+    }
     return out;
   }
 
   /** 从序列化数据创建 Store。 */
   static deserialize(data: SerializedStore): Store {
     const base = create_initial_state();
-    return new Store({
+    const store = new Store({
       initial_state: {
         ...base,
         nodes: data.nodes,
-        bindings: data.bindings ?? base.bindings,
         camera: data.camera ?? base.camera,
       },
     });
+    if (data.extensions) {
+      for (const [name, records] of Object.entries(data.extensions)) {
+        if (Object.keys(records).length > 0) {
+          store._extension_data.value = {
+            ...store._extension_data.value,
+            [name]: { ...records },
+          };
+        }
+      }
+    }
+    return store;
   }
 }

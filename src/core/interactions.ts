@@ -2,9 +2,6 @@ import type { State, Modifiers, Interaction } from './types';
 import type { Vec2 } from './math';
 import { vec2_sub, vec2_add, vec2_scale, vec2_create, aabb_intersect } from './math';
 import { move_nodes } from './node_ops';
-
-import { add_binding, remove_binding, find_binding_by_target } from './binding_ops';
-import { create_data_flow_binding } from './types';
 import * as O from 'fp-ts/Option';
 import { pipe } from 'fp-ts/function';
 
@@ -29,20 +26,6 @@ export const update_modifiers = (state: State, modifiers: Modifiers): State => (
   modifiers,
 });
 
-const start_wiring = (
-  state: State,
-  source_node_id: string,
-  source_port_id: string,
-  event: PointerEventParams,
-): State => ({
-  ...state,
-  interaction: {
-    mode: 'wiring',
-    source_node_id,
-    source_port_id,
-    target_pos: event.screen_position,
-  },
-});
 
 const start_resizing = (state: State, target_id: string, event: PointerEventParams): State => ({
   ...state,
@@ -93,38 +76,12 @@ const start_selection_or_pan = (state: State, event: PointerEventParams): State 
         },
 });
 
-const try_grab_wire = (state: State, event: PointerEventParams) =>
-  pipe(
-    O.Do,
-    O.bind('node_id', () => event.target_node_id),
-    O.bind('port_id', () => event.target_port_id),
-    O.bind('port_type', () => event.target_port_type),
-    O.chain(({ node_id, port_id, port_type }) => {
-      if (port_type === 'input') {
-        const b = find_binding_by_target(state, node_id, port_id);
-        if (b) {
-          return O.some(
-            start_wiring(remove_binding(state, b.id), b.source_id, b.source_handle, event),
-          );
-        }
-      } else if (port_type === 'output') {
-        return O.some(start_wiring(state, node_id, port_id, event));
-      }
-      return O.none;
-    }),
-  );
-
 export const pointer_down = (state: State, event: PointerEventParams): State =>
   pipe(
-    try_grab_wire(state, event),
-    O.alt(() =>
-      pipe(
-        event.target_action,
-        O.filter(action => action === 'resize'),
-        O.chain(() => event.target_node_id),
-        O.map(target_id => start_resizing(state, target_id, event)),
-      ),
-    ),
+    event.target_action,
+    O.filter(action => action === 'resize'),
+    O.chain(() => event.target_node_id),
+    O.map(target_id => start_resizing(state, target_id, event)),
     O.alt(() =>
       pipe(
         event.target_node_id,
@@ -156,29 +113,14 @@ const handlers_move: Record<
       vec2_sub(event.screen_position, i.start_pos),
       1 / state.camera.zoom,
     );
-    const restored_state = { ...state, nodes: { ...state.nodes } };
-
-    const to_move = new Set<string>();
-    const collect = (id: string) => {
-      if (to_move.has(id)) return;
-      to_move.add(id);
-      const children = Object.values(state.bindings)
-        .filter(
-          b => (b.type === 'group-child' || b.type === 'subgraph-child') && b.source_id === id,
-        )
-        .map(b => b.target_id);
-      children.forEach(collect);
-    };
-    i.node_ids.forEach(collect);
-
-    for (const id of to_move) {
-      if (restored_state.nodes[id] && i.original_nodes[id]) {
-        restored_state.nodes[id] = i.original_nodes[id]!;
+    const restored = { ...state, nodes: { ...state.nodes } };
+    for (const id of i.node_ids) {
+      if (restored.nodes[id] && i.original_nodes[id]) {
+        restored.nodes[id] = i.original_nodes[id]!;
       }
     }
-
     return {
-      ...move_nodes(restored_state, i.node_ids, total_delta),
+      ...move_nodes(restored, i.node_ids, total_delta),
       interaction: i,
     };
   },
@@ -189,10 +131,7 @@ const handlers_move: Record<
       position: vec2_add(i.original_camera, vec2_sub(event.screen_position, i.start_pos)),
     },
   }),
-  wiring: (state, i, event) => ({
-    ...state,
-    interaction: { ...i, target_pos: event.screen_position },
-  }),
+
   box_selecting: (state, i, event) => ({
     ...state,
     interaction: { ...i, current_pos: event.screen_position },
@@ -201,89 +140,6 @@ const handlers_move: Record<
 
 export const pointer_move = (state: State, event: PointerEventParams): State =>
   handlers_move[state.interaction.mode](state, state.interaction, event);
-
-const try_connect_wire = (
-  state: State,
-  source_node_id: string,
-  source_port_id: string,
-  event: PointerEventParams,
-): State =>
-  pipe(
-    event.target_node_id,
-    O.chain(target_node_id => {
-      if (target_node_id === source_node_id) return O.none;
-      const source_port = state.nodes[source_node_id]?.outputs.find(p => p.id === source_port_id);
-      const target_node = state.nodes[target_node_id];
-      if (!source_port || !target_node) return O.none;
-
-      const source_type = source_port.value_type || 'any';
-      let target_port_id: string | undefined;
-      let target_accepts: readonly string[] = ['any'];
-
-      if (
-        O.isSome(event.target_port_id) &&
-        O.isSome(event.target_port_type) &&
-        event.target_port_type.value === 'input'
-      ) {
-        target_port_id = event.target_port_id.value;
-        const target_port = target_node.inputs.find(p => p.id === target_port_id);
-        const target_widget = target_node.widgets?.find(w => w.id === target_port_id);
-        if (!target_port && !target_widget) return O.none;
-
-        if (target_port) {
-          target_accepts = target_port.accepts || [target_port.value_type || 'any'];
-        } else if (target_widget) {
-          target_accepts = target_widget.accepts || [target_widget.value_type || 'any'];
-        }
-      } else {
-        const is_port_free = (id: string) => !find_binding_by_target(state, target_node_id, id);
-
-        const compatible_input = target_node.inputs.find(p => {
-          if (!is_port_free(p.id)) return false;
-          const accepts = p.accepts || [p.value_type || 'any'];
-          return accepts.includes('any') || source_type === 'any' || accepts.includes(source_type);
-        });
-
-        if (compatible_input) {
-          target_port_id = compatible_input.id;
-          target_accepts = compatible_input.accepts || [compatible_input.value_type || 'any'];
-        } else {
-          const compatible_widget = target_node.widgets?.find(w => {
-            if (!is_port_free(w.id)) return false;
-            const accepts = w.accepts || [w.value_type || 'any'];
-            return (
-              accepts.includes('any') || source_type === 'any' || accepts.includes(source_type)
-            );
-          });
-          if (compatible_widget) {
-            target_port_id = compatible_widget.id;
-            target_accepts = compatible_widget.accepts || [compatible_widget.value_type || 'any'];
-          }
-        }
-      }
-
-      if (!target_port_id) return O.none;
-
-      if (
-        target_accepts.includes('any') ||
-        source_type === 'any' ||
-        target_accepts.includes(source_type)
-      ) {
-        const existing = find_binding_by_target(state, target_node_id, target_port_id);
-        const clean_state = existing ? remove_binding(state, existing.id) : state;
-
-        const binding = create_data_flow_binding(
-          source_node_id,
-          source_port_id,
-          target_node_id,
-          target_port_id,
-        );
-        return O.some(add_binding(clean_state, binding));
-      }
-      return O.none;
-    }),
-    O.getOrElse(() => state),
-  );
 
 const finish_box_selection = (
   state: State,
@@ -318,8 +174,6 @@ const finish_box_selection = (
 
 export const pointer_up = (state: State, event?: PointerEventParams): State => {
   const next_state = pipe(state.interaction, i => {
-    if (i.mode === 'wiring' && event)
-      return try_connect_wire(state, i.source_node_id, i.source_port_id, event);
     if (i.mode === 'box_selecting' && event) return finish_box_selection(state, i, event);
     return state;
   });

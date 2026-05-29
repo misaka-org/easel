@@ -7,7 +7,7 @@ import {
   remove_node,
   update_node_data,
   update_widget_value,
-  is_ancestor,
+
 } from '@/core/node_ops';
 import { vec2_create } from '@/core/math';
 
@@ -59,28 +59,6 @@ describe('node_ops', () => {
     expect(s.nodes['a']).toBeUndefined();
   });
 
-  it('should remove a node and its connected bindings', () => {
-    let s = add_node(create_initial_state(), node_a());
-    s = add_node(s, node_b());
-    s = {
-      ...s,
-      bindings: {
-        b1: {
-          id: 'b1',
-          type: 'data-flow',
-          source_id: 'a',
-          source_handle: 'out',
-          target_id: 'b',
-          target_handle: 'in',
-        },
-      },
-    };
-    s = remove_node(s, 'a');
-    expect(s.nodes['a']).toBeUndefined();
-    expect(s.nodes['b']).toBeDefined();
-    expect(s.bindings).toEqual({});
-  });
-
   it('should remove node from selected_node_ids', () => {
     let s = add_node(create_initial_state(), node_a());
     s = { ...s, selected_node_ids: ['a'] };
@@ -118,88 +96,5 @@ describe('node_ops', () => {
   it('remove_node does nothing for non-existent id', () => {
     const s = remove_node(create_initial_state(), 'nonexistent');
     expect(s.nodes).toEqual({});
-  });
-
-  it('move_node with group-child binding moves child nodes', () => {
-    const parent = { ...node_a(), custom_data: {} };
-    let s = add_node(create_initial_state(), parent);
-    s = add_node(s, node_b());
-    s = {
-      ...s,
-      bindings: {
-        ...s.bindings,
-        gc1: {
-          id: 'gc1',
-          type: 'group-child',
-          source_id: 'a',
-          source_handle: '',
-          target_id: 'b',
-          target_handle: '',
-        },
-      },
-    };
-    s = move_node(s, 'a', vec2_create(10, 10));
-    expect(s.nodes['a']?.position).toEqual(vec2_create(10, 10));
-    expect(s.nodes['b']?.position).toEqual(vec2_create(210, 10));
-  });
-  describe('is_ancestor', () => {
-    it('returns false for node with no children', () => {
-      const nodes = { a: node_a(), b: node_b() };
-      expect(is_ancestor(nodes, {}, 'a', 'b')).toBe(false);
-    });
-
-    it('detects child in parent children list (cycle prevention)', () => {
-      const bindings = {
-        gc1: {
-          id: 'gc1',
-          type: 'group-child',
-          source_id: 'a',
-          source_handle: '',
-          target_id: 'b',
-          target_handle: '',
-        },
-      };
-      const nodes = { a: node_a(), b: node_b() };
-      expect(is_ancestor(nodes, bindings, 'b', 'a')).toBe(true);
-    });
-
-    it('detects circular reference', () => {
-      const bindings = {
-        gc1: {
-          id: 'gc1',
-          type: 'group-child',
-          source_id: 'a',
-          source_handle: '',
-          target_id: 'b',
-          target_handle: '',
-        },
-        gc2: {
-          id: 'gc2',
-          type: 'group-child',
-          source_id: 'b',
-          source_handle: '',
-          target_id: 'a',
-          target_handle: '',
-        },
-      };
-      const nodes = { a: node_a(), b: node_b() };
-      expect(is_ancestor(nodes, bindings, 'a', 'b')).toBe(true);
-      expect(is_ancestor(nodes, bindings, 'b', 'a')).toBe(true);
-    });
-
-    it('returns false when no cycle', () => {
-      const bindings = {
-        gc1: {
-          id: 'gc1',
-          type: 'group-child',
-          source_id: 'a',
-          source_handle: '',
-          target_id: 'b',
-          target_handle: '',
-        },
-      };
-      const nodes = { a: node_a(), b: node_b() };
-      expect(is_ancestor(nodes, bindings, 'a', 'b')).toBe(false);
-    });
   });
 });

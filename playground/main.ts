@@ -275,11 +275,11 @@ const init = () => {
     } else if (name === 'math') {
       load_math_scene(dispatch);
     } else if (name === 'executor') {
-      load_executor_scene(dispatch);
+      load_executor_scene(dispatch, easel);
     } else if (name === 'realtime') {
-      load_realtime_scene(dispatch);
+      load_realtime_scene(dispatch, easel);
     } else if (name === 'ip_api') {
-      load_ip_api_scene(dispatch);
+      load_ip_api_scene(dispatch, easel);
     } else if (name === 'context_menu') {
       load_context_menu_scene(dispatch);
     } else if (name === 'perf') {
@@ -330,7 +330,7 @@ const init = () => {
       const s = state.value;
       const text_content = [
         `Nodes: ${Object.keys(s.nodes).length}`,
-        `Wires: ${Object.keys(s.bindings).length}`,
+        `Wires: ${easel.plugin_data.wire?.get_bindings().length ?? 0}`,
         `Camera: [${s.camera.position.x.toFixed(
           1,
         )}, ${s.camera.position.y.toFixed(1)}] @ ${s.camera.zoom.toFixed(2)}x`,

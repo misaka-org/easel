@@ -1,10 +1,10 @@
 import { vec2_create } from '@/core/math';
 import { add_node } from '@/core/node_ops';
-import { add_binding } from '@/core/binding_ops';
-import { create_data_flow_binding } from '@/core/types';
-import type { Dispatch } from '@/runtime/registry';
 
-export const load_realtime_scene = (dispatch: Dispatch) => {
+import type { Dispatch } from '@/runtime/registry';
+import type { Easel } from '@/runtime/easel';
+
+export const load_realtime_scene = (dispatch: Dispatch, easel: Easel) => {
   // 1. 4x Color Source nodes
   dispatch(s =>
     add_node(s, {
@@ -135,28 +135,15 @@ export const load_realtime_scene = (dispatch: Dispatch) => {
     }),
   );
 
-  // Wires: color sources -> builder
-  dispatch(s =>
-    add_binding(s, create_data_flow_binding('c1', 'out', 'builder', 'c1')),
-  );
-  dispatch(s =>
-    add_binding(s, create_data_flow_binding('c2', 'out', 'builder', 'c2')),
-  );
-  dispatch(s =>
-    add_binding(s, create_data_flow_binding('c3', 'out', 'builder', 'c3')),
-  );
-  dispatch(s =>
-    add_binding(s, create_data_flow_binding('c4', 'out', 'builder', 'c4')),
-  );
-  dispatch(s =>
-    add_binding(s, create_data_flow_binding('angle', 'query', 'builder', 'angle')),
-  );
-  dispatch(s =>
-    add_binding(s, create_data_flow_binding('type_g', 'query', 'builder', 'type_g')),
-  );
-
-  // Wire: builder -> preview
-  dispatch(s =>
-    add_binding(s, create_data_flow_binding('builder', 'css_out', 'preview', 'css_in')),
-  );
+  // wires via plugin
+  const api = easel.plugin_data.wire;
+  if (!api) return;
+  const mk_id = () => 'b_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  api.add_binding({ id: mk_id(), source_id: 'c1', source_handle: 'out', target_id: 'builder', target_handle: 'c1' });
+  api.add_binding({ id: mk_id(), source_id: 'c2', source_handle: 'out', target_id: 'builder', target_handle: 'c2' });
+  api.add_binding({ id: mk_id(), source_id: 'c3', source_handle: 'out', target_id: 'builder', target_handle: 'c3' });
+  api.add_binding({ id: mk_id(), source_id: 'c4', source_handle: 'out', target_id: 'builder', target_handle: 'c4' });
+  api.add_binding({ id: mk_id(), source_id: 'angle', source_handle: 'query', target_id: 'builder', target_handle: 'angle' });
+  api.add_binding({ id: mk_id(), source_id: 'type_g', source_handle: 'query', target_id: 'builder', target_handle: 'type_g' });
+  api.add_binding({ id: mk_id(), source_id: 'builder', source_handle: 'css_out', target_id: 'preview', target_handle: 'css_in' });
 };

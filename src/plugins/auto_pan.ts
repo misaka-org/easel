@@ -39,9 +39,10 @@ export const auto_pan_plugin: EaselPlugin = easel => {
       const s = easel.state.value;
       const mode = s.interaction.mode;
 
+      const is_wiring = (easel.plugin_data.wire as any)?._wire_state?.is_wiring ?? false;
       if (
         mode === 'dragging' ||
-        mode === 'wiring' ||
+        is_wiring ||
         mode === 'resizing' ||
         mode === 'box_selecting'
       ) {

@@ -28,7 +28,3 @@ Plugins                — (easel) => void，hook 到事件和 dispatch
 - PowerShell 写文件用 `[System.IO.File]::WriteAllText(path, content, [System.Text.UTF8Encoding]::new($false))`
 - 不要用 `Set-Content -Encoding UTF8`（会加 BOM）
 - 编码规范参考 `docs/coding/ts.md`
-
-## 文件编辑
-
-使用 apply_patch（V4A 格式），语法见 AGENTS.md 中的工具说明。

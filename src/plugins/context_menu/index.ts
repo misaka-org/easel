@@ -138,7 +138,7 @@ function node_ops_provider(easel: any): ContextMenuProvider {
   return {
     id: '__builtin_node_ops',
     priority: 20,
-    get_items: ctx => {
+    get_items: (ctx: ContextMenuContext) => {
       if (!ctx.node_id) return [];
       const node_id: string = ctx.node_id;
       const node_type: string | undefined = ctx.node_type;
@@ -298,7 +298,7 @@ function add_node_provider(easel: any): ContextMenuProvider {
   return {
     id: '__builtin_add_node',
     priority: 10,
-    get_items: ctx => {
+    get_items: (ctx: ContextMenuContext) => {
       const types = get_registered_types().filter(
         t => t !== 'subgraph_input' && t !== 'subgraph_output',
       );
@@ -333,7 +333,7 @@ function canvas_ops_provider(easel: any): ContextMenuProvider {
   return {
     id: '__builtin_canvas_ops',
     priority: -10,
-    get_items: ctx => {
+    get_items: (ctx: ContextMenuContext) => {
       if (ctx.node_id) return [];
       const items: ContextMenuItem[] = [];
 
@@ -370,7 +370,9 @@ function canvas_ops_provider(easel: any): ContextMenuProvider {
           label: 'Clear Wires',
           group: 'canvas',
           action: () => {
-            easel.dispatch((s: any) => ({ ...s, bindings: {} }));
+            for (const b of easel.plugin_data.wire?.get_bindings() ?? []) {
+              easel.plugin_data.wire?.remove_binding(b.id);
+            }
           },
         },
       );
@@ -385,7 +387,8 @@ function create_subgraph_provider(easel: any): ContextMenuProvider {
   return {
     id: '__builtin_create_subgraph',
     priority: 5,
-    get_items: ctx => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    get_items: (ctx: ContextMenuContext) => {
       const selected = easel.state?.value?.selected_node_ids;
       if (!selected || selected.length === 0) return [];
       const has_valid = selected.some((id: string) => {
@@ -412,7 +415,7 @@ function node_instance_provider(easel: any): ContextMenuProvider {
   return {
     id: '__builtin_node_instance',
     priority: -20,
-    get_items: ctx => {
+    get_items: (ctx: ContextMenuContext) => {
       if (!ctx.node_id) return [];
       const inst = easel.node_instances.get(ctx.node_id)?.inst;
       if (inst && typeof inst.get_context_menu_items === 'function') {

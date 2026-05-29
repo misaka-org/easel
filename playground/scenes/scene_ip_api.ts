@@ -1,10 +1,9 @@
 import { vec2_create } from '@/core/math';
 import { add_node } from '@/core/node_ops';
-import { add_binding } from '@/core/binding_ops';
-import { create_data_flow_binding } from '@/core/types';
 import type { Dispatch } from '@/runtime/registry';
+import type { Easel } from '@/runtime/easel';
 
-export const load_ip_api_scene = (dispatch: Dispatch) => {
+export const load_ip_api_scene = (dispatch: Dispatch, easel: Easel) => {
   // Text input node (provides the IP query)
   dispatch(s =>
     add_node(s, {
@@ -58,12 +57,10 @@ export const load_ip_api_scene = (dispatch: Dispatch) => {
     }),
   );
 
-  // Wire the graph: TextInput → IpApi → TextView
-  dispatch(s =>
-    add_binding(s, create_data_flow_binding('input1', 'query', 'api1', 'query')),
-  );
-
-  dispatch(s =>
-    add_binding(s, create_data_flow_binding('api1', 'result', 'view1', 'content')),
-  );
+  // wires via plugin
+  const api = easel.plugin_data.wire;
+  if (!api) return;
+  const mk_id = () => 'b_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  api.add_binding({ id: mk_id(), source_id: 'input1', source_handle: 'query', target_id: 'api1', target_handle: 'query' });
+  api.add_binding({ id: mk_id(), source_id: 'api1', source_handle: 'result', target_id: 'view1', target_handle: 'content' });
 };

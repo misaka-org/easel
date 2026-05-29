@@ -2,8 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { create_initial_state } from '@/core/state';
 import { serialize_state, deserialize_state } from '@/core/serialization';
 import { add_node } from '@/core/node_ops';
-import { add_binding } from '@/core/binding_ops';
-import { create_data_flow_binding } from '@/core/types';
 import { vec2_create } from '@/core/math';
 
 describe('serialization', () => {
@@ -12,12 +10,12 @@ describe('serialization', () => {
     const json = serialize_state(s);
     const restored = deserialize_state(json);
     expect(Object.keys(restored.nodes)).toEqual(Object.keys(s.nodes));
-    expect(Object.keys(restored.bindings)).toEqual(Object.keys(s.bindings));
+
     expect(restored.interaction.mode).toBe('idle');
   });
 
-  it('roundtrips nodes and wires', () => {
-    let s = add_node(create_initial_state(), {
+  it('roundtrips nodes', () => {
+    const s = add_node(create_initial_state(), {
       id: 'n1',
       type: 'default',
       position: vec2_create(100, 100),
@@ -28,14 +26,12 @@ describe('serialization', () => {
       widgets: [{ id: 'w1', type: 'number', label: 'Num', value: 42 }],
       custom_data: { foo: 'bar' },
     });
-    s = add_binding(s, create_data_flow_binding('n1', 'out', 'n1', 'in'));
 
     const json = serialize_state(s);
     const restored = deserialize_state(json);
     expect(restored.nodes['n1']?.title).toBe('Test');
     expect(restored.nodes['n1']?.position).toEqual(vec2_create(100, 100));
     expect(restored.nodes['n1']?.widgets?.[0]?.value).toBe(42);
-    expect(Object.values(restored.bindings).some(b => b.type === 'data-flow')).toBe(true);
   });
 
   it('returns initial state on invalid JSON', () => {
@@ -46,7 +42,7 @@ describe('serialization', () => {
   it('handles missing nodes/wires/camera fields', () => {
     const restored = deserialize_state(JSON.stringify({}));
     expect(Object.keys(restored.nodes).length).toBe(0);
-    expect(Object.keys(restored.bindings).length).toBe(0);
+
     expect(restored.camera).toEqual({ position: { x: 0, y: 0 }, zoom: 1 });
   });
 });

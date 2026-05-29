@@ -1,10 +1,9 @@
 import { vec2_create } from '@/core/math';
 import { add_node } from '@/core/node_ops';
-import { add_binding } from '@/core/binding_ops';
-import { create_data_flow_binding } from '@/core/types';
 import type { Dispatch } from '@/runtime/registry';
+import type { Easel } from '@/runtime/easel';
 
-export const load_executor_scene = (dispatch: Dispatch) => {
+export const load_executor_scene = (dispatch: Dispatch, easel: Easel) => {
   dispatch(s =>
     add_node(s, {
       id: 'n1',
@@ -61,16 +60,12 @@ export const load_executor_scene = (dispatch: Dispatch) => {
     }),
   );
 
-  dispatch(s =>
-    add_binding(s, create_data_flow_binding('n1', 'out', 'n2', 'prompt')),
-  );
-  dispatch(s =>
-    add_binding(s, create_data_flow_binding('n1', 'out', 'n3', 'prompt')),
-  );
-  dispatch(s =>
-    add_binding(s, create_data_flow_binding('n2', 'out_list', 'n4', 'prompt')),
-  );
-  dispatch(s =>
-    add_binding(s, create_data_flow_binding('n3', 'out_list', 'n4', 'ref')),
-  );
+  // 连线通过 wire 插件创建
+  const api = easel.plugin_data.wire;
+  if (!api) return;
+  const mk_id = () => `b_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  api.add_binding({ id: mk_id(), source_id: 'n1', source_handle: 'out', target_id: 'n2', target_handle: 'prompt' });
+  api.add_binding({ id: mk_id(), source_id: 'n1', source_handle: 'out', target_id: 'n3', target_handle: 'prompt' });
+  api.add_binding({ id: mk_id(), source_id: 'n2', source_handle: 'out_list', target_id: 'n4', target_handle: 'prompt' });
+  api.add_binding({ id: mk_id(), source_id: 'n3', source_handle: 'out_list', target_id: 'n4', target_handle: 'ref' });
 };

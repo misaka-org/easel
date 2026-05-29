@@ -1,7 +1,8 @@
 import { Store } from './store';
+import { group_plugin } from '@/plugins/group';
 import { setup_events } from './events';
 import { render_nodes } from './render';
-import { render_wires } from './render_wires';
+import { wire_plugin } from '@/plugins/wire';
 import { guidelines_plugin } from '@/plugins/guidelines';
 import { toolbar_plugin } from '@/plugins/toolbar';
 import { subgraph_plugin } from '@/plugins/subgraph';
@@ -32,6 +33,8 @@ export interface EaselEvents {
   node_dblclick: (payload: { node_id: string; target: HTMLElement }) => void;
   nodes_dropped: (node_ids: string[]) => void;
   enter_subgraph: (payload: { node_id: string }) => void;
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  create_group: (payload: {}) => void;
 }
 
 /** Per-node event payloads. Each node instance gets its own EventEmitter. */
@@ -102,17 +105,6 @@ export class Easel {
     this.state = easel_store.state;
     this.store = easel_store;
 
-    // Auto-cleanup bindings when a node is deleted
-    this.store.nodes.on_before_change((event) => {
-      if (event.type === 'delete' && event.prev) {
-        for (const b of this.store.bindings.list()) {
-          if (b.source_id === event.id || b.target_id === event.id) {
-            this.store.bindings.delete(b.id);
-          }
-        }
-      }
-    });
-
     this.app_events = new EventEmitter<EaselEvents>();
 
     this.dispatch = updater => {
@@ -137,13 +129,14 @@ export class Easel {
     guidelines_plugin(this);
     toolbar_plugin(this);
     subgraph_plugin(this);
+    wire_plugin(this);
+    group_plugin(this);
 
     options.plugins?.forEach(plugin => plugin(this));
 
-    register_core_keybindings(this.keybindings, this.dispatch);
+    register_core_keybindings(this.keybindings, this.dispatch, this.app_events);
 
     render_nodes(this);
-    render_wires(this.container, this.store);
     setup_events(this.container, this.dispatch, this.app_events, this.tools, this.keybindings);
   }
 

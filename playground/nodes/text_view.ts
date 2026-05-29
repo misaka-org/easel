@@ -79,17 +79,9 @@ export class TextViewNode extends EaselNode {
     set_inner_html(this.header, title_html);
 
     // Ports
-    const is_port_connected = (p_id: string) =>
-      Object.values(state.bindings ?? {}).some(
-        b =>
-          b.type === 'data-flow' &&
-          ((b.target_id === this.node_id && b.target_handle === p_id) ||
-           (b.source_id === this.node_id && b.source_handle === p_id)),
-      );
-
-    const ports_html = node_data.inputs
+const ports_html = node_data.inputs
       .map(p => {
-        const connected_class = is_port_connected(p.id) ? 'connected' : '';
+        const connected_class = '';
         return `
         <div class="port-row">
           <div class="port" data-port-id="${p.id}" data-port-type="input">

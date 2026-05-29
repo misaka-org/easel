@@ -1,17 +1,59 @@
-import type { State, GraphNode } from '@/core/types';
+/**
+ * Wire 渲染模块。
+ *
+ * 从 src/runtime/render_wires.ts 迁移，适配为插件渲染。
+ * 使用 SVG overlay 绘制贝塞尔曲线连线。
+ * 连线数据来源：easel.plugin_data.wire.get_bindings()
+ * 临时连线状态：easel.plugin_data.wire._wire_state
+ */
+
+import type { Easel } from '@/runtime/easel';
+import type { State, Port } from '@/core/types';
 import { vec2_sub, vec2_scale } from '@/core/math';
-import { frame_effect } from './frame_effect';
-import type { Store } from './store';
+import { frame_effect } from '@/runtime/frame_effect';
+
+// ── 本地类型定义（GraphNode 已从 core/types 移除）─────────────────
+
+type WidgetValue = string | number | boolean;
+type WidgetOption = { readonly label: string; readonly value: string };
+type Widget = {
+  readonly id: string;
+  readonly type: string;
+  readonly label: string;
+  readonly value: WidgetValue;
+  readonly min?: number;
+  readonly max?: number;
+  readonly step?: number;
+  readonly options?: readonly string[] | readonly WidgetOption[];
+  readonly value_type?: string;
+  readonly accepts?: readonly string[];
+  readonly required?: boolean;
+};
+
+type GraphNode = {
+  readonly id: string;
+  readonly type: string;
+  readonly position: import('@/core/math').Vec2;
+  readonly size: import('@/core/math').Vec2;
+  readonly title: string;
+  readonly inputs: readonly Port[];
+  readonly outputs: readonly Port[];
+  readonly widgets?: readonly Widget[];
+  readonly style_mode?: 'default' | 'borderless';
+  readonly resizable?: boolean;
+  readonly collapsed?: boolean;
+  readonly custom_data: Record<string, unknown>;
+};
 
 // Layout constants matching CSS defaults for DefaultNode / SubgraphNode
 const LAYOUT = {
   default: {
-    header_h: 36, // 10px padding-top + ~20px content + 6px padding-bottom
+    header_h: 36,
     body_pad_left: 12,
     body_pad_right: 12,
-    port_row_h: 16, // min-height of .port-row
+    port_row_h: 16,
     port_dot: 8,
-    port_gap: 0, // .port-rows are block elements, no gap
+    port_gap: 0,
   },
   subgraph: {
     header_h: 36,
@@ -22,16 +64,16 @@ const LAYOUT = {
     port_gap: 0,
   },
   subgraph_input: {
-    header_h: 0, // no header
-    body_pad_left: 6, // padding 10px 12px 10px 6px
+    header_h: 0,
+    body_pad_left: 6,
     body_pad_right: 12,
-    port_row_h: 22, // port ~16px + body gap 6px (ports are direct flex children with gap)
+    port_row_h: 22,
     port_dot: 8,
     port_gap: 6,
   },
   subgraph_output: {
     header_h: 0,
-    body_pad_left: 12, // padding 10px 6px 10px 12px
+    body_pad_left: 12,
     body_pad_right: 6,
     port_row_h: 22,
     port_dot: 8,
@@ -40,14 +82,13 @@ const LAYOUT = {
 };
 const LAYOUT_DEFAULT = LAYOUT.default;
 
-// Widget-area layout constants (default node only)
-const WIDGET_BODY_GAP = 8; // node-body gap between ports-container and widgets-container
+const WIDGET_BODY_GAP = 8;
 const WIDGET_CONTAINER_MARGIN_TOP = 2;
 const WIDGET_CONTAINER_PADDING_TOP = 8;
-const WIDGET_ROW_H = 24; // approximate widget row height (input ~22px + alignment)
-const WIDGET_GAP = 8; // widgets-container gap between rows
+const WIDGET_ROW_H = 24;
+const WIDGET_GAP = 8;
 
-/** Calculate port dot center relative to node position (no DOM reads). */
+/** 计算端口圆点中心相对节点位置的偏移（无 DOM 读取）。 */
 function calc_rel_pos(
   node: GraphNode,
   port_id: string,
@@ -58,7 +99,6 @@ function calc_rel_pos(
   const widgets = node.widgets || [];
   const no = LAYOUT[node.type as keyof typeof LAYOUT] || LAYOUT_DEFAULT;
 
-  // Collapsed: ports at header vertical center, left/right edge
   if (node.collapsed) {
     const mid_y = no.header_h > 0 ? no.header_h / 2 : 8;
     return {
@@ -67,38 +107,33 @@ function calc_rel_pos(
     };
   }
 
-  // Subgraph input stub: ports are outputs on the RIGHT edge
   if (node.type === 'subgraph_input') {
-    const idx = outputs.findIndex(p => p.id === port_id);
+    const idx = outputs.findIndex((p: Port) => p.id === port_id);
     if (idx === -1) return undefined;
     const x = Math.max(0, node.size.x - 22);
     const y = 10 + idx * no.port_row_h + 8;
     return { x, y };
   }
 
-  // Subgraph output stub: ports are inputs on the LEFT edge
   if (node.type === 'subgraph_output') {
-    const idx = inputs.findIndex(p => p.id === port_id);
+    const idx = inputs.findIndex((p: Port) => p.id === port_id);
     if (idx === -1) return undefined;
     const x = no.body_pad_left + no.port_dot / 2;
     const y = 10 + idx * no.port_row_h + 8;
     return { x, y };
   }
 
-  // Standard nodes (default, subgraph, group, custom)
   if (type === 'input') {
-    const idx = inputs.findIndex(p => p.id === port_id);
+    const idx = inputs.findIndex((p: Port) => p.id === port_id);
     if (idx !== -1) {
       const x = no.body_pad_left + no.port_dot / 2;
       const y = no.header_h + idx * (no.port_row_h + no.port_gap) + no.port_row_h / 2;
       return { x, y };
     }
 
-    // Not in inputs — might be a widget port (rendered in widgets-container)
-    const w_idx = widgets.findIndex(w => w.id === port_id);
+    const w_idx = widgets.findIndex((w: Widget) => w.id === port_id);
     if (w_idx !== -1) {
-      const x = no.body_pad_left + no.port_dot / 2; // same X as input ports
-      // Y: after all port rows + widgets-container overhead + widget row offset
+      const x = no.body_pad_left + no.port_dot / 2;
       const port_rows_h = (inputs.length + outputs.length) * no.port_row_h;
       const widgets_y =
         no.header_h +
@@ -114,7 +149,7 @@ function calc_rel_pos(
   }
 
   if (type === 'output') {
-    const idx = outputs.findIndex(p => p.id === port_id);
+    const idx = outputs.findIndex((p: Port) => p.id === port_id);
     if (idx === -1) return undefined;
     const x = Math.max(0, node.size.x - no.body_pad_right - no.port_dot / 2);
     const y =
@@ -125,23 +160,10 @@ function calc_rel_pos(
   return undefined;
 }
 
+export const render_wires = (easel: Easel): void => {
+  const container = easel.container;
+  const store = easel.store;
 
-/** Yield all data-flow connections as a uniform iterable. */
-function* all_connections(store: Store) {
-  for (const b of store.bindings.list()) {
-    if (b.type === 'data-flow') {
-      yield {
-        id: b.id,
-        source_node_id: b.source_id,
-        source_port_id: b.source_handle,
-        target_node_id: b.target_id,
-        target_port_id: b.target_handle,
-      };
-    }
-  }
-}
-
-export const render_wires = (container: HTMLElement, store: Store): void => {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.classList.add('wires-container');
   container.appendChild(svg);
@@ -151,12 +173,7 @@ export const render_wires = (container: HTMLElement, store: Store): void => {
   svg.appendChild(active_wire_path);
 
   const wire_elements = new Map<string, SVGPathElement>();
-
-  // Track last-drawn wire positions so we can skip unchanged wires.
   const last_wire_pos = new Map<string, string>();
-
-  // Port position cache: relative offsets from node position.
-  // Populated via calc_rel_pos() which avoids DOM reads entirely.
   const port_rel_positions = new Map<string, Map<string, { x: number; y: number }>>();
   const node_layout_versions = new Map<string, string>();
 
@@ -169,7 +186,6 @@ export const render_wires = (container: HTMLElement, store: Store): void => {
     const node = state.nodes[node_id];
     if (!node) return undefined;
 
-    // Invalidate cache when layout-relevant properties change
     const layout_key = `${node_id}_${node.type}_${node.size.x.toFixed(1)}_${node.size.y.toFixed(1)}_${node.inputs.length}_${node.outputs.length}_${!!node.collapsed}`;
     const cached_version = node_layout_versions.get(node_id);
     if (cached_version !== layout_key) {
@@ -177,7 +193,6 @@ export const render_wires = (container: HTMLElement, store: Store): void => {
       node_layout_versions.set(node_id, layout_key);
     }
 
-    // Check cache
     const node_cache = port_rel_positions.get(node_id);
     if (node_cache) {
       const rel = node_cache.get(port_id);
@@ -186,7 +201,6 @@ export const render_wires = (container: HTMLElement, store: Store): void => {
       }
     }
 
-    // Calculate relative position from layout constants (no DOM read)
     const rel = calc_rel_pos(node, port_id, type);
     if (rel) {
       if (!port_rel_positions.has(node_id)) {
@@ -196,7 +210,6 @@ export const render_wires = (container: HTMLElement, store: Store): void => {
       return { x: node.position.x + rel.x, y: node.position.y + rel.y };
     }
 
-    // Fallback: position within the node body (not at edge)
     const no = LAYOUT[node.type as keyof typeof LAYOUT] || LAYOUT_DEFAULT;
     const fx = no.body_pad_left + no.port_dot / 2;
     const fy = no.header_h + Math.min(node.size.y * 0.4, 80);
@@ -219,10 +232,11 @@ export const render_wires = (container: HTMLElement, store: Store): void => {
     svg.style.transform = `translate(${state.camera.position.x}px, ${state.camera.position.y}px) scale(${state.camera.zoom})`;
     svg.style.strokeWidth = `${2 / state.camera.zoom}px`;
 
-    const current_ids = new Set(
-      store.bindings.list().filter(b => b.type === 'data-flow').map(b => b.id),
-    );
+    // --- 读取插件 bindings（DataFlowBinding[]，不含 group-child 等）---
+    const bindings = easel.plugin_data.wire?.get_bindings() ?? [];
+    const current_ids = new Set(bindings.map(b => b.id));
 
+    // 清理已删除的连线元素
     Array.from(wire_elements.entries()).forEach(([id, el]) => {
       if (!current_ids.has(id)) {
         svg.removeChild(el);
@@ -230,8 +244,9 @@ export const render_wires = (container: HTMLElement, store: Store): void => {
       }
     });
 
-    for (const conn of all_connections(store)) {
-      const { id, source_node_id, source_port_id, target_node_id, target_port_id } = conn;
+    // 更新/创建连线路径
+    for (const conn of bindings) {
+      const { id, source_id, source_handle, target_id, target_handle } = conn;
       if (!current_ids.has(id)) continue;
 
       let el = wire_elements.get(id);
@@ -243,21 +258,20 @@ export const render_wires = (container: HTMLElement, store: Store): void => {
         last_wire_pos.delete(id);
       }
 
-      const source_node = store.nodes.get(source_node_id);
-      const source_port = source_node?.outputs.find(p => p.id === source_port_id);
-      const type = source_port?.value_type;
+      const source_node = store.nodes.get(source_id);
+      const source_port = source_node?.outputs.find((p: Port) => p.id === source_handle);
+      const vtype = source_port?.value_type;
 
-      if (type) {
-        el.dataset.valueType = type;
+      if (vtype) {
+        el.dataset.valueType = vtype;
       } else {
         delete el.dataset.valueType;
       }
 
-      const p1 = get_port_position(source_node_id, source_port_id, 'output', state);
-      const p2 = get_port_position(target_node_id, target_port_id, 'input', state);
+      const p1 = get_port_position(source_id, source_handle, 'output', state);
+      const p2 = get_port_position(target_id, target_handle, 'input', state);
 
       if (p1 && p2) {
-        // Skip draw_bezier + setAttribute when neither endpoint moved
         const pos_key = `${p1.x.toFixed(1)},${p1.y.toFixed(1)},${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
         if (last_wire_pos.get(id) === pos_key) continue;
         last_wire_pos.set(id, pos_key);
@@ -266,19 +280,16 @@ export const render_wires = (container: HTMLElement, store: Store): void => {
         if (last_wire_pos.has(id)) last_wire_pos.delete(id);
         el.setAttribute('d', '');
       }
+    }
 
-  }
-    if (state.interaction.mode === 'wiring') {
+    // --- Active wire（正在拖的临时连线）---
+    const ws = (easel.plugin_data.wire as any)?._wire_state;
+    if (ws && ws.is_wiring) {
       active_wire_path.style.display = 'block';
-      const p1 = get_port_position(
-        state.interaction.source_node_id,
-        state.interaction.source_port_id,
-        'output',
-        state,
-      );
+      const p1 = get_port_position(ws.source_node_id, ws.source_port_id, 'output', state);
 
       if (p1) {
-        const screen_delta = vec2_sub(state.interaction.target_pos, state.camera.position);
+        const screen_delta = vec2_sub(ws.target_pos, state.camera.position);
         const world_target = vec2_scale(screen_delta, 1 / state.camera.zoom);
 
         active_wire_path.setAttribute('d', draw_bezier(p1.x, p1.y, world_target.x, world_target.y));

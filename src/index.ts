@@ -55,7 +55,7 @@ export type {
 export { history_plugin } from './plugins/history';
 export { auto_pan_plugin } from './plugins/auto_pan';
 export { executor_plugin } from './plugins/executor_plugin';
-export { is_port_connected, find_binding_by_target, find_binding_by_source } from './core/binding_ops';
+
 export { guidelines_plugin } from './plugins/guidelines';
 export { toolbar_plugin } from './plugins/toolbar';
 export { node_picker_plugin } from './plugins/node_picker';

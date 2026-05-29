@@ -8,7 +8,6 @@ import type { PointerEventParams } from '@/core/interactions';
 import * as O from 'fp-ts/Option';
 import { vec2_sub, vec2_scale, vec2_create, aabb_intersect } from '@/core/math';
 import { move_nodes } from '@/core/node_ops';
-import { try_grab_wire, try_connect_wire } from './wire_tool';
 
 // ── Pure helpers ────────────────────────────────────────────────
 
@@ -56,17 +55,7 @@ const start_selection_or_pan = (state: State, event: PointerEventParams): State 
 const handle_dragging = (state: State, i: Extract<Interaction, { mode: 'dragging' }>, event: PointerEventParams): State => {
   const delta = vec2_scale(vec2_sub(event.screen_position, i.start_pos), 1 / state.camera.zoom);
   const restored = { ...state, nodes: { ...state.nodes } };
-  const to_move = new Set<string>();
-  const collect = (id: string) => {
-    if (to_move.has(id)) return;
-    to_move.add(id);
-    Object.values(state.bindings)
-      .filter(b => (b.type === 'group-child' || b.type === 'subgraph-child') && b.source_id === id)
-      .map(b => b.target_id)
-      .forEach(collect);
-  };
-  i.node_ids.forEach(collect);
-  for (const id of to_move) {
+  for (const id of i.node_ids) {
     if (restored.nodes[id] && i.original_nodes[id]) restored.nodes[id] = i.original_nodes[id]!;
   }
   return { ...move_nodes(restored, i.node_ids, delta), interaction: i };
@@ -112,11 +101,7 @@ export const select_tool: Tool = {
   cursor: 'default',
 
   on_pointer_down: (state, _interaction, event): ToolResult => {
-    // 1) wiring: 点 port 自动开始连线
-    const grabbed = try_grab_wire(state, event);
-    if (O.isSome(grabbed)) return { state: grabbed.value };
-
-    // 2) resize
+    // 1) resize
     if (O.isSome(event.target_action) && event.target_action.value === 'resize' && O.isSome(event.target_node_id)) {
       return { state: start_resizing(state, event.target_node_id.value, event) };
     }
@@ -130,13 +115,6 @@ export const select_tool: Tool = {
 
   on_pointer_move: (state, interaction, event): ToolResult => {
     switch (interaction.mode) {
-      case 'wiring':
-        return {
-          state: {
-            ...state,
-            interaction: { ...(interaction as Extract<Interaction, { mode: 'wiring' }>), target_pos: event.screen_position },
-          },
-        };
       case 'dragging':
         return { state: handle_dragging(state, interaction as any, event) };
       case 'resizing':
@@ -150,10 +128,7 @@ export const select_tool: Tool = {
 
   on_pointer_up: (state, interaction, event): ToolResult => {
     let next = state;
-    if (interaction.mode === 'wiring' && event) {
-      const i = interaction as Extract<Interaction, { mode: 'wiring' }>;
-      next = try_connect_wire(state, i.source_node_id, i.source_port_id, event);
-    } else if (interaction.mode === 'box_selecting' && event) {
+    if (interaction.mode === 'box_selecting' && event) {
       next = finish_box_selection(state, interaction as any, event);
     }
     return { state: { ...next, interaction: { mode: 'idle' } } };

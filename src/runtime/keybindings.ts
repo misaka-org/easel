@@ -1,7 +1,7 @@
-import { create_group_child_binding } from '@/core/types';
-import { remove_node, add_node } from '@/core/node_ops';
-import { vec2_create } from '@/core/math';
+
+import { remove_node } from '@/core/node_ops';
 import type { Dispatch } from './registry';
+import EventEmitter from 'eventemitter3';
 
 export type KeybindingDef = {
   id: string;
@@ -58,7 +58,7 @@ export class KeybindingManager {
 
 // ===== 内置快捷键注册 =====
 
-export function register_core_keybindings(kb: KeybindingManager, dispatch: Dispatch): void {
+export function register_core_keybindings(kb: KeybindingManager, dispatch: Dispatch, app_events: EventEmitter<any>): void {
   const delete_handler = () => (s: any) => {
     if (s.selected_node_ids.length === 0) return s;
     return s.selected_node_ids.reduce((acc: any, id: string) => {
@@ -85,53 +85,7 @@ export function register_core_keybindings(kb: KeybindingManager, dispatch: Dispa
     key: 'g',
     ctrl: true,
     handler: () => {
-      dispatch(s => {
-        const selected = s.selected_node_ids;
-        if (selected.length === 0) return s;
-
-        let min_x = Infinity,
-          min_y = Infinity,
-          max_x = -Infinity,
-          max_y = -Infinity;
-        selected.forEach((id: string) => {
-          const n = s.nodes[id];
-          if (n) {
-            min_x = Math.min(min_x, n.position.x);
-            min_y = Math.min(min_y, n.position.y);
-            max_x = Math.max(max_x, n.position.x + n.size.x);
-            max_y = Math.max(max_y, n.position.y + n.size.y);
-          }
-        });
-
-        const padding = 20;
-        const pos = vec2_create(min_x - padding, min_y - padding - 40);
-        const size = vec2_create(max_x - min_x + padding * 2, max_y - min_y + padding * 2 + 40);
-
-        const group_id = `group_${Date.now()}`;
-        const hues = [0, 30, 60, 120, 210, 270, 315];
-        const hue = hues[Math.floor(Math.random() * hues.length)];
-
-        const next = add_node(s, {
-          id: group_id,
-          type: 'group',
-          position: pos,
-          size: size,
-          title: 'Group',
-          inputs: [],
-          outputs: [],
-          custom_data: { hue },
-          resizable: true,
-        });
-
-        // 创建 group-child bindings
-        let bindings = { ...next.bindings };
-        for (const child_id of selected) {
-          const b = create_group_child_binding(group_id, child_id);
-          bindings = { ...bindings, [b.id]: b };
-        }
-
-        return { ...next, bindings, selected_node_ids: [group_id] };
-      });
+      app_events.emit('create_group', {});
     },
     description: 'Group selected nodes (Ctrl+G)',
   });

@@ -24,7 +24,10 @@ export const controls_plugin: EaselPlugin = easel => {
   const do_layout = () => {
     const vp = easel.container.getBoundingClientRect();
     const s = easel.state.value;
-    const result = auto_layout(s.nodes, s.bindings ?? {}, vp.width, vp.height);
+    const edges = (easel.plugin_data.wire?.get_bindings() ?? []).map(b => ({
+      source_id: b.source_id, target_id: b.target_id,
+    }));
+    const result = auto_layout(s.nodes, edges, vp.width, vp.height);
     const new_nodes = { ...s.nodes };
     for (const [id, pos] of Object.entries(result.positions)) {
       new_nodes[id] = { ...new_nodes[id], position: pos };
