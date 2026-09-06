@@ -43,6 +43,17 @@ export {
 } from './core/graph/document';
 export type { GraphDocumentError } from './core/graph/document';
 export {
+  validate_graph_document,
+  type GraphValidationIssue,
+  type GraphValidationIssuePath,
+} from './core/graph/validation';
+export {
+  deserialize_graph_document,
+  serialize_graph_document,
+  type GraphDeserializationError,
+  type GraphDocumentSerializeOptions,
+} from './core/graph/serialization';
+export {
   add_node as graph_add_node,
   get_node as graph_get_node,
   remove_node as graph_remove_node,

@@ -91,6 +91,22 @@ unpack_subgraph(document, host_node_id): Either<GraphDocumentError, GraphDocumen
 
 当 scope 仍被其它 host 引用、host 或 nested graph 不存在时，unpack 返回明确错误，不会静默删除共享 scope。
 
+## 一致性校验与版本化序列化
+
+校验与序列化定义在 `src/core/graph/validation.ts` 与 `src/core/graph/serialization.ts`，只处理当前 `format_version = 1` 的 GraphDocument。
+
+```ts
+validate_graph_document(document): Either<readonly GraphValidationIssue[], true>
+serialize_graph_document(document, options?): string
+deserialize_graph_document(json): Either<GraphDeserializationError | readonly GraphValidationIssue[], GraphDocument>
+```
+
+- `validate_graph_document` 返回可读问题列表，不抛堆栈异常。每个 `GraphValidationIssue` 带 `path` 与 `message`，例如 `nodes.abc.graph_id`，并覆盖 root/subgraph 层级、graph id、节点归属、binding 方向、boundary slot/端口方向与 host 端口对齐等一致性约束。
+- `serialize_graph_document` 输出普通 JSON string，默认紧凑输出；`{ pretty: true }` 使用 2 空格缩进。序列化结果不包含 class、function 或自定义运行时对象，可被 `JSON.parse` 恢复为 plain object。
+- `deserialize_graph_document` 先处理非法 JSON、缺失根字段、非法 `format_version` 和结构性类型错误，再调用一致性校验；结构合法但语义非法的 document 返回 validation issues。
+- `format_version` 当前固定为 1。后续迁移应在反序列化入口按版本分派 decoder；未知未来版本返回 `unsupported_format_version`，不要直接扩宽 v1 的类型守卫静默接受新数据。
+- 运行时尚未调用该序列化器。GraphDocument 校验与序列化只属于核心图模型范围，runtime、plugin 与 executor 仍按现有流程工作。
+
 ## 当前约束
 
 - 节点 ID 全局唯一，binding ID 同样在整份 document 内唯一。
