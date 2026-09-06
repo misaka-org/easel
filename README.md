@@ -27,6 +27,10 @@ pnpm dev
 
 两层严格分工：**核心**只做数据变换，**运行时**响应事件、驱动渲染。
 
+## 图模型状态
+
+核心 `GraphDocument` 已加入 first-class subgraph 语义：host node 通过 `nested_graph_id` 引用 scope，scope 边界通过 `boundary_bindings` 映射到内部节点端口，并提供不可变的 `pack_nodes` / `unpack_subgraph`。旧 runtime、plugin 与 executor 仍使用原有 stub/`custom_data.graph` 流程，尚未迁移到这套 GraphDocument 模型。
+
 ## 文档
 
 - [架构总览](./docs/architecture.md) — 分层、渲染策略、设计决策
@@ -34,22 +38,22 @@ pnpm dev
 - [运行时层 (Runtime)](./docs/runtime.md) — Easel 类、节点注册、事件、主题
 - [内置节点](./docs/nodes.md) — DefaultNode、GroupNode、SubgraphNode
 - [图执行引擎](./docs/executor.md) — GraphExecutor：拓扑排序、缓存、实时模式
-- [图模型 (GraphDocument)](./docs/graph-model.md) — GraphScope/GraphDocument 核心模型、纯操作与迁移边界
+- [图模型 (GraphDocument)](./docs/graph-model.md) — GraphScope/GraphDocument 核心模型、host/boundary 与 pack/unpack 语义、迁移边界
 - [React 对接](./docs/react.md) — 用 React 开发自定义节点
 - [插件列表](./docs/plugins-list.md) — 插件概览与各插件文档入口
 
 ## 插件一览
 
-| 插件 | 说明 |
-|---|---|
+| 插件                                           | 说明                           |
+| ---------------------------------------------- | ------------------------------ |
 | [Context Menu](./docs/plugins/context-menu.md) | 右键菜单，可扩展 Provider 模式 |
-| [Controls](./docs/plugins/controls.md) | 缩放/适配/全屏/自动布局 |
-| [History](./docs/plugins/history.md) | 撤销/重做，历史列表面板 |
-| [Minimap](./docs/plugins/minimap.md) | 画布小地图 |
-| [Auto Pan](./docs/plugins/auto-pan.md) | 边缘自动平移 |
-| [Guidelines](./docs/plugins/guidelines.md) | 吸附对齐参考线 |
-| [Node Picker](./docs/plugins/node-picker.md) | 搜索添加节点 |
-| [Executor](./docs/plugins/executor.md) | 图执行控制栏 + 节点覆盖层 |
+| [Controls](./docs/plugins/controls.md)         | 缩放/适配/全屏/自动布局        |
+| [History](./docs/plugins/history.md)           | 撤销/重做，历史列表面板        |
+| [Minimap](./docs/plugins/minimap.md)           | 画布小地图                     |
+| [Auto Pan](./docs/plugins/auto-pan.md)         | 边缘自动平移                   |
+| [Guidelines](./docs/plugins/guidelines.md)     | 吸附对齐参考线                 |
+| [Node Picker](./docs/plugins/node-picker.md)   | 搜索添加节点                   |
+| [Executor](./docs/plugins/executor.md)         | 图执行控制栏 + 节点覆盖层      |
 
 ## License
 

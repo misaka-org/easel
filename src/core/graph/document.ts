@@ -1,6 +1,8 @@
 import type { GraphNode } from '../types';
 import type {
   BindingId,
+  BoundaryId,
+  GraphBoundaryBinding,
   GraphBindingRecord,
   GraphDocument,
   GraphId,
@@ -88,6 +90,45 @@ export type GraphDocumentError =
       readonly binding_id: BindingId;
       readonly node_id: NodeId;
       readonly handle: string;
+    }
+  | {
+      readonly type: 'graph_has_hosts';
+      readonly graph_id: GraphId;
+      readonly host_node_ids: readonly NodeId[];
+    }
+  | {
+      readonly type: 'empty_node_selection';
+      readonly source_graph_id: GraphId;
+    }
+  | {
+      readonly type: 'node_not_in_source_graph';
+      readonly node_id: NodeId;
+      readonly node_graph_id: GraphId;
+      readonly source_graph_id: GraphId;
+    }
+  | {
+      readonly type: 'host_node_in_selection';
+      readonly host_node_id: NodeId;
+    }
+  | {
+      readonly type: 'nested_graph_required';
+      readonly node_id: NodeId;
+    }
+  | {
+      readonly type: 'nested_graph_not_found';
+      readonly node_id: NodeId;
+      readonly graph_id: GraphId;
+    }
+  | {
+      readonly type: 'graph_still_has_hosts';
+      readonly graph_id: GraphId;
+      readonly host_node_ids: readonly NodeId[];
+    }
+  | {
+      readonly type: 'host_binding_missing_boundary';
+      readonly binding_id: BindingId;
+      readonly node_id: NodeId;
+      readonly handle: string;
     };
 
 export const create_empty_graph_document = (): GraphDocument => {
@@ -105,6 +146,7 @@ export const create_empty_graph_document = (): GraphDocument => {
     graphs: { [root_graph.id]: root_graph },
     nodes: {},
     bindings: {},
+    boundary_bindings: {},
   };
 };
 
@@ -174,6 +216,13 @@ export const remove_graph = (
     return E.left({ type: 'cannot_remove_root', graph_id });
   }
 
+  const host_node_ids = Object.values(document.nodes)
+    .filter(node => node.nested_graph_id === graph_id)
+    .map(node => node.id);
+  if (host_node_ids.length > 0) {
+    return E.left({ type: 'graph_has_hosts', graph_id, host_node_ids });
+  }
+
   const child_graph_ids = Object.values(document.graphs)
     .filter(child_graph => child_graph.parent_graph_id === graph_id)
     .map(child_graph => child_graph.id);
@@ -192,7 +241,14 @@ export const remove_graph = (
   }
 
   const { [graph_id]: _removed_graph, ...graphs } = document.graphs;
-  return E.right({ ...document, graphs });
+  const boundary_bindings = Object.values(document.boundary_bindings)
+    .filter(boundary => boundary.graph_id !== graph_id)
+    .reduce<Readonly<Record<BoundaryId, GraphBoundaryBinding>>>(
+      (acc, boundary) => ({ ...acc, [boundary.id]: boundary }),
+      {},
+    );
+
+  return E.right({ ...document, graphs, boundary_bindings });
 };
 
 const add_node_record = (
@@ -396,3 +452,6 @@ export const remove_binding = (
   const { [binding_id]: _removed_binding, ...bindings } = document.bindings;
   return E.right({ ...document, bindings });
 };
+
+export { pack_nodes, unpack_subgraph } from './subgraph';
+export type { PackNodesOptions } from './subgraph';

@@ -18,6 +18,8 @@ export * from './core/types';
 // Graph document exports
 export type {
   BindingId,
+  BoundaryId,
+  GraphBoundaryBinding,
   GraphBindingRecord,
   GraphDocument,
   GraphId,
@@ -27,6 +29,8 @@ export type {
   GraphSlot,
   NodeId,
 } from './core/graph/types';
+export { pack_nodes, unpack_subgraph } from './core/graph/subgraph';
+export type { PackNodesOptions } from './core/graph/subgraph';
 export {
   add_binding,
   add_graph,
