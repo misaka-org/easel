@@ -33,6 +33,10 @@ import { CounterNode } from './nodes/counter_node';
 import { load_realtime_scene } from './scenes/scene_realtime';
 import { load_ip_api_scene } from './scenes/scene_ip_api';
 import { load_context_menu_scene } from './scenes/scene_context_menu';
+import {
+  load_document_subgraph_scene,
+  type DocumentSubgraphSceneHandle,
+} from './scenes/scene_document_subgraph';
 
 class ExecutableDefaultNode extends DefaultNode {
   static node_spec: NodeSpec = {};
@@ -148,6 +152,7 @@ const init = () => {
   });
 
   const { state, dispatch, set_theme } = easel;
+  let document_subgraph_handle: DocumentSubgraphSceneHandle | undefined;
 
   // Register node types via easel.register (OOP API)
   easel.register.add_node('default', ExecutableDefaultNode);
@@ -178,21 +183,66 @@ const init = () => {
   easel.register.add_node_ns('text_input', ['输入']);
   easel.register.add_node_ns('color_source', ['输入']);
 
-  // Subgraph stack depth → exit button visibility
-  const update_subgraph_ui = () => {
+  // Scope-aware subgraph exit/enter visibility
+  const update_scope_ui = () => {
+    const btn_enter = document.getElementById('btn-enter-subgraph');
     const btn_exit = document.getElementById('btn-exit-subgraph');
-    if (btn_exit) {
-      btn_exit.style.display = easel.plugin_data.subgraph?.stack_depth() ? 'block' : 'none';
-    }
-  };
-  effect(update_subgraph_ui);
+    const document_controller = document_subgraph_handle?.controller;
+    const legacy_depth = easel.plugin_data.subgraph?.stack_depth() ?? 0;
 
+    if (document_controller == null) {
+      if (btn_exit) {
+        btn_exit.style.display = legacy_depth > 0 ? 'block' : 'none';
+      }
+      if (btn_enter) {
+        btn_enter.style.display = 'none';
+      }
+      return;
+    }
+
+    const is_inside = document_controller.path.length > 1;
+    if (btn_exit) {
+      btn_exit.style.display = is_inside ? 'block' : 'none';
+    }
+    if (btn_enter == null) {
+      return;
+    }
+    const selected_host_id = state.value.selected_node_ids.find(
+      id => document_controller.view.nodes[id]?.nested_graph_id != null,
+    );
+    btn_enter.style.display = !is_inside && selected_host_id != null ? 'block' : 'none';
+  };
+  effect(() => {
+    void state.value;
+    void document_subgraph_handle?.controller.view;
+    update_scope_ui();
+  });
+
+  document.getElementById('btn-enter-subgraph')?.addEventListener('click', () => {
+    const document_controller = document_subgraph_handle?.controller;
+    if (document_controller == null) {
+      return;
+    }
+    const selected_host_id = state.value.selected_node_ids.find(
+      id => document_controller.view.nodes[id]?.nested_graph_id != null,
+    );
+    if (selected_host_id != null) {
+      document_controller.enter_subgraph(selected_host_id);
+    }
+  });
   document.getElementById('btn-exit-subgraph')?.addEventListener('click', () => {
+    const document_controller = document_subgraph_handle?.controller;
+    if (document_controller != null) {
+      document_controller.exit_subgraph();
+      return;
+    }
     easel.plugin_data.subgraph?.exit();
   });
 
   // Scene Management
   const load_scene = (name: string) => {
+    document_subgraph_handle?.stop();
+    document_subgraph_handle = undefined;
     easel.plugin_data.subgraph?.clear();
     easel.dispatch(() => ({
       ...create_initial_state(),
@@ -284,6 +334,8 @@ const init = () => {
       load_ip_api_scene(dispatch, easel);
     } else if (name === 'context_menu') {
       load_context_menu_scene(dispatch);
+    } else if (name === 'document_subgraph') {
+      document_subgraph_handle = load_document_subgraph_scene(easel);
     } else if (name === 'perf') {
       load_perf_scene(dispatch);
     }
@@ -330,6 +382,11 @@ const init = () => {
   if (stats_el) {
     effect(() => {
       const s = state.value;
+      const document_controller = document_subgraph_handle?.controller;
+      void document_controller?.view;
+      const scope_text = document_controller != null
+        ? `Scope: ${document_controller.path.join(' > ')}`
+        : `Stack Depth: ${easel.plugin_data.subgraph?.stack_depth() ?? 0}`;
       const text_content = [
         `Nodes: ${Object.keys(s.nodes).length}`,
         `Wires: ${easel.plugin_data.wire?.get_bindings().length ?? 0}`,
@@ -338,16 +395,13 @@ const init = () => {
         )}, ${s.camera.position.y.toFixed(1)}] @ ${s.camera.zoom.toFixed(2)}x`,
         `Selected: ${s.selected_node_ids.length > 0 ? s.selected_node_ids.join(', ') : 'None'}`,
         `Interaction: ${s.interaction.mode}`,
-    `Stack Depth: ${easel.plugin_data.subgraph?.stack_depth() ?? 0}`,
+        scope_text,
       ].join('\n');
       if (stats_el.textContent !== text_content) {
         stats_el.textContent = text_content;
       }
 
-      const btn_exit = document.getElementById('btn-exit-subgraph');
-      if (btn_exit) {
-        btn_exit.style.display = easel.plugin_data.subgraph?.stack_depth() ? 'block' : 'none';
-      }
+      update_scope_ui();
     });
   }
 

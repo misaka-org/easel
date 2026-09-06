@@ -83,6 +83,8 @@ stop();
 
 这是单向投影：旧 `Easel` 上的后续编辑仍不会反向写回 `GraphDocument`，旧 runtime 也未接管 GraphDocument 编辑。
 
+playground 的 `Document Subgraph` scene 已基于 `DocumentController` + `mount_document_bridge` 提供 GraphDocument scope 进入/退出视觉检查；当前旧 Easel 编辑仍不回写 GraphDocument，属于只读导航示例。
+
 ## 渲染
 
 ### 节点 (DOM)
