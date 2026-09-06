@@ -15,6 +15,35 @@ export {
 export * from './core/math';
 export * from './core/types';
 
+// Graph document exports
+export type {
+  BindingId,
+  GraphBindingRecord,
+  GraphDocument,
+  GraphId,
+  GraphKind,
+  GraphNodeRecord,
+  GraphScope,
+  GraphSlot,
+  NodeId,
+} from './core/graph/types';
+export {
+  add_binding,
+  add_graph,
+  create_empty_graph_document,
+  get_binding,
+  get_graph,
+  move_node_to_graph,
+  remove_binding,
+  remove_graph,
+} from './core/graph/document';
+export type { GraphDocumentError } from './core/graph/document';
+export {
+  add_node as graph_add_node,
+  get_node as graph_get_node,
+  remove_node as graph_remove_node,
+} from './core/graph/document';
+
 // Runtime exports
 export { Easel, type EaselEvents } from './runtime/easel';
 export { KeybindingManager, type KeybindingDef } from './runtime/keybindings';

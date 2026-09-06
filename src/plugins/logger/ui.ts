@@ -1,14 +1,6 @@
 import { apply_styles } from '@/utils/css';
 import type { LoggerService, LogEntry } from './types';
 
-// ── 级别颜色映射 ──
-const LEVEL_COLORS: Record<string, string> = {
-  debug: '#888',
-  info: '#ccc',
-  warn: '#eab308',
-  error: '#ef4444',
-};
-
 const ALL_LEVELS: ReadonlyArray<string> = ['debug', 'info', 'warn', 'error'];
 
 // ── CSS（注入 shadow root，单次） ──
