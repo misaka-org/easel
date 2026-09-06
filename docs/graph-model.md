@@ -71,6 +71,7 @@ add_node(document, node): Either<GraphDocumentError, GraphDocument>
 add_node(document, graph_id, node): Either<GraphDocumentError, GraphDocument>
 remove_node(document, node_id): Either<GraphDocumentError, GraphDocument>
 move_node_to_graph(document, node_id, target_graph_id): Either<GraphDocumentError, GraphDocument>
+update_node(document, node_id, updater): Either<GraphDocumentError, GraphDocument>
 add_binding(document, binding): Either<GraphDocumentError, GraphDocument>
 remove_binding(document, binding_id): Either<GraphDocumentError, GraphDocument>
 pack_nodes(document, options): Either<GraphDocumentError, GraphDocument>
@@ -78,6 +79,14 @@ unpack_subgraph(document, host_node_id): Either<GraphDocumentError, GraphDocumen
 ```
 
 查找函数使用 `fp-ts/Option`。会失败的变更使用 `fp-ts/Either` 和可识别错误 union，不抛异常、不以 `null` / `undefined` 表达错误。
+
+### 节点与 host/scope 不变量
+
+- `update_node` 用纯 updater 更新单个节点；不允许变更 `node.id` 或 `graph_id`。若更新删除 binding 正在使用的 input/output port，返回 `binding_invalidated_by_node_update`。
+- host 的 `nested_graph_id` 只能指向挂在该 host 所在 graph 下的非 root `subgraph`；host input/output port id 列表必须与对应 scope 的 `input_slots` / `output_slots` 完全对齐。`add_node`、`update_node` 与 `validate_graph_document` 都会校验这些约束。
+- `move_node_to_graph` 禁止移动 host node，返回 `cannot_move_host_node`；`remove_node` 删除 host 时会保留其指向的 scope definition（该 scope 可继续被其它 host 实例化，也可能暂未实例化）。
+- `remove_node` 与 `move_node_to_graph` 均拒绝删除或移动被 boundary mapping 引用的内部节点，返回 `node_used_by_boundary`；调用方需先删除或调整对应 boundary mapping 后重试。
+- `validate_graph_document` 检查重复 input/output slot id，以及同一 graph、方向、slot 的重复 boundary mapping。
 
 ### pack_nodes
 

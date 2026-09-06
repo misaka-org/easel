@@ -42,6 +42,15 @@ const has_slot = (graph: GraphScope, direction: 'input' | 'output', slot_id: str
   return slots.some(slot => slot.id === slot_id);
 };
 
+const push_duplicate_slot_issue = (
+  issues: GraphValidationIssue[],
+  path: string,
+  direction: string,
+  slot_id: string,
+): void => {
+  push_issue(issues, path, `duplicate ${direction} slot id '${slot_id}'`);
+};
+
 export const validate_graph_document = (
   document: GraphDocument,
 ): E.Either<readonly GraphValidationIssue[], true> => {
@@ -106,6 +115,32 @@ export const validate_graph_document = (
         `${graph_path}.parent_graph_id`,
         `parent graph '${graph.parent_graph_id}' does not exist`,
       );
+    }
+
+    const seen_input_slot_ids = new Set<string>();
+    for (const [index, slot] of graph.input_slots.entries()) {
+      if (seen_input_slot_ids.has(slot.id)) {
+        push_duplicate_slot_issue(
+          issues,
+          `${graph_path}.input_slots.${index}.id`,
+          'input',
+          slot.id,
+        );
+      }
+      seen_input_slot_ids.add(slot.id);
+    }
+
+    const seen_output_slot_ids = new Set<string>();
+    for (const [index, slot] of graph.output_slots.entries()) {
+      if (seen_output_slot_ids.has(slot.id)) {
+        push_duplicate_slot_issue(
+          issues,
+          `${graph_path}.output_slots.${index}.id`,
+          'output',
+          slot.id,
+        );
+      }
+      seen_output_slot_ids.add(slot.id);
     }
   }
 
@@ -233,6 +268,7 @@ export const validate_graph_document = (
   }
 
   const boundary_ids = new Set<string>();
+  const seen_boundary_mapping_keys = new Set<string>();
   for (const [key, boundary] of Object.entries(document.boundary_bindings)) {
     const boundary_path = `boundary_bindings.${key}`;
     if (boundary.id !== key) {
@@ -269,6 +305,17 @@ export const validate_graph_document = (
     if (graph == null) {
       continue;
     }
+
+    const mapping_key = `${boundary.graph_id}:${boundary.direction}:${boundary.slot_id}`;
+    if (seen_boundary_mapping_keys.has(mapping_key)) {
+      push_issue(
+        issues,
+        `${boundary_path}.slot_id`,
+        `duplicate boundary mapping for graph '${boundary.graph_id}' ${boundary.direction} slot '${boundary.slot_id}'`,
+      );
+    }
+    seen_boundary_mapping_keys.add(mapping_key);
+
     if (!has_slot(graph, boundary.direction, boundary.slot_id)) {
       push_issue(
         issues,
@@ -309,6 +356,27 @@ export const validate_graph_document = (
     const nested_graph = document.graphs[node.nested_graph_id];
     if (nested_graph == null) {
       continue;
+    }
+
+    if (nested_graph.id === document.root_graph_id) {
+      push_issue(
+        issues,
+        `nodes.${node.id}.nested_graph_id`,
+        `host must not reference root graph '${nested_graph.id}'`,
+      );
+    } else if (nested_graph.kind !== 'subgraph') {
+      push_issue(
+        issues,
+        `nodes.${node.id}.nested_graph_id`,
+        `host nested graph '${nested_graph.id}' must have kind subgraph, got '${String(nested_graph.kind)}'`,
+      );
+    }
+    if (nested_graph.parent_graph_id !== node.graph_id) {
+      push_issue(
+        issues,
+        `nodes.${node.id}.nested_graph_id`,
+        `host nested graph parent '${String(nested_graph.parent_graph_id)}' does not match node graph '${node.graph_id}'`,
+      );
     }
 
     const host_input_ids = node.inputs.map(port => port.id);

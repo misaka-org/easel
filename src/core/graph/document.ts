@@ -120,6 +120,58 @@ export type GraphDocumentError =
       readonly graph_id: GraphId;
     }
   | {
+      readonly type: 'host_graph_is_root';
+      readonly node_id: NodeId;
+      readonly nested_graph_id: GraphId;
+    }
+  | {
+      readonly type: 'host_graph_kind_invalid';
+      readonly node_id: NodeId;
+      readonly nested_graph_id: GraphId;
+      readonly nested_kind: string;
+    }
+  | {
+      readonly type: 'host_graph_parent_mismatch';
+      readonly node_id: NodeId;
+      readonly nested_graph_id: GraphId;
+      readonly node_graph_id: GraphId;
+      readonly nested_parent_graph_id?: GraphId;
+    }
+  | {
+      readonly type: 'host_ports_scope_mismatch';
+      readonly node_id: NodeId;
+      readonly nested_graph_id: GraphId;
+      readonly direction: 'input' | 'output';
+    }
+  | {
+      readonly type: 'node_used_by_boundary';
+      readonly node_id: NodeId;
+      readonly graph_id: GraphId;
+      readonly boundary_ids: readonly BoundaryId[];
+    }
+  | {
+      readonly type: 'cannot_move_host_node';
+      readonly node_id: NodeId;
+      readonly nested_graph_id: GraphId;
+    }
+  | {
+      readonly type: 'updated_node_id_changed';
+      readonly node_id: NodeId;
+      readonly updated_node_id: NodeId;
+    }
+  | {
+      readonly type: 'updated_node_graph_changed';
+      readonly node_id: NodeId;
+      readonly graph_id: GraphId;
+      readonly updated_graph_id: GraphId;
+    }
+  | {
+      readonly type: 'binding_invalidated_by_node_update';
+      readonly binding_id: BindingId;
+      readonly node_id: NodeId;
+      readonly handle: string;
+    }
+  | {
       readonly type: 'graph_still_has_hosts';
       readonly graph_id: GraphId;
       readonly host_node_ids: readonly NodeId[];
@@ -251,6 +303,80 @@ export const remove_graph = (
   return E.right({ ...document, graphs, boundary_bindings });
 };
 
+const has_same_ids = (left: readonly string[], right: readonly string[]): boolean => {
+  if (left.length !== right.length) {
+    return false;
+  }
+  return left.every((id, index) => id === right[index]);
+};
+
+const validate_host_scope = (
+  document: GraphDocument,
+  node: GraphNodeRecord,
+): E.Either<GraphDocumentError, undefined> => {
+  const nested_graph_id = node.nested_graph_id;
+  if (nested_graph_id == null) {
+    return E.right(undefined);
+  }
+
+  const nested_graph = document.graphs[nested_graph_id];
+  if (nested_graph == null) {
+    return E.left({
+      type: 'nested_graph_not_found',
+      node_id: node.id,
+      graph_id: nested_graph_id,
+    });
+  }
+  if (nested_graph.id === document.root_graph_id) {
+    return E.left({
+      type: 'host_graph_is_root',
+      node_id: node.id,
+      nested_graph_id,
+    });
+  }
+  if (nested_graph.kind !== 'subgraph') {
+    return E.left({
+      type: 'host_graph_kind_invalid',
+      node_id: node.id,
+      nested_graph_id,
+      nested_kind: String(nested_graph.kind),
+    });
+  }
+  if (nested_graph.parent_graph_id !== node.graph_id) {
+    return E.left({
+      type: 'host_graph_parent_mismatch',
+      node_id: node.id,
+      nested_graph_id,
+      node_graph_id: node.graph_id,
+      nested_parent_graph_id: nested_graph.parent_graph_id,
+    });
+  }
+
+  const host_input_ids = node.inputs.map(port => port.id);
+  const scope_input_ids = nested_graph.input_slots.map(slot => slot.id);
+  if (!has_same_ids(host_input_ids, scope_input_ids)) {
+    return E.left({
+      type: 'host_ports_scope_mismatch',
+      node_id: node.id,
+      nested_graph_id,
+      direction: 'input',
+    });
+  }
+
+  const host_output_ids = node.outputs.map(port => port.id);
+  const scope_output_ids = nested_graph.output_slots.map(slot => slot.id);
+  if (!has_same_ids(host_output_ids, scope_output_ids)) {
+    return E.left({
+      type: 'host_ports_scope_mismatch',
+      node_id: node.id,
+      nested_graph_id,
+      direction: 'output',
+    });
+  }
+
+  return E.right(undefined);
+};
+
 const add_node_record = (
   document: GraphDocument,
   node: GraphNodeRecord,
@@ -261,6 +387,11 @@ const add_node_record = (
 
   if (document.nodes[node.id] != null) {
     return E.left({ type: 'duplicate_node_id', node_id: node.id });
+  }
+
+  const host_validation = validate_host_scope(document, node);
+  if (E.isLeft(host_validation)) {
+    return host_validation;
   }
 
   return E.right({
@@ -294,6 +425,16 @@ export function add_node(
   return add_node_record(document, graph_id_or_node);
 }
 
+const boundary_ids_using_node = (
+  document: GraphDocument,
+  node_id: NodeId,
+  graph_id: GraphId,
+): readonly BoundaryId[] => {
+  return Object.values(document.boundary_bindings)
+    .filter(boundary => boundary.graph_id === graph_id && boundary.node_id === node_id)
+    .map(boundary => boundary.id);
+};
+
 export const remove_node = (
   document: GraphDocument,
   node_id: NodeId,
@@ -304,6 +445,16 @@ export const remove_node = (
   }
 
   const node = node_option.value;
+  const boundary_ids = boundary_ids_using_node(document, node_id, node.graph_id);
+  if (boundary_ids.length > 0) {
+    return E.left({
+      type: 'node_used_by_boundary',
+      node_id,
+      graph_id: node.graph_id,
+      boundary_ids,
+    });
+  }
+
   const bindings = bindings_without_node(document, node_id, node.graph_id);
   const { [node_id]: _removed_node, ...nodes } = document.nodes;
 
@@ -333,6 +484,24 @@ export const move_node_to_graph = (
     return E.left({ type: 'target_graph_is_current_graph', node_id, graph_id: node.graph_id });
   }
 
+  const boundary_ids = boundary_ids_using_node(document, node_id, node.graph_id);
+  if (boundary_ids.length > 0) {
+    return E.left({
+      type: 'node_used_by_boundary',
+      node_id,
+      graph_id: node.graph_id,
+      boundary_ids,
+    });
+  }
+
+  if (node.nested_graph_id != null) {
+    return E.left({
+      type: 'cannot_move_host_node',
+      node_id,
+      nested_graph_id: node.nested_graph_id,
+    });
+  }
+
   const moved_node: GraphNodeRecord = { ...node, graph_id: target_graph_id };
   const bindings = bindings_without_node(document, node_id, node.graph_id);
 
@@ -340,6 +509,93 @@ export const move_node_to_graph = (
     ...document,
     nodes: { ...document.nodes, [node_id]: moved_node },
     bindings,
+  });
+};
+
+const find_binding_invalidated_by_node_update = (
+  document: GraphDocument,
+  node_id: NodeId,
+  graph_id: GraphId,
+  updated_node: GraphNodeRecord,
+): GraphBindingRecord | undefined => {
+  const input_handles = new Set(updated_node.inputs.map(port => port.id));
+  const output_handles = new Set(updated_node.outputs.map(port => port.id));
+  return Object.values(document.bindings).find(binding => {
+    if (binding.graph_id !== graph_id) {
+      return false;
+    }
+    if (binding.source_id === node_id && !output_handles.has(binding.source_handle)) {
+      return true;
+    }
+    if (binding.target_id === node_id && !input_handles.has(binding.target_handle)) {
+      return true;
+    }
+    return false;
+  });
+};
+
+/**
+ * 用纯 updater 更新节点，并在写入前校验 host/scope 与既有 binding 不变量。
+ * @param document - 原 GraphDocument
+ * @param node_id - 目标节点 id
+ * @param updater - 返回新 GraphNodeRecord 的纯函数
+ * @returns 更新后的 document，或 GraphDocumentError
+ */
+export const update_node = (
+  document: GraphDocument,
+  node_id: NodeId,
+  updater: (node: GraphNodeRecord) => GraphNodeRecord,
+): E.Either<GraphDocumentError, GraphDocument> => {
+  const node_option = get_node(document, node_id);
+  if (O.isNone(node_option)) {
+    return E.left({ type: 'node_not_found', node_id });
+  }
+
+  const node = node_option.value;
+  const updated_node = updater(node);
+
+  if (updated_node.id !== node.id) {
+    return E.left({
+      type: 'updated_node_id_changed',
+      node_id: node.id,
+      updated_node_id: updated_node.id,
+    });
+  }
+  if (updated_node.graph_id !== node.graph_id) {
+    return E.left({
+      type: 'updated_node_graph_changed',
+      node_id: node.id,
+      graph_id: node.graph_id,
+      updated_graph_id: updated_node.graph_id,
+    });
+  }
+
+  const invalidated_binding = find_binding_invalidated_by_node_update(
+    document,
+    node_id,
+    node.graph_id,
+    updated_node,
+  );
+  if (invalidated_binding != null) {
+    const source_invalidated = invalidated_binding.source_id === node_id;
+    return E.left({
+      type: 'binding_invalidated_by_node_update',
+      binding_id: invalidated_binding.id,
+      node_id,
+      handle: source_invalidated
+        ? invalidated_binding.source_handle
+        : invalidated_binding.target_handle,
+    });
+  }
+
+  const host_validation = validate_host_scope(document, updated_node);
+  if (E.isLeft(host_validation)) {
+    return host_validation;
+  }
+
+  return E.right({
+    ...document,
+    nodes: { ...document.nodes, [node_id]: updated_node },
   });
 };
 

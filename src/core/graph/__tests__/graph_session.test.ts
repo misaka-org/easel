@@ -168,12 +168,17 @@ describe('graph session', () => {
       add_node(document, make_node_record('host_in_child', 'child', [], [], 'other')),
     );
     document = unwrap_document(add_node(document, make_node_record('plain', 'root')));
-    document = unwrap_document(
-      add_node(document, make_node_record('host_missing_scope', 'root', [], [], 'missing')),
-    );
-    document = unwrap_document(
-      add_node(document, make_node_record('host_wrong_parent', 'root', [], [], 'other')),
-    );
+
+    const host_missing_scope = make_node_record('host_missing_scope', 'root', [], [], 'missing');
+    document = {
+      ...document,
+      nodes: { ...document.nodes, [host_missing_scope.id]: host_missing_scope },
+    };
+    const host_wrong_parent = make_node_record('host_wrong_parent', 'root', [], [], 'other');
+    document = {
+      ...document,
+      nodes: { ...document.nodes, [host_wrong_parent.id]: host_wrong_parent },
+    };
 
     const root_session = unwrap_session(create_graph_session(document));
 

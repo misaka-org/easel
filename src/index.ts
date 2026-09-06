@@ -62,6 +62,7 @@ export {
   move_node_to_graph,
   remove_binding,
   remove_graph,
+  update_node,
 } from './core/graph/document';
 export type { GraphDocumentError } from './core/graph/document';
 export {
