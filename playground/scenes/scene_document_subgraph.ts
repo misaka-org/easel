@@ -1,4 +1,5 @@
 import * as E from 'fp-ts/Either';
+import { effect, stop as stop_effect } from '@vue/reactivity';
 import type { GraphDocument, GraphNodeRecord, NodeId } from '@/core/graph/types';
 import type { GraphDocumentError } from '@/core/graph/document';
 import { add_binding, add_node, create_empty_graph_document } from '@/core/graph/document';
@@ -80,7 +81,7 @@ export const create_document_subgraph_document = (): GraphDocument => {
     'Input Source',
     [],
     [make_port('prompt', 'output', 'text')],
-    80,
+    60,
     180,
   );
   const processor = make_node(
@@ -88,20 +89,29 @@ export const create_document_subgraph_document = (): GraphDocument => {
     'Processor',
     [make_port('prompt', 'input', 'text')],
     [make_port('result', 'output', 'text')],
-    380,
-    160,
+    420,
+    180,
+  );
+  const formatter = make_node(
+    'formatter',
+    'Formatter',
+    [make_port('result', 'input', 'text')],
+    [make_port('content', 'output', 'text')],
+    680,
+    180,
   );
   const preview = make_node(
     'preview',
     'Preview',
     [make_port('content', 'input', 'text')],
     [],
-    780,
-    160,
+    1020,
+    180,
   );
 
   let document = make_document_node(create_empty_graph_document(), source);
   document = make_document_node(document, processor);
+  document = make_document_node(document, formatter);
   document = make_document_node(document, preview);
   document = make_document_binding(
     document,
@@ -113,9 +123,17 @@ export const create_document_subgraph_document = (): GraphDocument => {
   );
   document = make_document_binding(
     document,
-    'processor_to_preview',
+    'processor_to_formatter',
     'processor',
     'result',
+    'formatter',
+    'result',
+  );
+  document = make_document_binding(
+    document,
+    'formatter_to_preview',
+    'formatter',
+    'content',
     'preview',
     'content',
   );
@@ -123,13 +141,13 @@ export const create_document_subgraph_document = (): GraphDocument => {
   return unwrap_document(
     pack_nodes(document, {
       source_graph_id: 'root',
-      node_ids: ['processor'],
+      node_ids: ['formatter', 'processor'],
       graph_id: 'child',
       host_node_id: 'host_subgraph',
       host_type: 'document_subgraph',
       host_title: 'Child Scope',
-      position: vec2_create(380, 160),
-      size: vec2_create(220, 110),
+      position: vec2_create(520, 180),
+      size: vec2_create(240, 110),
     }),
   );
 };
@@ -142,6 +160,151 @@ const enter_host_from_dblclick = (controller: DocumentController, node_id: NodeI
   controller.enter_subgraph(node_id);
 };
 
+const get_selected_host_id = (easel: Easel, controller: DocumentController): NodeId | undefined => {
+  return easel.state.value.selected_node_ids.find(id => {
+    return controller.view.nodes[id]?.nested_graph_id != null;
+  });
+};
+
+const enter_selected_host = (easel: Easel, controller: DocumentController): void => {
+  const selected_host_id = get_selected_host_id(easel, controller);
+  if (selected_host_id != null) {
+    controller.enter_subgraph(selected_host_id);
+  }
+};
+
+/**
+ * 挂载随 scene 清理的 scope breadcrumb / exit UI。
+ * UI 只读 controller path 与 legacy 选择状态，不写回 GraphDocument。
+ */
+const mount_document_scope_ui = (easel: Easel, controller: DocumentController): (() => void) => {
+  const root_node = easel.container.getRootNode();
+  const style_el = document.createElement('style');
+  style_el.textContent = `
+    .easel-document-scope-ui {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 900;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-width: min(360px, calc(100% - 24px));
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--node-border);
+      background: var(--node-bg);
+      color: var(--text-color);
+      font-family: sans-serif;
+      font-size: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      user-select: none;
+    }
+    .easel-document-scope-path {
+      font-weight: 600;
+      line-height: 18px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .easel-document-scope-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 26px;
+    }
+    .easel-document-scope-exit {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--text-muted);
+      background: var(--primary-color);
+      color: var(--canvas-bg);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .easel-document-scope-hint {
+      color: var(--text-muted);
+      line-height: 18px;
+    }
+  `;
+  if (root_node instanceof ShadowRoot || root_node instanceof Document) {
+    root_node.appendChild(style_el);
+  }
+
+  const panel = document.createElement('div');
+  panel.className = 'easel-document-scope-ui';
+  const path_el = document.createElement('div');
+  path_el.className = 'easel-document-scope-path';
+  const row = document.createElement('div');
+  row.className = 'easel-document-scope-row';
+  const exit_button = document.createElement('button');
+  exit_button.className = 'easel-document-scope-exit';
+  exit_button.textContent = 'Exit / Up';
+  exit_button.style.display = 'none';
+  exit_button.type = 'button';
+  const hint_el = document.createElement('div');
+  hint_el.className = 'easel-document-scope-hint';
+  row.appendChild(exit_button);
+  panel.appendChild(path_el);
+  panel.appendChild(row);
+  panel.appendChild(hint_el);
+  easel.container.appendChild(panel);
+
+  const stop_panel_drag = (e: PointerEvent): void => {
+    e.stopPropagation();
+  };
+  panel.addEventListener('pointerdown', stop_panel_drag);
+
+  const update_scope_ui = (): void => {
+    const path = controller.path;
+    path_el.textContent = path.join(' > ');
+    const selected_host_id = get_selected_host_id(easel, controller);
+    if (path.length > 1) {
+      exit_button.style.display = 'inline-flex';
+      hint_el.textContent = 'Escape 或 Exit / Up 返回上级';
+    } else {
+      exit_button.style.display = 'none';
+      hint_el.textContent =
+        selected_host_id == null
+          ? '双击 host 进入 subgraph'
+          : `host ${selected_host_id} 已选中，按 Enter 进入`;
+    }
+  };
+  const ui_effect = effect(() => {
+    void controller.session;
+    void easel.state.value;
+    update_scope_ui();
+  });
+
+  exit_button.addEventListener('click', () => {
+    controller.exit_subgraph();
+  });
+
+  const handle_keydown = (e: KeyboardEvent): void => {
+    const target = e.target as HTMLElement | null;
+    if (target != null && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) {
+      return;
+    }
+    if (e.key === 'Escape' && controller.path.length > 1) {
+      controller.exit_subgraph();
+    } else if (e.key === 'Enter' && controller.path.length === 1) {
+      enter_selected_host(easel, controller);
+    }
+  };
+  easel.app_events.on('keydown', handle_keydown);
+
+  return () => {
+    stop_effect(ui_effect);
+    easel.app_events.off('keydown', handle_keydown);
+    panel.removeEventListener('pointerdown', stop_panel_drag);
+    panel.remove();
+    style_el.remove();
+  };
+};
+
 /** Load the document scene into legacy Easel and return its cleanup handle. */
 export const load_document_subgraph_scene = (easel: Easel): DocumentSubgraphSceneHandle => {
   const controller_result = create_document_controller(create_document_subgraph_document());
@@ -150,6 +313,7 @@ export const load_document_subgraph_scene = (easel: Easel): DocumentSubgraphScen
   }
   const controller = controller_result.right;
   const stop_bridge = mount_document_bridge(easel, controller);
+  const stop_scope_ui = mount_document_scope_ui(easel, controller);
   const handle_dblclick = (payload: {
     readonly node_id: NodeId;
     readonly target: HTMLElement;
@@ -167,6 +331,7 @@ export const load_document_subgraph_scene = (easel: Easel): DocumentSubgraphScen
     }
     stopped = true;
     easel.app_events.off('node_dblclick', handle_dblclick);
+    stop_scope_ui();
     stop_bridge();
   };
 

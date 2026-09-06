@@ -117,17 +117,26 @@ const make_packed_document = (): GraphDocument => {
   const b = make_node('b', 'root', {
     position: { x: 50, y: 60 },
     inputs: [port('b_in', 'input')],
+    outputs: [port('b_out', 'output')],
     custom_data: { nested: { keep: true } },
+  });
+  const sink = make_node('sink', 'root', {
+    position: { x: 70, y: 80 },
+    inputs: [port('sink_in', 'input')],
   });
 
   let document = unwrap_document(add_node(create_empty_graph_document(), source));
   document = unwrap_document(add_node(document, a));
   document = unwrap_document(add_node(document, b));
+  document = unwrap_document(add_node(document, sink));
   document = unwrap_document(
     add_binding(document, make_binding('external', 'root', 'source', 'source_out', 'a', 'a_in')),
   );
   document = unwrap_document(
     add_binding(document, make_binding('internal', 'root', 'a', 'a_out', 'b', 'b_in')),
+  );
+  document = unwrap_document(
+    add_binding(document, make_binding('output_result', 'root', 'b', 'b_out', 'sink', 'sink_in')),
   );
 
   return unwrap_document(
@@ -161,7 +170,7 @@ const make_fake_easel = (): {
   const store = new Store();
   const bindings: DocumentBridgeBinding[] = [];
   const wire = {
-    get_bindings: () => bindings,
+    get_bindings: () => bindings.slice(),
     add_binding: (binding: DocumentBridgeBinding) => {
       bindings.push(binding);
     },
@@ -179,15 +188,19 @@ const make_fake_easel = (): {
 };
 
 describe('document bridge', () => {
-  it('projects root scope without graph-only fields or non-root content', () => {
+  it('projects root scope without graph-only fields, non-root content, or boundary proxies', () => {
     const document = make_packed_document();
     const controller = unwrap_controller(create_document_controller(document));
     const view = project_document_bridge_view(controller.view);
 
     expect(view.path).toEqual(['root']);
     expect(view.graph.id).toBe('root');
-    expect(Object.keys(view.nodes).sort()).toEqual(['host', 'source']);
-    expect(Object.keys(view.bindings)).toEqual(['external']);
+    expect(view.graph.input_slots).toEqual([]);
+    expect(view.graph.output_slots).toEqual([]);
+    expect(Object.keys(view.nodes).sort()).toEqual(['host', 'sink', 'source']);
+    expect(Object.keys(view.bindings).sort()).toEqual(['external', 'output_result']);
+    expect(view.view_only_node_ids).toEqual([]);
+    expect(view.view_only_binding_ids).toEqual([]);
 
     const host = view.nodes['host']!;
     expect(host).toEqual(to_legacy_node(controller.document.nodes['host']!));
@@ -197,19 +210,60 @@ describe('document bridge', () => {
       to_legacy_binding(controller.document.bindings['external']!),
     );
     expect(view.bindings['external']).not.toHaveProperty('graph_id');
+    expect(view.bindings['output_result']).toEqual(
+      to_legacy_binding(controller.document.bindings['output_result']!),
+    );
   });
 
-  it('projects packed child content without boundary stubs', () => {
+  it('projects packed child content with view-only boundary proxies and mappings', () => {
     const controller = unwrap_controller(create_document_controller(make_packed_document()));
     const child_view = unwrap_view(controller.enter_subgraph('host'));
     const view = project_document_bridge_view(child_view);
 
     expect(view.path).toEqual(['root', 'child']);
     expect(view.graph.id).toBe('child');
-    expect(Object.keys(view.nodes).sort()).toEqual(['a', 'b']);
-    expect(Object.keys(view.bindings)).toEqual(['internal']);
+    expect(view.graph.input_slots.map(slot => slot.id)).toEqual(['input_0']);
+    expect(view.graph.output_slots.map(slot => slot.id)).toEqual(['output_0']);
     expect(view.nodes['host']).toBeUndefined();
-    expect(Object.keys(view.bindings).some(id => id.startsWith('child:'))).toBe(false);
+
+    const input_proxy = Object.values(view.nodes).find(
+      node => node.type === 'document_boundary_input',
+    );
+    const output_proxy = Object.values(view.nodes).find(
+      node => node.type === 'document_boundary_output',
+    );
+    expect(input_proxy).toBeDefined();
+    expect(output_proxy).toBeDefined();
+    expect(input_proxy?.inputs).toEqual([]);
+    expect(input_proxy?.outputs.map(port => port.id)).toEqual(['input_0']);
+    expect(output_proxy?.inputs.map(port => port.id)).toEqual(['output_0']);
+    expect(output_proxy?.outputs).toEqual([]);
+    expect(Object.keys(view.nodes).sort()).toEqual(['a', 'b', ...view.view_only_node_ids].sort());
+
+    const input_binding = Object.values(view.bindings).find(
+      binding => binding.source_id === input_proxy?.id,
+    );
+    const output_binding = Object.values(view.bindings).find(
+      binding => binding.target_id === output_proxy?.id,
+    );
+    expect(input_binding).toBeDefined();
+    expect(output_binding).toBeDefined();
+    expect(input_binding?.source_handle).toBe('input_0');
+    expect(input_binding?.target_id).toBe('a');
+    expect(input_binding?.target_handle).toBe('a_in');
+    expect(output_binding?.source_id).toBe('b');
+    expect(output_binding?.source_handle).toBe('b_out');
+    expect(output_binding?.target_handle).toBe('output_0');
+
+    expect(Object.keys(view.bindings).sort()).toEqual(
+      ['internal', ...view.view_only_binding_ids].sort(),
+    );
+    expect(view.view_only_node_ids).toHaveLength(2);
+    expect(view.view_only_binding_ids).toHaveLength(2);
+    expect(new Set(view.view_only_node_ids).has(input_proxy?.id ?? '')).toBe(true);
+    expect(new Set(view.view_only_node_ids).has(output_proxy?.id ?? '')).toBe(true);
+    expect(new Set(view.view_only_binding_ids).has(input_binding?.id ?? '')).toBe(true);
+    expect(new Set(view.view_only_binding_ids).has(output_binding?.id ?? '')).toBe(true);
 
     const a = view.nodes['a']!;
     expect(a).toEqual(to_legacy_node(controller.document.nodes['a']!));
@@ -220,6 +274,14 @@ describe('document bridge', () => {
       to_legacy_binding(controller.document.bindings['internal']!),
     );
     expect(view.bindings['internal']).not.toHaveProperty('graph_id');
+
+    for (const node of Object.values(view.nodes)) {
+      expect(node).not.toHaveProperty('graph_id');
+      expect(node).not.toHaveProperty('nested_graph_id');
+    }
+    for (const binding of Object.values(view.bindings)) {
+      expect(binding).not.toHaveProperty('graph_id');
+    }
   });
 
   it('does not modify the controller view while projecting', () => {
@@ -249,19 +311,23 @@ describe('document bridge', () => {
     });
 
     sync_document_controller_to_legacy(fake.easel, controller);
-    expect(store.nodes.keys().sort()).toEqual(['host', 'source']);
-    expect(fake.bindings.map(binding => binding.id)).toEqual(['external']);
+    expect(store.nodes.keys().sort()).toEqual(['host', 'sink', 'source']);
+    expect(fake.bindings.map(binding => binding.id).sort()).toEqual(['external', 'output_result']);
     expect(store.nodes.get('host')).not.toHaveProperty('graph_id');
     expect(store.nodes.get('host')).not.toHaveProperty('nested_graph_id');
     expect(fake.bindings[0]).not.toHaveProperty('graph_id');
 
     unwrap_view(controller.enter_subgraph('host'));
+    const projected_child = project_document_bridge_view(controller.view);
     sync_document_controller_to_legacy(fake.easel, controller);
-    expect(store.nodes.keys().sort()).toEqual(['a', 'b']);
-    expect(fake.bindings.map(binding => binding.id)).toEqual(['internal']);
+    expect(store.nodes.keys().sort()).toEqual(Object.keys(projected_child.nodes).sort());
+    expect(fake.bindings.map(binding => binding.id).sort()).toEqual(
+      Object.keys(projected_child.bindings).sort(),
+    );
     expect(store.nodes.get('host')).toBeUndefined();
     expect(store.nodes.get('a')).not.toHaveProperty('graph_id');
-    expect(fake.bindings[0]).not.toHaveProperty('graph_id');
+    expect(store.nodes.get('a')).not.toHaveProperty('nested_graph_id');
+    expect(fake.bindings.find(binding => binding.id === 'internal')).not.toHaveProperty('graph_id');
   });
 
   it('mounts a controller-to-legacy effect and stops cleanly without reverse sync', () => {
@@ -269,7 +335,7 @@ describe('document bridge', () => {
     const fake = make_fake_easel();
     const stop = mount_document_bridge(fake.easel, controller);
 
-    expect(fake.easel.store.nodes.keys().sort()).toEqual(['host', 'source']);
+    expect(fake.easel.store.nodes.keys().sort()).toEqual(['host', 'sink', 'source']);
     fake.easel.store.nodes.delete('source');
     expect(fake.easel.store.nodes.has('source')).toBe(false);
 

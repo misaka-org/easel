@@ -37,7 +37,7 @@ describe('document subgraph scene', () => {
       .sort();
 
     expect(root_ids).toEqual(['host_subgraph', 'preview', 'source']);
-    expect(child_ids).toEqual(['processor']);
+    expect(child_ids).toEqual(['formatter', 'processor']);
 
     const host = document.nodes['host_subgraph'];
     expect(host?.type).toBe('document_subgraph');
@@ -45,7 +45,7 @@ describe('document subgraph scene', () => {
     expect(Object.keys(document.boundary_bindings)).toHaveLength(2);
   });
 
-  it('navigates into host scope, exposes only the internal node, and exits back to root', () => {
+  it('navigates into host scope with two internal nodes and an internal binding', () => {
     const document = create_document_subgraph_document();
     const controller = unwrap_controller(create_document_controller(document));
 
@@ -56,16 +56,20 @@ describe('document subgraph scene', () => {
       'source',
     ]);
     expect(controller.view.bindings['source_to_processor']?.target_id).toBe('host_subgraph');
-    expect(controller.view.bindings['processor_to_preview']?.source_id).toBe('host_subgraph');
+    expect(controller.view.bindings['formatter_to_preview']?.source_id).toBe('host_subgraph');
 
     const child_view = unwrap_view(controller.enter_subgraph('host_subgraph'));
     expect(child_view.path).toEqual(['root', 'child']);
-    expect(Object.keys(child_view.nodes)).toEqual(['processor']);
-    expect(Object.keys(child_view.bindings)).toEqual([]);
+    expect(Object.keys(child_view.nodes).sort()).toEqual(['formatter', 'processor']);
+    expect(Object.keys(child_view.bindings)).toEqual(['processor_to_formatter']);
+    expect(child_view.bindings['processor_to_formatter']?.source_id).toBe('processor');
+    expect(child_view.bindings['processor_to_formatter']?.target_id).toBe('formatter');
     expect(Object.keys(child_view.boundary_bindings).sort()).toEqual([
       'child:input:0',
       'child:output:0',
     ]);
+    expect(child_view.boundary_bindings['child:input:0']?.node_id).toBe('processor');
+    expect(child_view.boundary_bindings['child:output:0']?.node_id).toBe('formatter');
 
     const exited_view = unwrap_view(controller.exit_subgraph());
     expect(exited_view.path).toEqual(['root']);
