@@ -103,6 +103,21 @@ export {
 } from './runtime/registry';
 export type { Dispatch } from './runtime/store';
 export {
+  create_document_controller,
+  create_document_controller_from_json,
+  deserialize_document_controller,
+  DocumentController,
+} from './runtime/document_controller';
+export type {
+  DocumentBindingInput,
+  DocumentBoundaryInput,
+  DocumentControllerDeserializeError,
+  DocumentControllerError,
+  DocumentControllerScopeError,
+  DocumentGraphView,
+  DocumentNodeInput,
+} from './runtime/document_controller';
+export {
   register_node_spec,
   create_node_data,
   resolve_node_spec,

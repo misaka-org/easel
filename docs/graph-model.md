@@ -126,7 +126,7 @@ session_current_boundary_bindings(session: GraphSession): Readonly<Record<Bounda
 - `session_set_document` 用新 document 替换 session 的 document 并保留当前 path，但只校验 path 上的 graph 链仍存在且层级一致，不重复调用 `validate_graph_document` 校验整份 document。
 - `session_current_graph` 返回当前 graph；path 失效时返回 `None`。`session_current_nodes` / `session_current_bindings` / `session_current_boundary_bindings` 过滤出当前 graph 的不可变 record。
 
-GraphSession 仍是纯核心层能力；runtime、plugin 与 executor 尚未迁移使用。现有 `subgraph_plugin` 的 `enter_subgraph` 事件仍使用 stub node 流程。
+GraphSession 仍是纯核心层能力；`src/runtime/document_controller.ts` 已作为首个 runtime 入口消费它，用于当前 scope 视图与操作。旧 Easel / plugin / executor 尚未迁移，现有 `subgraph_plugin` 的 `enter_subgraph` 事件仍使用 stub node 流程。
 
 ## 边界编辑操作
 
@@ -172,7 +172,7 @@ update_graph_boundary_slot(
 - `remove_graph_boundary` 删除 slot、对应 boundary mapping 以及所有 host node 的同名端口。若任一 host node 的该端口仍被父 graph binding 使用，返回 `host_port_in_use`，错误含 `host_node_id`、`binding_id` 等定位信息，且不回写原 document。
 - 失败 union 包含 `graph_not_found`、`boundary_slot_already_exists`、`boundary_slot_not_found`、mapping 节点/端口相关错误、`boundary_id_already_exists`、`invalid_arguments` 与 `host_port_in_use`，调用方可按 `type` 分支处理。
 
-边界 slot 编辑也仍是纯核心层 API；runtime、plugin 与 executor 尚未迁移使用，旧 subgraph plugin 仍使用 subgraph stub node。
+边界 slot 编辑仍是纯核心层 API；`document_controller.ts` 已把增删改封装为当前 scope 入口。旧 Easel / plugin 尚未迁移，旧 subgraph plugin 仍使用 subgraph stub node。
 
 ## 一致性校验与版本化序列化
 
@@ -188,7 +188,7 @@ deserialize_graph_document(json): Either<GraphDeserializationError | readonly Gr
 - `serialize_graph_document` 输出普通 JSON string，默认紧凑输出；`{ pretty: true }` 使用 2 空格缩进。序列化结果不包含 class、function 或自定义运行时对象，可被 `JSON.parse` 恢复为 plain object。
 - `deserialize_graph_document` 先处理非法 JSON、缺失根字段、非法 `format_version` 和结构性类型错误，再调用一致性校验；结构合法但语义非法的 document 返回 validation issues。
 - `format_version` 当前固定为 1。后续迁移应在反序列化入口按版本分派 decoder；未知未来版本返回 `unsupported_format_version`，不要直接扩宽 v1 的类型守卫静默接受新数据。
-- 运行时尚未调用该序列化器。GraphDocument 校验与序列化只属于核心图模型范围，runtime、plugin 与 executor 仍按现有流程工作。
+- `document_controller.ts` 已调用该校验后的序列化/反序列化入口，并从 JSON 重建后回到 root path。旧 Easel runtime、plugin 与 executor 仍按现有流程工作，尚未迁移到 GraphDocument。
 
 ## 执行图 flatten
 
@@ -247,7 +247,7 @@ type FlattenedGraph = {
 
 ## 与现有 runtime 的关系
 
-以下内容仍使用现有 `State`、Store、plugin 和 DOM/SVG 渲染，本次模型不会迁移它们：
+GraphDocument 迁移第一步已由 `src/runtime/document_controller.ts` 承担：它以 `GraphDocument` + `GraphSession` 为唯一权威，提供纯逻辑、无 DOM 的当前 scope 只读 view 与操作入口，可作为后续 render/projection、playground subgraph scene 和旧 Easel 迁移的基础。旧 Easel 仍未迁移，以下旧流程继续使用现有 `State`、Store、plugin 和 DOM/SVG 渲染：
 
 - `src/runtime/store.ts` 的 `Table` / `Store` 响应式桥接
 - `src/plugins/subgraph.ts` 的 stub node 方案与 expand / create 流程
@@ -256,7 +256,7 @@ type FlattenedGraph = {
 
 后续迁移顺序建议：
 
-1. 让 runtime 读取 `GraphDocument`，替代手写 `custom_data.graph`。
+1. `DocumentController` 已落地 runtime 读取 `GraphDocument` / `GraphSession` 的入口；下一步让旧 Easel 消费该入口并替代手写 `custom_data.graph`。
 2. 将 wire binding 和 group child binding 收敛到 document binding。
 3. 将 subgraph plugin 改为消费 host node + `boundary_bindings`，替代 subgraph stub node。
 4. 将 executor 改为消费 `GraphDocument`，再逐步替换旧 State。

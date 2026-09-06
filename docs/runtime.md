@@ -9,6 +9,7 @@ src/runtime/
 ├── easel.ts          # Easel 主类
 ├── registry.ts       # 节点类型注册表
 ├── store.ts          # reactive store (shallowRef + dispatch)
+├── document_controller.ts # GraphDocument/GraphSession 薄适配层
 ├── events.ts         # 事件绑定与转发
 ├── render.ts         # 节点 DOM 渲染与生命周期
 ├── render_wires.ts   # 连线 SVG 渲染
@@ -47,6 +48,22 @@ register_node_spec("my_node", { inputs: [...], outputs: [...] });
 
 // 创建节点数据（自动合并 spec 中的 ports/widgets/size）
 const node = create_node_data("my_node", { position: vec2Create(100, 100) });
+```
+
+## DocumentController
+
+`document_controller.ts` 是纯逻辑、无 DOM 的薄 runtime adapter。它用 `shallowRef<GraphSession>` 持有 `GraphSession` 作为唯一权威状态，消费 `GraphDocument` / `GraphSession`，暴露当前 scope 的只读 `DocumentGraphView`、subgraph 导航、节点/连线/边界 CRUD 和序列化入口。它暂不迁移旧 `Easel` / `Store`，也不会替换现有 DOM 渲染或 plugin 的 `State + custom_data.graph` 流程，后续可作为 projection、playground subgraph scene 和旧 runtime 迁移的基础。
+
+```ts
+import * as E from 'fp-ts/Either';
+
+const result = create_document_controller(document);
+if (E.isRight(result)) {
+  const controller = result.right;
+  controller.enter_subgraph(host_node_id);
+  controller.add_node(node);
+  controller.serialize();
+}
 ```
 
 ## 渲染
