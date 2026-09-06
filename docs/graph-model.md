@@ -247,7 +247,7 @@ type FlattenedGraph = {
 
 ## 与现有 runtime 的关系
 
-GraphDocument 迁移第一步已由 `src/runtime/document_controller.ts` 承担：它以 `GraphDocument` + `GraphSession` 为唯一权威，提供纯逻辑、无 DOM 的当前 scope 只读 view 与操作入口，可作为后续 render/projection、playground subgraph scene 和旧 Easel 迁移的基础。旧 Easel 仍未迁移，以下旧流程继续使用现有 `State`、Store、plugin 和 DOM/SVG 渲染：
+GraphDocument 迁移入口已由 `src/runtime/document_controller.ts` 与 `src/runtime/document_bridge.ts` 承担：controller 以 `GraphDocument` + `GraphSession` 为唯一权威，提供纯逻辑、无 DOM 的当前 scope 只读 view 与操作入口；bridge 把当前 scope 投影到旧 Easel/Store/wire，供旧渲染消费。旧 Easel 尚未接管 GraphDocument 编辑，以下旧流程继续使用现有 `State`、Store、plugin 和 DOM/SVG 渲染：
 
 - `src/runtime/store.ts` 的 `Table` / `Store` 响应式桥接
 - `src/plugins/subgraph.ts` 的 stub node 方案与 expand / create 流程
@@ -256,7 +256,7 @@ GraphDocument 迁移第一步已由 `src/runtime/document_controller.ts` 承担�
 
 后续迁移顺序建议：
 
-1. `DocumentController` 已落地 runtime 读取 `GraphDocument` / `GraphSession` 的入口；下一步让旧 Easel 消费该入口并替代手写 `custom_data.graph`。
+1. `DocumentController` + `document_bridge.ts` 已落地：controller 提供 runtime 读取 `GraphDocument` / `GraphSession` 的入口，bridge 提供当前 scope 到旧 `Easel` / Store / wire 的单向 legacy 投影；旧 Easel 尚未接管 GraphDocument 编辑。
 2. 将 wire binding 和 group child binding 收敛到 document binding。
 3. 将 subgraph plugin 改为消费 host node + `boundary_bindings`，替代 subgraph stub node。
 4. 将 executor 改为消费 `GraphDocument`，再逐步替换旧 State。

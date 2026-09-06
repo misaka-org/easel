@@ -118,6 +118,12 @@ export type {
   DocumentNodeInput,
 } from './runtime/document_controller';
 export {
+  mount_document_bridge,
+  project_document_bridge_view,
+  sync_document_controller_to_legacy,
+} from './runtime/document_bridge';
+export type { DocumentBridgeBinding, DocumentBridgeView } from './runtime/document_bridge';
+export {
   register_node_spec,
   create_node_data,
   resolve_node_spec,

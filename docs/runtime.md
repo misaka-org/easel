@@ -52,7 +52,7 @@ const node = create_node_data("my_node", { position: vec2Create(100, 100) });
 
 ## DocumentController
 
-`document_controller.ts` 是纯逻辑、无 DOM 的薄 runtime adapter。它用 `shallowRef<GraphSession>` 持有 `GraphSession` 作为唯一权威状态，消费 `GraphDocument` / `GraphSession`，暴露当前 scope 的只读 `DocumentGraphView`、subgraph 导航、节点/连线/边界 CRUD 和序列化入口。它暂不迁移旧 `Easel` / `Store`，也不会替换现有 DOM 渲染或 plugin 的 `State + custom_data.graph` 流程，后续可作为 projection、playground subgraph scene 和旧 runtime 迁移的基础。
+`document_controller.ts` 是纯逻辑、无 DOM 的薄 runtime adapter。它用 `shallowRef<GraphSession>` 持有 `GraphSession` 作为唯一权威状态，消费 `GraphDocument` / `GraphSession`，暴露当前 scope 的只读 `DocumentGraphView`、subgraph 导航、节点/连线/边界 CRUD 和序列化入口。它暂不迁移旧 `Easel` / `Store`，也不会替换现有 DOM 渲染或 plugin 的 `State + custom_data.graph` 流程；`document_bridge.ts` 在不改动旧运行时结构的前提下提供当前 scope 到 legacy 的投影，后续仍可作为 playground subgraph scene 和旧 runtime 迁移的基础。
 
 ```ts
 import * as E from 'fp-ts/Either';
@@ -65,6 +65,23 @@ if (E.isRight(result)) {
   controller.serialize();
 }
 ```
+
+## DocumentController legacy projection bridge
+
+`document_bridge.ts` 是 DOM-free 的薄桥接层：只把 `DocumentController` 的当前 scope 投影到旧 `Easel` / `Store` / wire plugin，不迁移旧编辑、交互或数据所有权，也不引入新依赖。
+
+- `DocumentBridgeView` 是当前 scope 的 legacy 投影，含 `path`、`graph`、`nodes` 与 `bindings`。节点去掉 `graph_id`、`nested_graph_id` 等 graph-only 字段，binding 去掉 `graph_id`；subgraph boundary 不会生成 stub 节点。
+- `project_document_bridge_view(view)` 是纯投影函数，不修改输入。
+- `sync_document_controller_to_legacy(easel, controller)` 清空旧 `store.nodes` 与 wire bindings 后写入当前投影，并用 `store.transact` 包装旧节点更新。
+- `mount_document_bridge(easel, controller)` 用 `@vue/reactivity` 的 `effect` 监听 controller session 变化并自动同步，返回 stop 函数；切换 scene 时应卸载。
+
+```ts
+const stop = mount_document_bridge(easel, controller);
+// 切换 scene 前卸载
+stop();
+```
+
+这是单向投影：旧 `Easel` 上的后续编辑仍不会反向写回 `GraphDocument`，旧 runtime 也未接管 GraphDocument 编辑。
 
 ## 渲染
 
