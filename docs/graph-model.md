@@ -91,6 +91,80 @@ unpack_subgraph(document, host_node_id): Either<GraphDocumentError, GraphDocumen
 
 当 scope 仍被其它 host 引用、host 或 nested graph 不存在时，unpack 返回明确错误，不会静默删除共享 scope。
 
+## GraphSession / scope 导航
+
+`src/core/graph/session.ts` 提供围绕 `GraphDocument` 的纯 scope 会话。`GraphSession` 持有完整 document 与当前导航 path；`path` 从 root graph 开始，最后一个 id 是当前 graph。会失败的入口返回 `fp-ts/Either`，错误类型为 `GraphSessionError`；操作不修改传入 session 或 document，也不抛堆栈异常。
+
+```ts
+type GraphSession = {
+  readonly document: GraphDocument;
+  readonly path: readonly GraphId[];
+};
+
+create_graph_session(document: GraphDocument): Either<GraphSessionError, GraphSession>
+enter_subgraph(session: GraphSession, host_node_id: NodeId): Either<GraphSessionError, GraphSession>
+exit_subgraph(session: GraphSession): Either<GraphSessionError, GraphSession>
+session_set_document(session: GraphSession, document: GraphDocument): Either<GraphSessionError, GraphSession>
+session_current_graph(session: GraphSession): Option<GraphScope>
+session_current_nodes(session: GraphSession): Readonly<Record<NodeId, GraphNodeRecord>>
+session_current_bindings(session: GraphSession): Readonly<Record<BindingId, GraphBindingRecord>>
+session_current_boundary_bindings(session: GraphSession): Readonly<Record<BoundaryId, GraphBoundaryBinding>>
+```
+
+- `create_graph_session` 从 root 创建 `[root_graph_id]` 路径，并确认 root graph 存在且 `kind` 为 `root`。
+- `enter_subgraph` 要求 host node 在当前 graph 且带 `nested_graph_id`；nested graph 的 `parent_graph_id` 必须等于当前 graph。成功后把 nested graph id 追加到 path。
+- `exit_subgraph` 从非 root path 移除最后一级；root 返回 `cannot_exit_root`。
+- `session_set_document` 用新 document 替换 session 的 document 并保留当前 path，但只校验 path 上的 graph 链仍存在且层级一致，不重复调用 `validate_graph_document` 校验整份 document。
+- `session_current_graph` 返回当前 graph；path 失效时返回 `None`。`session_current_nodes` / `session_current_bindings` / `session_current_boundary_bindings` 过滤出当前 graph 的不可变 record。
+
+GraphSession 仍是纯核心层能力；runtime、plugin 与 executor 尚未迁移使用。现有 `subgraph_plugin` 的 `enter_subgraph` 事件仍使用 stub node 流程。
+
+## 边界编辑操作
+
+`src/core/graph/boundary.ts` 提供 scope 边界 slot 的增删改，并自动同步该 scope 的所有 host node 端口。这些操作不可变：成功返回新 `GraphDocument`，失败返回 `Either<GraphBoundaryError, GraphDocument>`，不修改原 document、不抛堆栈异常。
+
+```ts
+type GraphBoundaryDirection = 'input' | 'output';
+type GraphBoundaryMapping = {
+  readonly node_id: NodeId;
+  readonly port_id: string;
+};
+type AddGraphBoundaryOptions = {
+  readonly graph_id: GraphId;
+  readonly direction: GraphBoundaryDirection;
+  readonly slot: GraphSlot;
+  readonly mapping: GraphBoundaryMapping;
+  readonly boundary_id?: BoundaryId;
+};
+type GraphBoundarySlotUpdate = Partial<GraphSlot>;
+
+add_graph_boundary(
+  document: GraphDocument,
+  options: AddGraphBoundaryOptions,
+): Either<GraphBoundaryError, GraphDocument>;
+remove_graph_boundary(
+  document: GraphDocument,
+  graph_id: GraphId,
+  direction: GraphBoundaryDirection,
+  slot_id: string,
+): Either<GraphBoundaryError, GraphDocument>;
+update_graph_boundary_slot(
+  document: GraphDocument,
+  graph_id: GraphId,
+  direction: GraphBoundaryDirection,
+  slot_id: string,
+  updates: GraphBoundarySlotUpdate,
+): Either<GraphBoundaryError, GraphDocument>;
+```
+
+- `add_graph_boundary` 在目标 graph scope 的 input/output slots 后追加新 slot，写入对应 `boundary_bindings` mapping，并给每个 `nested_graph_id` 指向该 graph 的 host node 追加同名端口。默认 boundary id 是 `${graph_id}:${direction}:${slot_id}`，也可用 `boundary_id` 指定。
+- mapping 的 node 必须存在于目标 graph，且对应方向端口必须存在。重复 slot、重复 boundary id、缺失 graph/node/port 等情况都返回对应 `GraphBoundaryError`。
+- `update_graph_boundary_slot` 更新 slot 元数据并同步所有 host node 的同名端口；slot `id` 不可变，尝试改 id 返回 `invalid_arguments`。
+- `remove_graph_boundary` 删除 slot、对应 boundary mapping 以及所有 host node 的同名端口。若任一 host node 的该端口仍被父 graph binding 使用，返回 `host_port_in_use`，错误含 `host_node_id`、`binding_id` 等定位信息，且不回写原 document。
+- 失败 union 包含 `graph_not_found`、`boundary_slot_already_exists`、`boundary_slot_not_found`、mapping 节点/端口相关错误、`boundary_id_already_exists`、`invalid_arguments` 与 `host_port_in_use`，调用方可按 `type` 分支处理。
+
+边界 slot 编辑也仍是纯核心层 API；runtime、plugin 与 executor 尚未迁移使用，旧 subgraph plugin 仍使用 subgraph stub node。
+
 ## 一致性校验与版本化序列化
 
 校验与序列化定义在 `src/core/graph/validation.ts` 与 `src/core/graph/serialization.ts`，只处理当前 `format_version = 1` 的 GraphDocument。

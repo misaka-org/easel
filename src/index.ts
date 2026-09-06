@@ -32,6 +32,28 @@ export type {
 export { pack_nodes, unpack_subgraph } from './core/graph/subgraph';
 export type { PackNodesOptions } from './core/graph/subgraph';
 export {
+  create_graph_session,
+  enter_subgraph,
+  exit_subgraph,
+  session_set_document,
+  session_current_graph,
+  session_current_nodes,
+  session_current_bindings,
+  session_current_boundary_bindings,
+  type GraphSession,
+  type GraphSessionError,
+} from './core/graph/session';
+export {
+  add_graph_boundary,
+  remove_graph_boundary,
+  update_graph_boundary_slot,
+  type AddGraphBoundaryOptions,
+  type GraphBoundaryDirection,
+  type GraphBoundaryError,
+  type GraphBoundaryMapping,
+  type GraphBoundarySlotUpdate,
+} from './core/graph/boundary';
+export {
   add_binding,
   add_graph,
   create_empty_graph_document,
