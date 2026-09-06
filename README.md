@@ -29,7 +29,7 @@ pnpm dev
 
 ## 图模型状态
 
-核心 `GraphDocument` 已加入 first-class subgraph 语义：host node 通过 `nested_graph_id` 引用 scope，scope 边界通过 `boundary_bindings` 映射到内部节点端口，并提供不可变的 `pack_nodes` / `unpack_subgraph`、`GraphSession` scope 导航和 graph boundary slot 编辑。模型层同时提供 `validate_graph_document` 一致性校验，以及基于 `format_version = 1` 的 `serialize_graph_document` / `deserialize_graph_document` 版本化 JSON 序列化；后续格式迁移按版本 decoder 处理。旧 runtime、plugin 与 executor 仍使用原有 stub/`custom_data.graph` 流程，尚未迁移到这套 GraphDocument 模型，也未调用 scope session、边界 slot 编辑、校验与序列化器。
+核心 `GraphDocument` 已加入 first-class subgraph 语义：host node 通过 `nested_graph_id` 引用 scope，scope 边界通过 `boundary_bindings` 映射到内部节点端口，并提供不可变的 `pack_nodes` / `unpack_subgraph`、`GraphSession` scope 导航和 graph boundary slot 编辑。模型层同时提供 `validate_graph_document` 一致性校验、基于 `format_version = 1` 的 `serialize_graph_document` / `deserialize_graph_document` 版本化 JSON 序列化，以及 `flatten_graph_document` 扁平执行图 view：从 root 递归展开 host/nested scope 与 boundary，host 本身不进入 flat view，跨 host binding 穿透到真实内部节点端口，同一 scope 的多实例按 instance 分别展开。后续格式迁移按版本 decoder 处理。旧 runtime、plugin 与 executor 仍使用原有 stub/`custom_data.graph` 流程，尚未迁移到这套 GraphDocument 模型，也未调用 scope session、边界 slot 编辑、flatten/execution view、校验与序列化器。
 
 ## 文档
 

@@ -181,6 +181,53 @@ deserialize_graph_document(json): Either<GraphDeserializationError | readonly Gr
 - `format_version` 当前固定为 1。后续迁移应在反序列化入口按版本分派 decoder；未知未来版本返回 `unsupported_format_version`，不要直接扩宽 v1 的类型守卫静默接受新数据。
 - 运行时尚未调用该序列化器。GraphDocument 校验与序列化只属于核心图模型范围，runtime、plugin 与 executor 仍按现有流程工作。
 
+## 执行图 flatten
+
+`flatten_graph_document` 定义在 `src/core/graph/flatten.ts`，从 root 递归展开 `GraphDocument` 成扁平执行图 view。它是纯函数，返回 `Either<GraphFlattenError, FlattenedGraph>`，不修改原 document，也不抛堆栈异常。
+
+```ts
+flatten_graph_document(document: GraphDocument): Either<GraphFlattenError, FlattenedGraph>
+```
+
+flat view 的公开类型如下：
+
+```ts
+type GraphScopeStep = {
+  readonly graph_id: GraphId;
+  readonly host_node_id?: NodeId;
+};
+
+type FlattenedGraphNode = {
+  readonly instance_id: string;
+  readonly scope_steps: readonly GraphScopeStep[];
+  readonly graph_id: GraphId;
+  readonly node_id: NodeId;
+  readonly node: GraphNodeRecord;
+};
+
+type FlattenedGraphBinding = {
+  readonly id: string;
+  readonly source_instance_id: string;
+  readonly source_handle: string;
+  readonly target_instance_id: string;
+  readonly target_handle: string;
+};
+
+type FlattenedGraph = {
+  readonly nodes: Readonly<Record<string, FlattenedGraphNode>>;
+  readonly bindings: Readonly<Record<string, FlattenedGraphBinding>>;
+};
+```
+
+- flat view 只输出实际内容节点与 binding，host 节点本身不进入结果。每个 `FlattenedGraphNode` 保留原始 `GraphNodeRecord`，同时给出该实例的 `instance_id` 与 `scope_steps`；`instance_id` 从 root graph id 开始、逐层追加 host node id，`scope_steps` 保存对应的 graph 路径，嵌套层 step 带 `host_node_id`。
+- 同一 subgraph scope 被多个 host 引用时，host node id 不同，因此各 host 会得到独立展开实例，flat node 与 binding 不会互相覆盖。
+- root 内普通 binding 保留原 binding id；进入嵌套实例后，binding id 会加上实例路径，避免不同 host 实例中的同名 binding 冲突。
+- binding 端点若是 host node 的端口，flatten 会沿该 host 指向的 nested graph 查找对应方向与 slot 的 `boundary_bindings`，再继续解析到真实内部节点端口；内部节点若又是更深层 host，会继续穿透。最终 `FlattenedGraphBinding` 的端点指向非 host 内部节点的实例 id 与端口 handle。
+- 同一 graph scope 内，相同 `direction` + `slot_id` 不允许存在多个 boundary mapping。发现重复时返回 `duplicate_boundary_mapping`，错误携带 `graph_id`、`direction`、`slot_id` 与用于定位的 `boundary_ids`。
+- host binding 对应的 slot 缺少 boundary mapping 时返回 `host_binding_missing_boundary`，错误携带 `binding_id`、`host_node_id`、`direction`、`slot_id` 与 `nested_graph_id`。mapping 指向不存在节点、节点 graph 不匹配或端口不存在时，分别返回 `boundary_mapping_node_not_found`、`boundary_mapping_node_graph_mismatch`、`boundary_mapping_port_not_found`。
+- `GraphFlattenError` 还覆盖 root/nested graph 缺失、节点 graph 不匹配与 scope cycle 等非法输入，调用方按 `type` 分支处理。
+- flatten 结果仍是纯数据 execution view，供 future executor 使用；现有 runtime、plugin 与 executor 尚未消费该 API，仍按旧 runtime stub/`custom_data.graph` 流程工作。
+
 ## 当前约束
 
 - 节点 ID 全局唯一，binding ID 同样在整份 document 内唯一。

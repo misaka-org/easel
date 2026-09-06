@@ -76,6 +76,14 @@ export {
   type GraphDocumentSerializeOptions,
 } from './core/graph/serialization';
 export {
+  flatten_graph_document,
+  type FlattenedGraph,
+  type FlattenedGraphBinding,
+  type FlattenedGraphNode,
+  type GraphFlattenError,
+  type GraphScopeStep,
+} from './core/graph/flatten';
+export {
   add_node as graph_add_node,
   get_node as graph_get_node,
   remove_node as graph_remove_node,
