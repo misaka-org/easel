@@ -1,11 +1,17 @@
 import type { Easel, EaselPlugin } from '@/runtime/easel';
 import { ContextMenuService } from './service';
 import type { ContextMenuContext, ContextMenuItem, ContextMenuProvider } from './types';
-import { remove_node, add_node, create_subgraph_from_selection, expand_subgraph } from '@/core/node_ops';
+import {
+  remove_node,
+  add_node,
+  create_subgraph_from_selection,
+  expand_subgraph,
+} from '@/core/node_ops';
 import { vec2_create } from '@/core/math';
 import { get_registered_types, get_node_ns, create_node_data } from '@/runtime/registry';
 import type { State } from '@/core/types';
 import type { Tool } from '@/core/tool';
+import { get_locked_binding_ids } from '@/plugins/wire/lock';
 
 // 将 context_menu 服务注册到 EaselPluginData，其他插件可直接从 easel.plugin_data 获取
 declare module '../../runtime/easel' {
@@ -33,6 +39,7 @@ const CSS = `
   flex-direction: column;
   gap: 2px;
   min-width: 140px;
+  max-width: min(320px, 100%);
   backdrop-filter: blur(12px);
   font-size: 13px;
   font-weight: 400;
@@ -82,6 +89,7 @@ const CSS = `
 .easel-context-menu-item-label {
   flex: 1;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 .easel-context-menu-label {
   padding: 6px 12px 4px;
@@ -115,6 +123,7 @@ const CSS = `
 .easel-context-menu-label-text {
   flex: 1;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 .easel-context-menu-separator {
   height: 1px;
@@ -372,8 +381,15 @@ function canvas_ops_provider(easel: Easel): ContextMenuProvider {
           label: 'Clear Wires',
           group: 'canvas',
           action: () => {
-            for (const b of easel.plugin_data.wire?.get_bindings() ?? []) {
-              easel.plugin_data.wire?.remove_binding(b.id);
+            const bindings = easel.plugin_data.wire?.get_bindings() ?? [];
+            const nodes = Object.fromEntries(
+              easel.store.nodes.list().map(node => [node.id, node]),
+            );
+            const locked_ids = get_locked_binding_ids(nodes, bindings);
+            for (const b of bindings) {
+              if (!locked_ids.has(b.id)) {
+                easel.plugin_data.wire?.remove_binding(b.id);
+              }
             }
           },
         },
@@ -432,59 +448,62 @@ function node_instance_provider(easel: Easel): ContextMenuProvider {
 // Plugin
 // ---------------------------------------------------------------------------
 
-export const context_menu_plugin: EaselPlugin = { id: '@easel/context-menu', dependencies: [{ id: '@easel/wire', hard: false }], setup(easel) {
-  const root_node = easel.container.getRootNode() as ShadowRoot | Document;
-  inject_styles(root_node);
+export const context_menu_plugin: EaselPlugin = {
+  id: '@easel/context-menu',
+  dependencies: [{ id: '@easel/wire', hard: false }],
+  setup(easel) {
+    const root_node = easel.container.getRootNode() as ShadowRoot | Document;
+    inject_styles(root_node);
 
-  const service = new ContextMenuService(easel.container);
+    const service = new ContextMenuService(easel.container);
 
-  // Expose for other plugins / code
-  easel.plugin_data.context_menu = service;
+    // Expose for other plugins / code
+    easel.plugin_data.context_menu = service;
 
-  // Register built-in providers
-  service.register(node_ops_provider(easel));
-  service.register(add_node_provider(easel));
-  service.register(create_subgraph_provider(easel));
-  service.register(canvas_ops_provider(easel));
-  service.register(node_instance_provider(easel));
+    // Register built-in providers
+    service.register(node_ops_provider(easel));
+    service.register(add_node_provider(easel));
+    service.register(create_subgraph_provider(easel));
+    service.register(canvas_ops_provider(easel));
+    service.register(node_instance_provider(easel));
 
-  // -----------------------------------------------------------------------
-  // Event wiring
-  // -----------------------------------------------------------------------
-  easel.app_events.on('contextmenu', (e: MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+    // -----------------------------------------------------------------------
+    // Event wiring
+    // -----------------------------------------------------------------------
+    easel.app_events.on('contextmenu', (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-    const root = easel.container.getRootNode() as ShadowRoot | Document;
-    const el = root.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
-    const node_el = el?.closest('.node') as HTMLElement | null;
-    const node_id = node_el?.dataset['id'] ?? null;
+      const root = easel.container.getRootNode() as ShadowRoot | Document;
+      const el = root.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+      const node_el = el?.closest('.node') as HTMLElement | null;
+      const node_id = node_el?.dataset['id'] ?? null;
 
-    const rect = easel.container.getBoundingClientRect();
-    const screen_pos = vec2_create(e.clientX - rect.left, e.clientY - rect.top);
+      const rect = easel.container.getBoundingClientRect();
+      const screen_pos = vec2_create(e.clientX - rect.left, e.clientY - rect.top);
 
-    const state = easel.state.value;
-    const world_pos = vec2_create(
-      (screen_pos.x - state.camera.position.x) / state.camera.zoom,
-      (screen_pos.y - state.camera.position.y) / state.camera.zoom,
-    );
+      const state = easel.state.value;
+      const world_pos = vec2_create(
+        (screen_pos.x - state.camera.position.x) / state.camera.zoom,
+        (screen_pos.y - state.camera.position.y) / state.camera.zoom,
+      );
 
-    const ctx: ContextMenuContext = {
-      node_id: node_id ?? undefined,
-      node_type: node_id ? state.nodes[node_id]?.type : undefined,
-      screen_pos,
-      world_pos,
-      target: el ?? undefined,
-      container: easel.container,
-    };
+      const ctx: ContextMenuContext = {
+        node_id: node_id ?? undefined,
+        node_type: node_id ? state.nodes[node_id]?.type : undefined,
+        screen_pos,
+        world_pos,
+        target: el ?? undefined,
+        container: easel.container,
+      };
 
-    service.show(ctx, screen_pos);
-  });
+      service.show(ctx, screen_pos);
+    });
 
-  easel.app_events.on('pointerdown', (e: MouseEvent) => {
-    if (!(e.target as HTMLElement).closest('.easel-context-menu')) {
-      service.hide();
-    }
-  });
-}
+    easel.app_events.on('pointerdown', (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('.easel-context-menu')) {
+        service.hide();
+      }
+    });
+  },
 };

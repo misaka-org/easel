@@ -3,14 +3,20 @@ export { create_initial_state } from './core/state';
 
 export {
   add_node,
+  is_node_locked,
+  is_node_muted,
   move_node,
   move_nodes,
+  muted_node_outputs,
+  set_node_flag,
+  toggle_node_flag,
   update_node_data,
   update_widget_value,
   remove_node,
   create_subgraph_from_selection,
   expand_subgraph,
 } from './core/node_ops';
+export type { NodeFlag } from './core/node_ops';
 
 export * from './core/math';
 export * from './core/types';
@@ -46,11 +52,13 @@ export {
 export {
   add_graph_boundary,
   remove_graph_boundary,
+  set_graph_boundary_mapping,
   update_graph_boundary_slot,
   type AddGraphBoundaryOptions,
   type GraphBoundaryDirection,
   type GraphBoundaryError,
   type GraphBoundaryMapping,
+  type GraphBoundaryRemoveOptions,
   type GraphBoundarySlotUpdate,
 } from './core/graph/boundary';
 export {
@@ -121,8 +129,23 @@ export {
   mount_document_bridge,
   project_document_bridge_view,
   sync_document_controller_to_legacy,
+  document_boundary_add_port_id,
 } from './runtime/document_bridge';
 export type { DocumentBridgeBinding, DocumentBridgeView } from './runtime/document_bridge';
+export {
+  commit_document_boundary_binding,
+  commit_document_boundary_edit,
+  diff_document_boundary_wire_changes,
+  mount_document_boundary_editor,
+  translate_document_boundary_binding,
+  translate_document_boundary_removal,
+} from './runtime/document_boundary_editor';
+export type {
+  DocumentBoundaryChange,
+  DocumentBoundaryEdit,
+  DocumentBoundaryEditError,
+  DocumentBoundaryRemoval,
+} from './runtime/document_boundary_editor';
 export {
   register_node_spec,
   create_node_data,

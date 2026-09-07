@@ -1,10 +1,12 @@
 import { effect } from '@vue/reactivity';
+import * as E from 'fp-ts/Either';
 import { Easel, ExecuteContext, type NodeSpec } from '@/index';
 import { add_node } from '@/core/node_ops';
 import { create_initial_state } from '@/core/state';
 import { serialize_state, deserialize_state } from '@/core/serialization';
 import { vec2_create } from '@/core/math';
 import type { GraphNode } from '@/core/types';
+import type { GraphDocument } from '@/core/graph/types';
 import { light_theme, default_theme } from '@/runtime/theme';
 import { minimap_plugin } from '@/plugins/minimap';
 import { controls_plugin } from '@/plugins/controls';
@@ -37,6 +39,29 @@ import {
   load_document_subgraph_scene,
   type DocumentSubgraphSceneHandle,
 } from './scenes/scene_document_subgraph';
+import {
+  default_project_file_name,
+  make_project_file_name,
+  parse_project_document_json,
+  project_name_from_file_name,
+  type ProjectFileParseError,
+} from './project_file';
+import {
+  apply_dom_translations,
+  detect_browser_locale,
+  on_locale_change,
+  read_locale_preference,
+  resolve_locale,
+  set_locale,
+  translate,
+  write_locale_preference,
+  type LocalePreference,
+} from './i18n';
+import {
+  get_node_flag_context_menu_items,
+  toggle_node_flag_for_context,
+  type NodeFlag,
+} from './node_flag_context_menu';
 
 class ExecutableDefaultNode extends DefaultNode {
   static node_spec: NodeSpec = {};
@@ -106,6 +131,9 @@ const init = () => {
   const canvas_el = document.getElementById('canvas');
   if (!canvas_el) return;
 
+  set_locale(detect_browser_locale());
+  apply_dom_translations();
+
   const easel = new Easel(canvas_el, {
     plugins: [
       context_menu_plugin,
@@ -153,8 +181,25 @@ const init = () => {
 
   const { state, dispatch, set_theme } = easel;
   let document_subgraph_handle: DocumentSubgraphSceneHandle | undefined;
+  let saved_document_json: string | null = null;
+  let saved_document_file_name: string | null = null;
 
-  // Register node types via easel.register (OOP API)
+  const project_name_el = document.getElementById('project-name') as HTMLInputElement | null;
+  const file_state_el = document.getElementById('file-state');
+  const project_scope_path_el = document.getElementById('project-scope-path');
+  const scope_summary_el = document.getElementById('scope-summary');
+  const scope_nav_el = document.getElementById('scope-nav');
+  const stat_nodes_el = document.getElementById('stat-nodes');
+  const stat_wires_el = document.getElementById('stat-wires');
+  const stat_zoom_el = document.getElementById('stat-zoom');
+  const stat_selected_el = document.getElementById('stat-selected');
+  const import_error_el = document.getElementById('import-error');
+  const workspace_el = document.getElementById('workspace');
+  const node_search_el = document.getElementById('node-search') as HTMLInputElement | null;
+  const scene_selector_el = document.getElementById('scene-selector') as HTMLSelectElement | null;
+  const locale_selector_el = document.getElementById('locale-selector') as HTMLSelectElement | null;
+
+  // Register node types via easel.register (OOP API).
   easel.register.add_node('default', ExecutableDefaultNode);
   easel.register.add_node('text_generation', TextGenNode);
   easel.register.add_node('image_generation', ImageGenNode);
@@ -168,54 +213,196 @@ const init = () => {
   easel.register.add_node('css_preview', CSSPreviewNode);
   easel.register.add_node('counter', CounterNode);
 
-  // Register namespace hierarchy for "Add Node" submenu
-  easel.register.add_node_ns('image_generation', ['生成', '图像']);
-  easel.register.add_node_ns('text_generation', ['生成', '文本']);
-  easel.register.add_node_ns('audio_generation', ['生成', '音频']);
-  easel.register.add_node_ns('video_concatenation', ['生成', '视频']);
-  easel.register.add_node_ns('ip_api', ['网络']);
-  easel.register.add_node_ns('math', ['数学']);
-  easel.register.add_node_ns('counter', ['数学']);
-  easel.register.add_node_ns('image_preview', ['预览']);
-  easel.register.add_node_ns('text_view', ['预览']);
-  easel.register.add_node_ns('css_preview', ['预览']);
-  easel.register.add_node_ns('css_builder', ['预览']);
-  easel.register.add_node_ns('text_input', ['输入']);
-  easel.register.add_node_ns('color_source', ['输入']);
+  // Re-register namespaces on locale changes; registry stores the latest path per type.
+  const register_node_namespaces = (): void => {
+    const generate = translate('ns_generate');
+    easel.register.add_node_ns('image_generation', [generate, translate('ns_image')]);
+    easel.register.add_node_ns('text_generation', [generate, translate('ns_text')]);
+    easel.register.add_node_ns('audio_generation', [generate, translate('ns_audio')]);
+    easel.register.add_node_ns('video_concatenation', [generate, translate('ns_video')]);
+    easel.register.add_node_ns('ip_api', [translate('ns_network')]);
+    easel.register.add_node_ns('math', [translate('ns_math')]);
+    easel.register.add_node_ns('counter', [translate('ns_math')]);
+    easel.register.add_node_ns('image_preview', [translate('ns_preview')]);
+    easel.register.add_node_ns('text_view', [translate('ns_preview')]);
+    easel.register.add_node_ns('css_preview', [translate('ns_preview')]);
+    easel.register.add_node_ns('css_builder', [translate('ns_preview')]);
+    easel.register.add_node_ns('text_input', [translate('ns_input')]);
+    easel.register.add_node_ns('color_source', [translate('ns_input')]);
+  };
+  register_node_namespaces();
+  on_locale_change(register_node_namespaces);
+
+  const get_active_document_json = (): string | null => {
+    const controller = document_subgraph_handle?.controller;
+    return controller == null ? null : controller.serialize({ pretty: true });
+  };
+
+  const current_project_file_name = (): string => {
+    const base_name = project_name_el?.value.trim() || default_project_file_name;
+    return make_project_file_name(base_name);
+  };
+
+  const set_import_error = (message: string | null): void => {
+    if (import_error_el == null) {
+      return;
+    }
+    if (message == null) {
+      import_error_el.hidden = true;
+      import_error_el.textContent = '';
+      return;
+    }
+    import_error_el.textContent = translate('file_error_prefix', { message });
+    import_error_el.hidden = false;
+  };
+
+  const format_project_file_error = (error: ProjectFileParseError): string => {
+    if ('type' in error) {
+      if (error.type === 'invalid_json') {
+        return translate('file_error_invalid_json');
+      }
+      if (error.type === 'unsupported_format_version') {
+        return translate('file_error_unsupported_version', {
+          version: String(error.format_version ?? '?'),
+        });
+      }
+      if (error.type === 'missing_field') {
+        return translate('file_error_missing_field', {
+          field: error.field ?? error.path ?? 'document',
+        });
+      }
+      return translate('file_error_invalid_structure', {
+        path: error.path ?? 'document',
+        message: error.message,
+      });
+    }
+    const details = error
+      .slice(0, 2)
+      .map(issue => `${issue.path || 'document'}: ${issue.message}`)
+      .join('; ');
+    const suffix = details.length > 0 ? ` (${details})` : '';
+    return `${translate('file_error_document_invalid')}${suffix}`;
+  };
+
+  const update_project_file_state = (): void => {
+    const active_json = get_active_document_json();
+    const file_name = current_project_file_name();
+    const is_saved =
+      active_json != null &&
+      saved_document_json === active_json &&
+      saved_document_file_name === file_name;
+    if (file_state_el) {
+      file_state_el.classList.remove('state-saved', 'state-dirty');
+      if (active_json == null) {
+        file_state_el.textContent = translate('file_state_legacy_scene');
+      } else if (is_saved) {
+        file_state_el.classList.add('state-saved');
+        file_state_el.textContent = translate('file_state_saved');
+      } else {
+        file_state_el.classList.add('state-dirty');
+        file_state_el.textContent = translate('file_state_unsaved');
+      }
+    }
+  };
+
+  const download_text_file = (file_name: string, content: string): void => {
+    const blob = new Blob([content], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file_name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
+  const export_project_file = (): void => {
+    const controller = document_subgraph_handle?.controller;
+    if (controller == null) {
+      set_import_error(translate('file_error_no_active_document'));
+      return;
+    }
+    const json = controller.serialize({ pretty: true });
+    const file_name = current_project_file_name();
+    download_text_file(file_name, json);
+    saved_document_json = json;
+    saved_document_file_name = file_name;
+    set_import_error(null);
+    update_project_file_state();
+  };
+
+  const scene_label = (value: string): string => {
+    switch (value) {
+      case 'document_subgraph':
+        return translate('scene_document_subgraph');
+      case 'default':
+        return translate('scene_basic_canvas');
+      case 'math':
+        return translate('scene_math_test');
+      case 'perf':
+        return translate('scene_performance_test');
+      case 'executor':
+        return translate('scene_executor_demo');
+      case 'realtime':
+        return translate('scene_realtime_css');
+      case 'ip_api':
+        return translate('scene_ip_api');
+      case 'context_menu':
+        return translate('scene_context_menu');
+      default:
+        return value;
+    }
+  };
 
   // Scope-aware subgraph exit/enter visibility
-  const update_scope_ui = () => {
+  const update_scope_ui = (): void => {
     const btn_enter = document.getElementById('btn-enter-subgraph');
     const btn_exit = document.getElementById('btn-exit-subgraph');
     const document_controller = document_subgraph_handle?.controller;
     const legacy_depth = easel.plugin_data.subgraph?.stack_depth() ?? 0;
+    const selected_host_id = state.value.selected_node_ids.find(id => {
+      return document_controller?.view.nodes[id]?.nested_graph_id != null;
+    });
+    const is_document_scope = document_controller != null;
+    const is_inside = is_document_scope ? document_controller.path.length > 1 : legacy_depth > 0;
+    const enter_visible = is_document_scope && !is_inside && selected_host_id != null;
+    const exit_visible = is_inside;
 
-    if (document_controller == null) {
-      if (btn_exit) {
-        btn_exit.style.display = legacy_depth > 0 ? 'block' : 'none';
-      }
-      if (btn_enter) {
-        btn_enter.style.display = 'none';
-      }
-      return;
+    if (btn_enter) {
+      btn_enter.hidden = !enter_visible;
     }
-
-    const is_inside = document_controller.path.length > 1;
     if (btn_exit) {
-      btn_exit.style.display = is_inside ? 'block' : 'none';
+      btn_exit.hidden = !exit_visible;
     }
-    if (btn_enter == null) {
-      return;
+    if (scope_nav_el) {
+      scope_nav_el.classList.toggle('active', enter_visible || exit_visible);
     }
-    const selected_host_id = state.value.selected_node_ids.find(
-      id => document_controller.view.nodes[id]?.nested_graph_id != null,
-    );
-    btn_enter.style.display = !is_inside && selected_host_id != null ? 'block' : 'none';
+
+    const path_text = is_document_scope
+      ? document_controller.path.join(' / ')
+      : legacy_depth > 0
+        ? translate('scope_path_legacy_depth', { depth: legacy_depth })
+        : translate('scope_path_legacy_scene', {
+            scene: scene_label(scene_selector_el?.value ?? 'default'),
+          });
+    if (scope_summary_el) {
+      scope_summary_el.textContent = path_text;
+    }
+    if (project_scope_path_el) {
+      project_scope_path_el.textContent = is_document_scope
+        ? translate('scope_path_project_file', {
+            file_name: current_project_file_name(),
+            path: path_text,
+          })
+        : path_text;
+    }
   };
   effect(() => {
     void state.value;
     void document_subgraph_handle?.controller.view;
     update_scope_ui();
+    update_project_file_state();
   });
 
   document.getElementById('btn-enter-subgraph')?.addEventListener('click', () => {
@@ -240,9 +427,17 @@ const init = () => {
   });
 
   // Scene Management
-  const load_scene = (name: string) => {
+  type LoadSceneOptions = {
+    readonly document?: GraphDocument;
+    readonly file_name?: string;
+  };
+
+  const load_scene = (name: string, options: LoadSceneOptions = {}) => {
     document_subgraph_handle?.stop();
     document_subgraph_handle = undefined;
+    saved_document_json = null;
+    saved_document_file_name = null;
+    set_import_error(null);
     easel.plugin_data.subgraph?.clear();
     easel.dispatch(() => ({
       ...create_initial_state(),
@@ -335,40 +530,149 @@ const init = () => {
     } else if (name === 'context_menu') {
       load_context_menu_scene(dispatch);
     } else if (name === 'document_subgraph') {
-      document_subgraph_handle = load_document_subgraph_scene(easel);
+      if (options.document != null) {
+        document_subgraph_handle = load_document_subgraph_scene(easel, {
+          document: options.document,
+          auto_enter: null,
+        });
+        const imported_base_name =
+          options.file_name == null
+            ? translate('file_state_imported_document')
+            : project_name_from_file_name(options.file_name) ||
+              translate('file_state_imported_document');
+        if (project_name_el) {
+          project_name_el.value = imported_base_name;
+        }
+        const controller = document_subgraph_handle.controller;
+        saved_document_json = controller.serialize({ pretty: true });
+        saved_document_file_name = current_project_file_name();
+      } else {
+        document_subgraph_handle = load_document_subgraph_scene(easel);
+        if (project_name_el) {
+          project_name_el.value = translate('file_state_fixture');
+        }
+        saved_document_json = null;
+        saved_document_file_name = null;
+      }
     } else if (name === 'perf') {
       load_perf_scene(dispatch);
     }
+
+    if (scene_selector_el) {
+      scene_selector_el.value = name;
+    }
+    update_scope_ui();
+    update_project_file_state();
   };
 
-  document.getElementById('scene-selector')?.addEventListener('change', e => {
+  scene_selector_el?.addEventListener('change', e => {
     load_scene((e.target as HTMLSelectElement).value);
   });
 
-  document.getElementById('theme-selector')?.addEventListener('change', e => {
-    const val = (e.target as HTMLSelectElement).value;
-    if (val === 'light') {
-      set_theme(light_theme);
-      document.body.style.background = '#e0e0e0';
-      document.body.style.color = '#333';
-      document.getElementById('hud')!.style.background = '#f5f5f5';
-      document.getElementById('hud')!.style.color = '#333';
-      document.getElementById('hud')!.style.borderColor = '#ccc';
-      document
-        .querySelectorAll('.hud-section')
-        .forEach(el => ((el as HTMLElement).style.background = '#fff'));
-    } else {
-      set_theme(default_theme);
-      document.body.style.background = '#1e1e1e';
-      document.body.style.color = '#fff';
-      document.getElementById('hud')!.style.background = '#252526';
-      document.getElementById('hud')!.style.color = '#fff';
-      document.getElementById('hud')!.style.borderColor = '#333';
-      document
-        .querySelectorAll('.hud-section')
-        .forEach(el => ((el as HTMLElement).style.background = '#1e1e1e'));
+  project_name_el?.addEventListener('input', () => {
+    saved_document_json = null;
+    saved_document_file_name = null;
+    update_project_file_state();
+    update_scope_ui();
+  });
+
+  const file_input_el = document.getElementById('file-import') as HTMLInputElement | null;
+  file_input_el?.addEventListener('change', async () => {
+    const file = file_input_el.files?.[0];
+    file_input_el.value = '';
+    if (file == null) {
+      return;
+    }
+    let text: string;
+    try {
+      text = await file.text();
+    } catch {
+      set_import_error(translate('file_error_read'));
+      return;
+    }
+    const parse_result = parse_project_document_json(text);
+    if (E.isLeft(parse_result)) {
+      set_import_error(format_project_file_error(parse_result.left));
+      return;
+    }
+    load_scene('document_subgraph', {
+      document: parse_result.right,
+      file_name: file.name,
+    });
+  });
+
+  document.getElementById('btn-export-document')?.addEventListener('click', export_project_file);
+
+  const file_input_trigger_el = file_input_el;
+  document.addEventListener('keydown', e => {
+    const target = e.target as HTMLElement | null;
+    if (target != null && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) {
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'e') {
+      e.preventDefault();
+      export_project_file();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
+      e.preventDefault();
+      file_input_trigger_el?.click();
     }
   });
+
+  const toggle_library = (): void => {
+    workspace_el?.classList.toggle('collapsed-library');
+    document
+      .getElementById('btn-collapse-library')
+      ?.setAttribute(
+        'aria-pressed',
+        String(workspace_el?.classList.contains('collapsed-library') ?? false),
+      );
+  };
+  document.getElementById('btn-collapse-library')?.addEventListener('click', toggle_library);
+  document.getElementById('btn-library-close')?.addEventListener('click', toggle_library);
+
+  node_search_el?.addEventListener('input', () => {
+    const query = node_search_el.value.trim().toLowerCase();
+    document.querySelectorAll('.node-group').forEach(group => {
+      let group_has_match = false;
+      group.querySelectorAll<HTMLElement>('.node-drag-item').forEach(item => {
+        const match =
+          query.length === 0 ||
+          (item.textContent ?? '').toLowerCase().includes(query) ||
+          (item.dataset['type'] ?? '').toLowerCase().includes(query);
+        item.hidden = !match;
+        if (match) {
+          group_has_match = true;
+        }
+      });
+      (group as HTMLElement).hidden = !group_has_match;
+    });
+  });
+
+  const set_theme_mode = (mode: string): void => {
+    if (mode === 'light') {
+      set_theme(light_theme);
+    } else {
+      set_theme(default_theme);
+    }
+    document.body.dataset['theme'] = mode;
+  };
+  document.getElementById('theme-selector')?.addEventListener('change', e => {
+    set_theme_mode((e.target as HTMLSelectElement).value);
+  });
+  set_theme_mode('dark');
+
+  if (locale_selector_el) {
+    locale_selector_el.value = read_locale_preference();
+    locale_selector_el.addEventListener('change', event => {
+      const preference = (event.target as HTMLSelectElement).value as LocalePreference;
+      write_locale_preference(preference);
+      const browser_language = typeof navigator === 'undefined' ? undefined : navigator.language;
+      set_locale(resolve_locale(preference, browser_language));
+      apply_dom_translations();
+      refresh_dynamic_text();
+    });
+  }
 
   // Math Evaluator Effect
   effect(() => {
@@ -377,33 +681,83 @@ const init = () => {
     }
   });
 
-  // HUD 闁槒锟?
+  // Legacy stats panel.
   const stats_el = document.getElementById('hud-stats');
-  if (stats_el) {
-    effect(() => {
-      const s = state.value;
-      const document_controller = document_subgraph_handle?.controller;
-      void document_controller?.view;
-      const scope_text = document_controller != null
-        ? `Scope: ${document_controller.path.join(' > ')}`
-        : `Stack Depth: ${easel.plugin_data.subgraph?.stack_depth() ?? 0}`;
+  const render_stats = (): void => {
+    const s = state.value;
+    const document_controller = document_subgraph_handle?.controller;
+    const node_count = Object.keys(s.nodes).length;
+    const wire_count = easel.plugin_data.wire?.get_bindings().length ?? 0;
+    const zoom_text = `${s.camera.zoom.toFixed(2)}x`;
+    const selected_text =
+      s.selected_node_ids.length > 0
+        ? s.selected_node_ids.join(', ')
+        : translate('status_value_none');
+    if (stat_nodes_el) {
+      stat_nodes_el.textContent = String(node_count);
+    }
+    if (stat_wires_el) {
+      stat_wires_el.textContent = String(wire_count);
+    }
+    if (stat_zoom_el) {
+      stat_zoom_el.textContent = zoom_text;
+    }
+    if (stat_selected_el) {
+      stat_selected_el.textContent = selected_text;
+    }
+    if (stats_el) {
+      const scope_text =
+        document_controller != null
+          ? translate('stat_scope', { path: document_controller.path.join(' > ') })
+          : translate('stat_stack_depth', {
+              depth: easel.plugin_data.subgraph?.stack_depth() ?? 0,
+            });
       const text_content = [
-        `Nodes: ${Object.keys(s.nodes).length}`,
-        `Wires: ${easel.plugin_data.wire?.get_bindings().length ?? 0}`,
-        `Camera: [${s.camera.position.x.toFixed(
-          1,
-        )}, ${s.camera.position.y.toFixed(1)}] @ ${s.camera.zoom.toFixed(2)}x`,
-        `Selected: ${s.selected_node_ids.length > 0 ? s.selected_node_ids.join(', ') : 'None'}`,
-        `Interaction: ${s.interaction.mode}`,
+        translate('stat_camera', {
+          x: s.camera.position.x.toFixed(1),
+          y: s.camera.position.y.toFixed(1),
+        }),
+        translate('stat_interaction', { mode: s.interaction.mode }),
         scope_text,
       ].join('\n');
       if (stats_el.textContent !== text_content) {
         stats_el.textContent = text_content;
       }
+    }
+  };
+  const refresh_dynamic_text = (): void => {
+    render_stats();
+    update_scope_ui();
+    update_project_file_state();
+  };
+  effect(() => {
+    void state.value;
+    void document_subgraph_handle?.controller.view;
+    refresh_dynamic_text();
+  });
 
-      update_scope_ui();
-    });
-  }
+  const node_title_from_type = (type: string): string => {
+    switch (type) {
+      case 'text_generation':
+        return translate('node_text_generation');
+      case 'image_generation':
+        return translate('node_image_generation');
+      case 'audio_generation':
+        return translate('node_audio_generation');
+      case 'video_concatenation':
+        return translate('node_video_concatenation');
+      case 'text_input':
+        return translate('node_text_input');
+      case 'ip_api':
+        return translate('node_ip_api');
+      case 'counter':
+        return translate('node_counter');
+      case 'text_view':
+        return translate('node_text_view');
+      default:
+        return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+  };
 
   // Drag and Drop Node Creation
   canvas_el.addEventListener('dragover', e => {
@@ -430,7 +784,7 @@ const init = () => {
       type: 'default',
       position: vec2_create(world_x, world_y),
       size: vec2_create(200, 120),
-      title: type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      title: node_title_from_type(type),
       inputs: [],
       outputs: [],
       custom_data: {},
@@ -551,7 +905,7 @@ const init = () => {
   });
 
   // -------------------------------------------------------------------
-  // Context menu demo 锟?plugin-level provider.
+  // Context menu demo plugin-level provider.
   // This registers extra items on every node to show how plugins
   // can augment the context menu without modifying node code.
   // -------------------------------------------------------------------
@@ -559,17 +913,45 @@ const init = () => {
     const service = easel.plugin_data.context_menu;
 
     service.register({
+      id: 'playground_node_flags',
+      priority: -3,
+      get_items: (ctx: ContextMenuContext): readonly ContextMenuItem[] => {
+        if (ctx.node_id == null) {
+          return [];
+        }
+        const node_id = ctx.node_id;
+        const document_controller = document_subgraph_handle?.controller;
+        const node = document_controller?.view.nodes[node_id] ?? easel.state.value.nodes[node_id];
+        if (node == null) {
+          return [];
+        }
+        const on_toggle = (flag: NodeFlag): void => {
+          toggle_node_flag_for_context(
+            document_subgraph_handle?.controller,
+            easel.dispatch,
+            node_id,
+            flag,
+          );
+        };
+        return get_node_flag_context_menu_items(node_id, node, on_toggle);
+      },
+    });
+
+    service.register({
       id: 'playground_demo',
       priority: -5,
       get_items: (ctx: ContextMenuContext): readonly ContextMenuItem[] => {
         const items: ContextMenuItem[] = [];
 
-        // Node info label 锟?shown when right-clicking any node
+        // Node info label shown when right-clicking any node.
         if (ctx.node_id) {
           items.push({
             id: 'demo_node_info',
             kind: 'label',
-            label: `Node: ${ctx.node_id} 路 ${ctx.node_type}`,
+            label: translate('context_node_info', {
+              node_id: ctx.node_id,
+              node_type: ctx.node_type ?? 'unknown',
+            }),
             icon: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
           });
         }
@@ -578,7 +960,7 @@ const init = () => {
         if (ctx.node_id) {
           items.push({
             id: 'demo_log_info',
-            label: 'Log Node Info',
+            label: translate('context_log_info'),
             group: 'playground',
             icon: '<svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
             action: () => {
@@ -599,7 +981,7 @@ const init = () => {
         if (ctx.node_type === 'text_input') {
           items.push({
             id: 'demo_fill_hello',
-            label: "Fill 'Hello'",
+            label: translate('context_fill_hello'),
             group: 'playground',
             icon: '<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>',
             action: () => {
@@ -631,31 +1013,44 @@ const init = () => {
     log.info('Easel playground started');
     log.debug('Initial scene loading...');
 
-    // 监听状态变化记录日志
+    // Track state changes and log count transitions.
     easel.app_events.on('state_changed', ({ prev, next }) => {
       const node_count = Object.keys(next.nodes).length;
       const prev_count = Object.keys(prev.nodes).length;
       if (node_count !== prev_count) {
-        log.info(`Nodes: ${prev_count} → ${node_count}`);
+        log.info(translate('logger_nodes_changed', { previous: prev_count, current: node_count }));
       }
     });
   }
 
-  // Load initial scene
-  load_scene('default');
+  // Load the GraphDocument fixture as the primary file-workflow starting point.
+  load_scene('document_subgraph');
+
+  const set_legacy_file_feedback = (message: string, is_warning: boolean): void => {
+    if (file_state_el) {
+      file_state_el.classList.remove('state-saved', 'state-dirty');
+      if (!is_warning) {
+        file_state_el.classList.add('state-saved');
+      } else {
+        file_state_el.classList.add('state-dirty');
+      }
+      file_state_el.textContent = message;
+    }
+  };
 
   document.getElementById('btn-save')?.addEventListener('click', () => {
     const json = serialize_state(state.value);
     localStorage.setItem('easel_save', json);
-    alert('Saved to LocalStorage!');
+    set_legacy_file_feedback(translate('file_state_legacy_saved'), false);
   });
 
   document.getElementById('btn-load')?.addEventListener('click', () => {
     const json = localStorage.getItem('easel_save');
     if (json) {
       dispatch(() => deserialize_state(json));
+      set_legacy_file_feedback(translate('file_state_legacy_loaded'), false);
     } else {
-      alert('No save found.');
+      set_legacy_file_feedback(translate('file_state_no_legacy_save'), true);
     }
   });
 };

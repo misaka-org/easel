@@ -9,11 +9,41 @@ import type { GraphNode, Port } from '@/core/types';
 import type { Easel } from '@/runtime/easel';
 import { create_document_controller, type DocumentController } from '@/runtime/document_controller';
 import { mount_document_bridge } from '@/runtime/document_bridge';
+import { mount_document_boundary_editor } from '@/runtime/document_boundary_editor';
+import { on_locale_change, translate } from '../i18n';
 
 /** Handle returned by the playground document subgraph scene. */
 export type DocumentSubgraphSceneHandle = {
   readonly controller: DocumentController;
   readonly stop: () => void;
+};
+
+export type DocumentSubgraphSceneOptions = {
+  readonly document?: GraphDocument;
+  readonly auto_enter?: NodeId | null;
+};
+
+export type DocumentSubgraphSceneSetup = {
+  readonly document: GraphDocument;
+  readonly auto_enter_node_id: NodeId | null;
+};
+
+export const default_document_subgraph_host_id: NodeId = 'host_subgraph';
+
+/** Resolve default fixture behavior without coupling it to imported documents. */
+export const resolve_document_subgraph_scene_options = (
+  options: DocumentSubgraphSceneOptions = {},
+): DocumentSubgraphSceneSetup => {
+  if (options.document != null) {
+    return {
+      document: options.document,
+      auto_enter_node_id: options.auto_enter ?? null,
+    };
+  }
+  return {
+    document: create_document_subgraph_document(),
+    auto_enter_node_id: options.auto_enter ?? default_document_subgraph_host_id,
+  };
 };
 
 const unwrap_document = <T>(result: E.Either<GraphDocumentError, T>): T => {
@@ -87,16 +117,16 @@ export const create_document_subgraph_document = (): GraphDocument => {
   const processor = make_node(
     'processor',
     'Processor',
-    [make_port('prompt', 'input', 'text')],
-    [make_port('result', 'output', 'text')],
+    [make_port('prompt', 'input', 'text'), make_port('config', 'input', 'text')],
+    [make_port('result', 'output', 'text'), make_port('debug', 'output', 'text')],
     420,
     180,
   );
   const formatter = make_node(
     'formatter',
     'Formatter',
-    [make_port('result', 'input', 'text')],
-    [make_port('content', 'output', 'text')],
+    [make_port('result', 'input', 'text'), make_port('theme', 'input', 'text')],
+    [make_port('content', 'output', 'text'), make_port('report', 'output', 'text')],
     680,
     180,
   );
@@ -174,8 +204,8 @@ const enter_selected_host = (easel: Easel, controller: DocumentController): void
 };
 
 /**
- * 挂载随 scene 清理的 scope breadcrumb / exit UI。
- * UI 只读 controller path 与 legacy 选择状态，不写回 GraphDocument。
+ * Mounts scope UI that is cleaned up when the scene stops.
+ * UI only reads controller path/state and never writes GraphDocument.
  */
 const mount_document_scope_ui = (easel: Easel, controller: DocumentController): (() => void) => {
   const root_node = easel.container.getRootNode();
@@ -242,7 +272,7 @@ const mount_document_scope_ui = (easel: Easel, controller: DocumentController): 
   row.className = 'easel-document-scope-row';
   const exit_button = document.createElement('button');
   exit_button.className = 'easel-document-scope-exit';
-  exit_button.textContent = 'Exit / Up';
+  exit_button.textContent = translate('overlay_scope_exit_up');
   exit_button.style.display = 'none';
   exit_button.type = 'button';
   const hint_el = document.createElement('div');
@@ -259,18 +289,19 @@ const mount_document_scope_ui = (easel: Easel, controller: DocumentController): 
   panel.addEventListener('pointerdown', stop_panel_drag);
 
   const update_scope_ui = (): void => {
+    exit_button.textContent = translate('overlay_scope_exit_up');
     const path = controller.path;
     path_el.textContent = path.join(' > ');
     const selected_host_id = get_selected_host_id(easel, controller);
     if (path.length > 1) {
       exit_button.style.display = 'inline-flex';
-      hint_el.textContent = 'Escape 或 Exit / Up 返回上级';
+      hint_el.textContent = translate('overlay_scope_child_hint');
     } else {
       exit_button.style.display = 'none';
       hint_el.textContent =
         selected_host_id == null
-          ? '双击 host 进入 subgraph'
-          : `host ${selected_host_id} 已选中，按 Enter 进入`;
+          ? translate('overlay_scope_root_hint')
+          : translate('overlay_scope_root_selected_hint', { host_id: selected_host_id });
     }
   };
   const ui_effect = effect(() => {
@@ -278,6 +309,7 @@ const mount_document_scope_ui = (easel: Easel, controller: DocumentController): 
     void easel.state.value;
     update_scope_ui();
   });
+  const stop_locale_listener = on_locale_change(update_scope_ui);
 
   exit_button.addEventListener('click', () => {
     controller.exit_subgraph();
@@ -298,6 +330,7 @@ const mount_document_scope_ui = (easel: Easel, controller: DocumentController): 
 
   return () => {
     stop_effect(ui_effect);
+    stop_locale_listener();
     easel.app_events.off('keydown', handle_keydown);
     panel.removeEventListener('pointerdown', stop_panel_drag);
     panel.remove();
@@ -305,14 +338,44 @@ const mount_document_scope_ui = (easel: Easel, controller: DocumentController): 
   };
 };
 
-/** Load the document scene into legacy Easel and return its cleanup handle. */
-export const load_document_subgraph_scene = (easel: Easel): DocumentSubgraphSceneHandle => {
-  const controller_result = create_document_controller(create_document_subgraph_document());
+/** Create a document scene controller from an optional GraphDocument. */
+export const create_document_subgraph_controller = (
+  options: DocumentSubgraphSceneOptions = {},
+): DocumentController => {
+  const setup = resolve_document_subgraph_scene_options(options);
+  const controller_result = create_document_controller(setup.document);
   if (E.isLeft(controller_result)) {
     throw new Error(`document controller creation failed: ${String(controller_result.left)}`);
   }
   const controller = controller_result.right;
+  if (setup.auto_enter_node_id != null) {
+    const host_node = controller.view.nodes[setup.auto_enter_node_id];
+    if (host_node?.nested_graph_id == null) {
+      throw new Error(
+        `document scene auto_enter target '${setup.auto_enter_node_id}' is not a host node.`,
+      );
+    }
+    const enter_result = controller.enter_subgraph(setup.auto_enter_node_id);
+    if (E.isLeft(enter_result)) {
+      throw new Error(`document scene enter failed: ${String(enter_result.left)}`);
+    }
+  }
+  return controller;
+};
+
+/** Create the default playground fixture controller with host_subgraph entered. */
+export const create_entered_document_subgraph_controller = (): DocumentController => {
+  return create_document_subgraph_controller();
+};
+
+/** Load the document scene into legacy Easel and return its cleanup handle. */
+export const load_document_subgraph_scene = (
+  easel: Easel,
+  options: DocumentSubgraphSceneOptions = {},
+): DocumentSubgraphSceneHandle => {
+  const controller = create_document_subgraph_controller(options);
   const stop_bridge = mount_document_bridge(easel, controller);
+  const stop_boundary_editor = mount_document_boundary_editor(easel, controller);
   const stop_scope_ui = mount_document_scope_ui(easel, controller);
   const handle_dblclick = (payload: {
     readonly node_id: NodeId;
@@ -332,6 +395,7 @@ export const load_document_subgraph_scene = (easel: Easel): DocumentSubgraphScen
     stopped = true;
     easel.app_events.off('node_dblclick', handle_dblclick);
     stop_scope_ui();
+    stop_boundary_editor();
     stop_bridge();
   };
 

@@ -30,6 +30,7 @@ type GraphDocument = {
 - `GraphId`、`NodeId`、`BindingId`、`BoundaryId` 是 string alias，便于后续收紧为 branded type。
 - `GraphScope` 表示一个可进入的画布 scope：root 或 subgraph。
 - `GraphNodeRecord` 是现有 `GraphNode` 与 `graph_id` 的交集；节点 ID 在整份 document 内唯一。
+- `GraphNode` 的 `muted?: boolean`、`pinned?: boolean` 与 `locked?: boolean` 是 first-class 可选持久化字段，行为与 `collapsed` 一致：不存在等价于未设置，显式 `false` 也会保留；`format_version` 保持 1，旧文件缺省这些字段仍可导入。`locked` 与 `pinned` 语义不同：`pinned` 阻止位置拖拽，`locked` 只锁接线，不固定位置。
 - `GraphBindingRecord` 复用现有 binding 字段命名：`source_id`、`source_handle`、`target_id`、`target_handle`，方便后续迁移连线逻辑。
 - `boundary_bindings` 按 graph scope 记录每个输入/输出 slot 映射到的子图内部节点端口。
 
@@ -55,6 +56,8 @@ type GraphBoundaryBinding = {
 ```
 
 `remove_graph` 会拒绝删除仍被任何 host node 引用的 subgraph scope。
+
+runtime 的 document bridge 会为当前 subgraph scope 投影 view-only I/O rail，复用 legacy 类型名 `subgraph_input` / `subgraph_output`，但只在 `custom_data.view_only === true` 时切换为 `easel-boundary-rail` 渲染；没有该标记的旧式细线 stub 仍按旧流程渲染，两者不会互相覆盖。rail 是可拖动的 legacy 合成节点：拖动只更新运行时投影坐标，不进入 GraphDocument.nodes；同一 scope 的 rail position 会作为 layout override 保留到下一次 bridge resync，但不跨 reload 保存。
 
 ## 纯操作
 
@@ -146,6 +149,9 @@ type AddGraphBoundaryOptions = {
   readonly boundary_id?: BoundaryId;
 };
 type GraphBoundarySlotUpdate = Partial<GraphSlot>;
+type GraphBoundaryRemoveOptions = {
+  readonly cascade_host_bindings?: boolean;
+};
 
 add_graph_boundary(
   document: GraphDocument,
@@ -156,6 +162,14 @@ remove_graph_boundary(
   graph_id: GraphId,
   direction: GraphBoundaryDirection,
   slot_id: string,
+  options?: GraphBoundaryRemoveOptions,
+): Either<GraphBoundaryError, GraphDocument>;
+set_graph_boundary_mapping(
+  document: GraphDocument,
+  graph_id: GraphId,
+  direction: GraphBoundaryDirection,
+  slot_id: string,
+  mapping: GraphBoundaryMapping,
 ): Either<GraphBoundaryError, GraphDocument>;
 update_graph_boundary_slot(
   document: GraphDocument,
@@ -169,10 +183,11 @@ update_graph_boundary_slot(
 - `add_graph_boundary` 在目标 graph scope 的 input/output slots 后追加新 slot，写入对应 `boundary_bindings` mapping，并给每个 `nested_graph_id` 指向该 graph 的 host node 追加同名端口。默认 boundary id 是 `${graph_id}:${direction}:${slot_id}`，也可用 `boundary_id` 指定。
 - mapping 的 node 必须存在于目标 graph，且对应方向端口必须存在。重复 slot、重复 boundary id、缺失 graph/node/port 等情况都返回对应 `GraphBoundaryError`。
 - `update_graph_boundary_slot` 更新 slot 元数据并同步所有 host node 的同名端口；slot `id` 不可变，尝试改 id 返回 `invalid_arguments`。
-- `remove_graph_boundary` 删除 slot、对应 boundary mapping 以及所有 host node 的同名端口。若任一 host node 的该端口仍被父 graph binding 使用，返回 `host_port_in_use`，错误含 `host_node_id`、`binding_id` 等定位信息，且不回写原 document。
+- `set_graph_boundary_mapping` 保留 graph scope slot 与全部 host 端口，只更新或补写该 slot 对应的 `boundary_bindings` 内部节点端口映射；当前模型仍是每个 boundary slot 一对一的内部端口 mapping，反向的一对多留待后续 UI/模型扩展。
+- `remove_graph_boundary` 删除 slot、对应 boundary mapping 以及所有 host node 的同名端口。默认是安全删除：任一 host node 的该端口仍被父 graph binding 使用时返回 `host_port_in_use`，错误含 `host_node_id`、`binding_id` 等定位信息，且不回写原 document。传 `{ cascade_host_bindings: true }` 后，会先删除所有 host node 上该 direction/slot 对应的父 graph bindings（output 可一次清理多条 source binding），再删除 slot、mapping 与 host ports；该选项用于 UI 明确确认要断开边界连接的场景。
 - 失败 union 包含 `graph_not_found`、`boundary_slot_already_exists`、`boundary_slot_not_found`、mapping 节点/端口相关错误、`boundary_id_already_exists`、`invalid_arguments` 与 `host_port_in_use`，调用方可按 `type` 分支处理。
 
-边界 slot 编辑仍是纯核心层 API；`document_controller.ts` 已把增删改封装为当前 scope 入口。旧 Easel / plugin 尚未迁移，旧 subgraph plugin 仍使用 subgraph stub node。
+边界 slot 编辑仍是纯核心层 API；`document_controller.ts` 已把增删改和 mapping 更新封装为当前 scope 入口。旧 Easel / plugin 尚未迁移，旧 subgraph plugin 仍使用 subgraph stub node；runtime 的 ComfyUI 风格 I/O 轨只负责把拖拽翻译成上述边界 API。
 
 ## 一致性校验与版本化序列化
 
@@ -187,6 +202,7 @@ deserialize_graph_document(json): Either<GraphDeserializationError | readonly Gr
 - `validate_graph_document` 返回可读问题列表，不抛堆栈异常。每个 `GraphValidationIssue` 带 `path` 与 `message`，例如 `nodes.abc.graph_id`，并覆盖 root/subgraph 层级、graph id、节点归属、binding 方向、boundary slot/端口方向与 host 端口对齐等一致性约束。
 - `serialize_graph_document` 输出普通 JSON string，默认紧凑输出；`{ pretty: true }` 使用 2 空格缩进。序列化结果不包含 class、function 或自定义运行时对象，可被 `JSON.parse` 恢复为 plain object。
 - `deserialize_graph_document` 先处理非法 JSON、缺失根字段、非法 `format_version` 和结构性类型错误，再调用一致性校验；结构合法但语义非法的 document 返回 validation issues。
+- node decoder 会像 `collapsed` 一样对可选的 `muted`、`pinned`、`locked` 做 boolean 校验，并且只在字段存在时写回，因此不强制旧 `.easel.json` 补字段。
 - `format_version` 当前固定为 1。后续迁移应在反序列化入口按版本分派 decoder；未知未来版本返回 `unsupported_format_version`，不要直接扩宽 v1 的类型守卫静默接受新数据。
 - `document_controller.ts` 已调用该校验后的序列化/反序列化入口，并从 JSON 重建后回到 root path。旧 Easel runtime、plugin 与 executor 仍按现有流程工作，尚未迁移到 GraphDocument。
 

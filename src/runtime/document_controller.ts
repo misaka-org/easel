@@ -14,6 +14,8 @@ import type {
   AddGraphBoundaryOptions,
   GraphBoundaryDirection,
   GraphBoundaryError,
+  GraphBoundaryMapping,
+  GraphBoundaryRemoveOptions,
   GraphBoundarySlotUpdate,
 } from '../core/graph/boundary';
 import type { GraphDocumentError } from '../core/graph/document';
@@ -26,6 +28,7 @@ import type { GraphValidationIssue } from '../core/graph/validation';
 import {
   add_graph_boundary as core_add_graph_boundary,
   remove_graph_boundary as core_remove_graph_boundary,
+  set_graph_boundary_mapping as core_set_graph_boundary_mapping,
   update_graph_boundary_slot as core_update_graph_boundary_slot,
 } from '../core/graph/boundary';
 import {
@@ -331,9 +334,16 @@ export class DocumentController {
   remove_graph_boundary(
     direction: GraphBoundaryDirection,
     slot_id: string,
+    options?: GraphBoundaryRemoveOptions,
   ): E.Either<DocumentControllerError, DocumentGraphView> {
     const current_graph_id = this.current_graph_id();
-    const result = core_remove_graph_boundary(this.document, current_graph_id, direction, slot_id);
+    const result = core_remove_graph_boundary(
+      this.document,
+      current_graph_id,
+      direction,
+      slot_id,
+      options,
+    );
     return this.commit_document_result(result);
   }
 
@@ -350,6 +360,23 @@ export class DocumentController {
       direction,
       slot_id,
       updates,
+    );
+    return this.commit_document_result(result);
+  }
+
+  /** Update the internal mapping used by an existing boundary slot. */
+  set_graph_boundary_mapping(
+    direction: GraphBoundaryDirection,
+    slot_id: string,
+    mapping: GraphBoundaryMapping,
+  ): E.Either<DocumentControllerError, DocumentGraphView> {
+    const current_graph_id = this.current_graph_id();
+    const result = core_set_graph_boundary_mapping(
+      this.document,
+      current_graph_id,
+      direction,
+      slot_id,
+      mapping,
     );
     return this.commit_document_result(result);
   }

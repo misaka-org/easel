@@ -7,8 +7,10 @@ import { CameraController } from '@/runtime/camera';
 import * as E from 'fp-ts/Either';
 import type { Easel } from '@/runtime/easel';
 
-
-function mockEasel(nodeOverrides: Record<string, any> = {}, bindingOverrides: Record<string, any> = {}) {
+function mockEasel(
+  nodeOverrides: Record<string, any> = {},
+  bindingOverrides: Record<string, any> = {},
+) {
   const base = create_initial_state();
   const nodes = { ...base.nodes, ...nodeOverrides };
   const store = new Store({ initial_state: { ...base, nodes } });
@@ -91,6 +93,58 @@ describe('executor', () => {
       expect(exec.state.value.node_states['b']?.status).toBe('completed');
     });
 
+    it('muted nodes bypass execute and forward matching inputs', async () => {
+      const execute_a = vi.fn().mockResolvedValue({ out_a: 'from_a' });
+      const execute_muted = vi.fn().mockResolvedValue({ out: 'should_not_run' });
+      const execute_c = vi.fn().mockResolvedValue({ out: 'ok' });
+
+      const a = node('a', { outputs: [{ id: 'out_a', label: 'Out A', type: 'output' }] });
+      const b = {
+        ...node('b', {
+          inputs: [{ id: 'in_b', label: 'In B', type: 'input' }],
+          outputs: [{ id: 'out_b', label: 'Out B', type: 'output' }],
+        }),
+        muted: true,
+      };
+      const c = node('c', { inputs: [{ id: 'in_c', label: 'In C', type: 'input' }] });
+      const bindings = {
+        ab: {
+          id: 'ab',
+          type: 'data-flow',
+          source_id: 'a',
+          source_handle: 'out_a',
+          target_id: 'b',
+          target_handle: 'in_b',
+        },
+        bc: {
+          id: 'bc',
+          type: 'data-flow',
+          source_id: 'b',
+          source_handle: 'out_b',
+          target_id: 'c',
+          target_handle: 'in_c',
+        },
+      };
+      const easel = mockEasel({ a, b, c }, bindings);
+      (easel as any).get_node_instance = (id: string) =>
+        id === 'a'
+          ? { execute: execute_a }
+          : id === 'b'
+            ? { execute: execute_muted }
+            : { execute: execute_c };
+
+      const exec = new GraphExecutor(easel);
+      exec.compile();
+      exec.run();
+      await new Promise(r => setTimeout(r, 0));
+
+      expect(exec.state.value.status).toBe('completed');
+      expect(exec.state.value.node_states['b']?.status).toBe('completed');
+      expect(exec.state.value.node_states['b']?.outputs).toEqual({ out_b: 'from_a' });
+      expect(execute_muted).not.toHaveBeenCalled();
+      expect(execute_c.mock.calls[0]?.[0].inputs).toHaveProperty('in_c', 'from_a');
+    });
+
     it('sets error status for node with missing required input', async () => {
       const n = node('n', {
         inputs: [{ id: 'req', label: 'Required', type: 'input', required: true }],
@@ -99,6 +153,22 @@ describe('executor', () => {
       exec.compile();
       expect(exec.state.value.node_states['n']?.status).toBe('error');
       expect(exec.state.value.node_states['n']?.error).toContain('Required');
+    });
+
+    it('muted nodes bypass missing required inputs and widgets', async () => {
+      const n = {
+        ...node('n', {
+          inputs: [{ id: 'req', label: 'Required', type: 'input', required: true }],
+          widgets: [{ id: 'w', label: 'Widget', type: 'widget', required: true }],
+        }),
+        muted: true,
+      };
+      const exec = new GraphExecutor(mockEasel({ n }));
+      exec.compile();
+      expect(exec.state.value.node_states['n']?.status).toBe('idle');
+      exec.run();
+      await new Promise(r => setTimeout(r, 0));
+      expect(exec.state.value.status).toBe('completed');
     });
 
     it('is no-op when already running', () => {
@@ -210,6 +280,55 @@ describe('executor', () => {
       expect(exec.state.value.node_states['a']?.status).toBe('completed');
       expect(exec.state.value.node_states['b']?.status).toBe('completed');
       expect(executeMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('realtime muted nodes bypass execute and forward matching inputs', async () => {
+      const execute_a = vi.fn().mockResolvedValue({ out_a: 'from_a' });
+      const execute_muted = vi.fn().mockResolvedValue({ out_b: 'should_not_run' });
+      const execute_c = vi.fn().mockResolvedValue({ out: 'ok' });
+
+      const a = node('a', { outputs: [{ id: 'out_a', label: 'Out A', type: 'output' }] });
+      const b = {
+        ...node('b', {
+          inputs: [{ id: 'in_b', label: 'In B', type: 'input' }],
+          outputs: [{ id: 'out_b', label: 'Out B', type: 'output' }],
+        }),
+        muted: true,
+      };
+      const c = node('c', { inputs: [{ id: 'in_c', label: 'In C', type: 'input' }] });
+      const bindings = {
+        ab: {
+          id: 'ab',
+          type: 'data-flow',
+          source_id: 'a',
+          source_handle: 'out_a',
+          target_id: 'b',
+          target_handle: 'in_b',
+        },
+        bc: {
+          id: 'bc',
+          type: 'data-flow',
+          source_id: 'b',
+          source_handle: 'out_b',
+          target_id: 'c',
+          target_handle: 'in_c',
+        },
+      };
+      const easel = mockEasel({ a, b, c }, bindings);
+      (easel as any).get_node_instance = (id: string) =>
+        id === 'a'
+          ? { execute: execute_a }
+          : id === 'b'
+            ? { execute: execute_muted }
+            : { execute: execute_c };
+
+      const exec = new GraphExecutor(easel);
+      exec.compile();
+      await exec['realtime_execute_downstream']('a');
+
+      expect(exec.state.value.node_states['b']?.outputs).toEqual({ out_b: 'from_a' });
+      expect(execute_muted).not.toHaveBeenCalled();
+      expect(execute_c.mock.calls[0]?.[0].inputs).toHaveProperty('in_c', 'from_a');
     });
   });
 

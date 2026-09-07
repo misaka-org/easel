@@ -2,12 +2,15 @@ import { describe, it, expect } from 'vitest';
 import { create_initial_state } from '@/core/state';
 import {
   add_node,
+  is_node_muted,
   move_node,
   move_nodes,
+  muted_node_outputs,
   remove_node,
+  set_node_flag,
+  toggle_node_flag,
   update_node_data,
   update_widget_value,
-
 } from '@/core/node_ops';
 import { vec2_create } from '@/core/math';
 
@@ -52,6 +55,68 @@ describe('node_ops', () => {
     s = move_nodes(s, ['a', 'b'], vec2_create(10, 20));
     expect(s.nodes['a']?.position).toEqual(vec2_create(10, 20));
     expect(s.nodes['b']?.position).toEqual(vec2_create(210, 20));
+  });
+
+  it('does not move a pinned node', () => {
+    const pinned = { ...node_a(), pinned: true };
+    const source = add_node(create_initial_state(), pinned);
+    const moved = move_node(source, 'a', vec2_create(50, 60));
+    expect(moved.nodes['a']?.position).toEqual(node_a().position);
+    expect(moved.nodes['a']?.pinned).toBe(true);
+  });
+
+  it('moves unpinned nodes beside a pinned node', () => {
+    let s = create_initial_state();
+    s = add_node(s, { ...node_a(), pinned: true });
+    s = add_node(s, node_b());
+    s = move_nodes(s, ['a', 'b'], vec2_create(10, 20));
+    expect(s.nodes['a']?.position).toEqual(node_a().position);
+    expect(s.nodes['b']?.position).toEqual(vec2_create(210, 20));
+  });
+
+  it('moves a locked node because locked does not pin position', () => {
+    const source = add_node(create_initial_state(), { ...node_a(), locked: true });
+    const moved = move_node(source, 'a', vec2_create(15, 25));
+    expect(moved.nodes['a']?.position).toEqual(vec2_create(15, 25));
+    expect(moved.nodes['a']?.locked).toBe(true);
+  });
+
+  it('sets and toggles node flags with typed helpers', () => {
+    let s = add_node(create_initial_state(), node_a());
+    s = set_node_flag(s, 'a', 'muted', true);
+    s = set_node_flag(s, 'a', 'pinned', false);
+    s = set_node_flag(s, 'a', 'locked', true);
+    expect(s.nodes['a']?.muted).toBe(true);
+    expect(s.nodes['a']?.pinned).toBe(false);
+    expect(s.nodes['a']?.locked).toBe(true);
+
+    s = toggle_node_flag(s, 'a', 'muted');
+    s = toggle_node_flag(s, 'a', 'pinned');
+    s = toggle_node_flag(s, 'a', 'locked');
+    expect(s.nodes['a']?.muted).toBe(false);
+    expect(s.nodes['a']?.pinned).toBe(true);
+    expect(s.nodes['a']?.locked).toBe(false);
+  });
+
+  it('treats muted as bypass and maps input ports to output ports', () => {
+    const muted = {
+      ...node_a(),
+      muted: true,
+      inputs: [
+        { id: 'first', label: 'First', type: 'input' as const },
+        { id: 'second', label: 'Second', type: 'input' as const },
+      ],
+      outputs: [
+        { id: 'first', label: 'First', type: 'output' as const },
+        { id: 'second_copy', label: 'Second Copy', type: 'output' as const },
+      ],
+    };
+
+    expect(is_node_muted(muted)).toBe(true);
+    expect(muted_node_outputs(muted, { first: 'A', second: 'B', widget_only: 'W' })).toEqual({
+      first: 'A',
+      second_copy: 'B',
+    });
   });
 
   it('should remove a node', () => {

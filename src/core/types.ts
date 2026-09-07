@@ -47,6 +47,9 @@ export type GraphNode = {
   readonly style_mode?: 'default' | 'borderless';
   readonly resizable?: boolean;
   readonly collapsed?: boolean;
+  readonly muted?: boolean;
+  readonly pinned?: boolean;
+  readonly locked?: boolean;
   readonly custom_data: Record<string, unknown>;
 };
 

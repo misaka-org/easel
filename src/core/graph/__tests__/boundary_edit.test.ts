@@ -10,6 +10,7 @@ import {
 import {
   add_graph_boundary,
   remove_graph_boundary,
+  set_graph_boundary_mapping,
   update_graph_boundary_slot,
   type GraphBoundaryError,
 } from '@/core/graph/boundary';
@@ -246,6 +247,117 @@ describe('graph boundary edit operations', () => {
     expect(JSON.stringify(document)).toBe(snapshot);
   });
 
+  it('cascades host bindings when removing input/output boundary slots', () => {
+    let document = make_base_document();
+    document = unwrap_document(add_input_boundary(document));
+    document = unwrap_document(add_output_boundary(document));
+
+    const root_source = make_node(
+      'root_source',
+      'root',
+      [],
+      [port('source_out', 'output', 'text')],
+    );
+    const sink1 = make_node('sink1', 'root', [port('sink_in', 'input', 'text')], []);
+    const sink2 = make_node('sink2', 'root', [port('sink_in', 'input', 'text')], []);
+    const sink3 = make_node('sink3', 'root', [port('sink_in', 'input', 'text')], []);
+    document = unwrap_document(add_node(document, root_source));
+    document = unwrap_document(add_node(document, sink1));
+    document = unwrap_document(add_node(document, sink2));
+    document = unwrap_document(add_node(document, sink3));
+
+    document = unwrap_document(
+      add_binding(document, {
+        id: 'input_host_use',
+        graph_id: 'root',
+        source_id: 'root_source',
+        source_handle: 'source_out',
+        target_id: 'host',
+        target_handle: 'request',
+      }),
+    );
+    document = unwrap_document(
+      add_binding(document, {
+        id: 'input_host2_use',
+        graph_id: 'root',
+        source_id: 'root_source',
+        source_handle: 'source_out',
+        target_id: 'host2',
+        target_handle: 'request',
+      }),
+    );
+    document = unwrap_document(
+      add_binding(document, {
+        id: 'output_host_use_1',
+        graph_id: 'root',
+        source_id: 'host',
+        source_handle: 'response',
+        target_id: 'sink1',
+        target_handle: 'sink_in',
+      }),
+    );
+    document = unwrap_document(
+      add_binding(document, {
+        id: 'output_host_use_2',
+        graph_id: 'root',
+        source_id: 'host',
+        source_handle: 'response',
+        target_id: 'sink2',
+        target_handle: 'sink_in',
+      }),
+    );
+    document = unwrap_document(
+      add_binding(document, {
+        id: 'output_host2_use',
+        graph_id: 'root',
+        source_id: 'host2',
+        source_handle: 'response',
+        target_id: 'sink3',
+        target_handle: 'sink_in',
+      }),
+    );
+    const snapshot = JSON.stringify(document);
+
+    const refused = remove_graph_boundary(document, 'child', 'input', 'request', {
+      cascade_host_bindings: false,
+    });
+    expect(expect_boundary_error(refused).type).toBe('host_port_in_use');
+
+    const removed_input = unwrap_document(
+      remove_graph_boundary(document, 'child', 'input', 'request', {
+        cascade_host_bindings: true,
+      }),
+    );
+    expect(removed_input).not.toBe(document);
+    expect(JSON.stringify(document)).toBe(snapshot);
+    expect(removed_input.graphs['child']?.input_slots).toEqual([]);
+    expect(removed_input.nodes['host']?.inputs).toEqual([]);
+    expect(removed_input.nodes['host2']?.inputs).toEqual([]);
+    expect(removed_input.boundary_bindings['child:input:request']).toBeUndefined();
+    expect(removed_input.bindings['input_host_use']).toBeUndefined();
+    expect(removed_input.bindings['input_host2_use']).toBeUndefined();
+    expect(removed_input.bindings['output_host_use_1']).toBeDefined();
+    expect(removed_input.bindings['output_host_use_2']).toBeDefined();
+    expect(removed_input.bindings['output_host2_use']).toBeDefined();
+    expect_valid(removed_input);
+
+    const removed_output = unwrap_document(
+      remove_graph_boundary(removed_input, 'child', 'output', 'response', {
+        cascade_host_bindings: true,
+      }),
+    );
+    expect(removed_output).not.toBe(removed_input);
+    expect(removed_output.graphs['child']?.output_slots).toEqual([]);
+    expect(removed_output.nodes['host']?.outputs).toEqual([]);
+    expect(removed_output.nodes['host2']?.outputs).toEqual([]);
+    expect(removed_output.boundary_bindings['child:output:response']).toBeUndefined();
+    expect(removed_output.bindings['output_host_use_1']).toBeUndefined();
+    expect(removed_output.bindings['output_host_use_2']).toBeUndefined();
+    expect(removed_output.bindings['output_host2_use']).toBeUndefined();
+    expect(removed_output.bindings).toEqual({});
+    expect_valid(removed_output);
+  });
+
   it('updates slot metadata and all matching host ports without changing ids', () => {
     let document = make_base_document();
     document = unwrap_document(add_input_boundary(document));
@@ -302,6 +414,116 @@ describe('graph boundary edit operations', () => {
       throw new Error(`expected roundtrip success: ${JSON.stringify(result.left)}`);
     }
     expect(result.right).toEqual(document);
+  });
+
+  it('remaps an existing input slot mapping without changing slot metadata or host ports', () => {
+    let document = make_base_document();
+    document = unwrap_document(add_input_boundary(document));
+    document = unwrap_document(
+      add_node(
+        document,
+        make_node(
+          'secondary',
+          'child',
+          [port('second_in', 'input', 'text')],
+          [port('second_out', 'output', 'text')],
+        ),
+      ),
+    );
+    const host_ports_before = JSON.stringify(document.nodes['host']);
+
+    document = unwrap_document(
+      set_graph_boundary_mapping(document, 'child', 'input', 'request', {
+        node_id: 'secondary',
+        port_id: 'second_in',
+      }),
+    );
+
+    expect(document.graphs['child']?.input_slots).toHaveLength(1);
+    expect(document.graphs['child']?.input_slots[0]?.id).toBe('request');
+    expect(document.graphs['child']?.input_slots[0]?.label).toBe('Request');
+    expect(JSON.stringify(document.nodes['host'])).toBe(host_ports_before);
+    expect(document.nodes['host']?.inputs.map(port => port.id)).toEqual(['request']);
+    expect(document.boundary_bindings['child:input:request']).toEqual({
+      id: 'child:input:request',
+      graph_id: 'child',
+      direction: 'input',
+      slot_id: 'request',
+      node_id: 'secondary',
+      port_id: 'second_in',
+    });
+    expect_valid(document);
+  });
+
+  it('returns the original document when a remap is a no-op', () => {
+    const document = unwrap_document(add_input_boundary(make_base_document()));
+    const result = set_graph_boundary_mapping(document, 'child', 'input', 'request', {
+      node_id: 'internal',
+      port_id: 'in',
+    });
+
+    expect(E.isRight(result)).toBe(true);
+    if (E.isRight(result)) {
+      expect(result.right).toBe(document);
+    }
+  });
+
+  it('keeps set_graph_boundary_mapping immutable and roundtrips through serialization', () => {
+    let document = unwrap_document(add_input_boundary(make_base_document()));
+    document = unwrap_document(
+      add_node(document, make_node('secondary', 'child', [port('second_in', 'input', 'text')], [])),
+    );
+    const snapshot = JSON.stringify(document);
+
+    const remapped = unwrap_document(
+      set_graph_boundary_mapping(document, 'child', 'input', 'request', {
+        node_id: 'secondary',
+        port_id: 'second_in',
+      }),
+    );
+    expect(remapped).not.toBe(document);
+    expect(JSON.stringify(document)).toBe(snapshot);
+
+    const json = serialize_graph_document(remapped);
+    const result = deserialize_graph_document(json);
+    if (E.isLeft(result)) {
+      throw new Error(`expected roundtrip success: ${JSON.stringify(result.left)}`);
+    }
+    expect(result.right).toEqual(remapped);
+  });
+
+  it('returns set_graph_boundary_mapping lookup and invalid argument errors', () => {
+    const document = unwrap_document(add_input_boundary(make_base_document()));
+
+    const missing_graph = set_graph_boundary_mapping(document, 'missing', 'input', 'request', {
+      node_id: 'internal',
+      port_id: 'in',
+    });
+    expect(expect_boundary_error(missing_graph).type).toBe('graph_not_found');
+
+    const missing_slot = set_graph_boundary_mapping(document, 'child', 'input', 'missing', {
+      node_id: 'internal',
+      port_id: 'in',
+    });
+    expect(expect_boundary_error(missing_slot).type).toBe('boundary_slot_not_found');
+
+    const missing_node = set_graph_boundary_mapping(document, 'child', 'input', 'request', {
+      node_id: 'missing',
+      port_id: 'in',
+    });
+    expect(expect_boundary_error(missing_node).type).toBe('boundary_mapping_node_not_found');
+
+    const outside_node = set_graph_boundary_mapping(document, 'child', 'input', 'request', {
+      node_id: 'host',
+      port_id: 'in',
+    });
+    expect(expect_boundary_error(outside_node).type).toBe('boundary_mapping_node_not_in_graph');
+
+    const missing_port = set_graph_boundary_mapping(document, 'child', 'input', 'request', {
+      node_id: 'internal',
+      port_id: 'missing',
+    });
+    expect(expect_boundary_error(missing_port).type).toBe('boundary_mapping_port_not_found');
   });
 
   it('returns boundary parameter and lookup errors', () => {

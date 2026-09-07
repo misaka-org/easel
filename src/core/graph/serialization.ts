@@ -1,8 +1,4 @@
-import type {
-  Port,
-  Widget,
-  WidgetOption,
-} from '../types';
+import type { Port, Widget, WidgetOption } from '../types';
 import type {
   GraphBoundaryBinding,
   GraphBindingRecord,
@@ -11,10 +7,7 @@ import type {
   GraphScope,
   GraphSlot,
 } from './types';
-import type {
-  GraphValidationIssue,
-  GraphValidationIssuePath,
-} from './validation';
+import type { GraphValidationIssue, GraphValidationIssuePath } from './validation';
 import { validate_graph_document } from './validation';
 import * as E from 'fp-ts/Either';
 
@@ -23,7 +16,11 @@ export type GraphDocumentSerializeOptions = {
 };
 
 export type GraphDeserializationError = {
-  readonly type: 'invalid_json' | 'unsupported_format_version' | 'missing_field' | 'invalid_structure';
+  readonly type:
+    | 'invalid_json'
+    | 'unsupported_format_version'
+    | 'missing_field'
+    | 'invalid_structure';
   readonly path?: GraphValidationIssuePath;
   readonly field?: string;
   readonly format_version?: unknown;
@@ -39,10 +36,7 @@ const invalid_structure = (
   return E.left({ type: 'invalid_structure', path, message });
 };
 
-const missing_field = (
-  path: string,
-  field: string,
-): E.Either<GraphDeserializationError, never> => {
+const missing_field = (path: string, field: string): E.Either<GraphDeserializationError, never> => {
   return E.left({ type: 'missing_field', path, field, message: `missing field '${field}'` });
 };
 
@@ -253,7 +247,10 @@ const decode_port = (value: unknown, path: string): E.Either<GraphDeserializatio
   return E.right(decoded as Port);
 };
 
-const decode_slot = (value: unknown, path: string): E.Either<GraphDeserializationError, GraphSlot> => {
+const decode_slot = (
+  value: unknown,
+  path: string,
+): E.Either<GraphDeserializationError, GraphSlot> => {
   if (!is_unknown_record(value)) {
     return invalid_structure(path, 'expected a slot object');
   }
@@ -320,7 +317,10 @@ const decode_widget_options = (
   return E.right(value as readonly WidgetOption[]);
 };
 
-const decode_widget = (value: unknown, path: string): E.Either<GraphDeserializationError, Widget> => {
+const decode_widget = (
+  value: unknown,
+  path: string,
+): E.Either<GraphDeserializationError, Widget> => {
   if (!is_unknown_record(value)) {
     return invalid_structure(path, 'expected a widget object');
   }
@@ -415,7 +415,10 @@ const decode_widget = (value: unknown, path: string): E.Either<GraphDeserializat
   return E.right(decoded as Widget);
 };
 
-const decode_scope = (value: unknown, path: string): E.Either<GraphDeserializationError, GraphScope> => {
+const decode_scope = (
+  value: unknown,
+  path: string,
+): E.Either<GraphDeserializationError, GraphScope> => {
   if (!is_unknown_record(value)) {
     return invalid_structure(path, 'expected a graph scope object');
   }
@@ -442,7 +445,11 @@ const decode_scope = (value: unknown, path: string): E.Either<GraphDeserializati
   if (E.isLeft(title_result)) {
     return title_result;
   }
-  const input_slots_result = decode_array(value.input_slots ?? null, `${path}.input_slots`, decode_slot);
+  const input_slots_result = decode_array(
+    value.input_slots ?? null,
+    `${path}.input_slots`,
+    decode_slot,
+  );
   if (E.isLeft(input_slots_result)) {
     return input_slots_result;
   }
@@ -536,6 +543,18 @@ const decode_node = (
   if (E.isLeft(collapsed_result)) {
     return collapsed_result;
   }
+  const muted_result = decode_optional_boolean(value, 'muted', `${path}.muted`);
+  if (E.isLeft(muted_result)) {
+    return muted_result;
+  }
+  const pinned_result = decode_optional_boolean(value, 'pinned', `${path}.pinned`);
+  if (E.isLeft(pinned_result)) {
+    return pinned_result;
+  }
+  const locked_result = decode_optional_boolean(value, 'locked', `${path}.locked`);
+  if (E.isLeft(locked_result)) {
+    return locked_result;
+  }
 
   const decoded: Record<string, unknown> = {
     id: id_result.right,
@@ -559,6 +578,15 @@ const decode_node = (
   }
   if (collapsed_result.right !== undefined) {
     decoded.collapsed = collapsed_result.right;
+  }
+  if (muted_result.right !== undefined) {
+    decoded.muted = muted_result.right;
+  }
+  if (pinned_result.right !== undefined) {
+    decoded.pinned = pinned_result.right;
+  }
+  if (locked_result.right !== undefined) {
+    decoded.locked = locked_result.right;
   }
   if (has_own(value, 'widgets')) {
     const widgets_result = decode_array(value.widgets, `${path}.widgets`, decode_widget);
@@ -640,9 +668,7 @@ const decode_boundary = (
   });
 };
 
-const decode_document = (
-  value: unknown,
-): E.Either<GraphDeserializationError, GraphDocument> => {
+const decode_document = (value: unknown): E.Either<GraphDeserializationError, GraphDocument> => {
   if (!is_unknown_record(value)) {
     return invalid_structure('', 'expected a GraphDocument object');
   }

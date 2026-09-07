@@ -112,6 +112,60 @@ export const get_base_css = () => css`
     border-color: var(--primary-color);
   }
 
+  .node[data-pinned='true'] {
+    border-color: var(--text-color);
+    box-shadow:
+      0 0 0 1px var(--text-color),
+      0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .node[data-pinned='true'] .title-text::after {
+    content: ' / PIN';
+    margin-left: 4px;
+    color: var(--text-muted);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .node[data-locked='true'] {
+    border-color: #f59e0b;
+    box-shadow:
+      0 0 0 1px rgba(245, 158, 11, 0.9),
+      0 0 18px rgba(245, 158, 11, 0.25),
+      0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .node[data-locked='true'] .title-text::after {
+    content: ' / LOCK';
+    margin-left: 4px;
+    color: #f59e0b;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .node[data-pinned='true'][data-locked='true'] .title-text::after {
+    content: ' / PIN / LOCK';
+    margin-left: 4px;
+    color: #f59e0b;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .node[data-muted='true'] {
+    opacity: 0.46;
+  }
+
+  .node[data-muted='true'].selected {
+    opacity: 0.72;
+  }
+
+  .node[data-muted='true'] .title-text {
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+  }
   .node.borderless {
     background: transparent;
     border: none;
@@ -199,6 +253,125 @@ export const get_base_css = () => css`
   .node.subgraph-output-stub .port-label {
     font-size: 11px;
     white-space: nowrap;
+  }
+
+  .node.easel-boundary-rail {
+    pointer-events: auto;
+    display: flex;
+    border: none;
+    border-radius: 10px;
+    overflow: hidden;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 44px),
+      var(--node-bg);
+    box-shadow:
+      0 0 0 1px var(--node-border),
+      0 8px 24px rgba(0, 0, 0, 0.2);
+    cursor: grab;
+    contain: layout style paint;
+  }
+
+  .node.easel-boundary-rail:active {
+    cursor: grabbing;
+  }
+
+  .node.easel-boundary-rail.selected {
+    box-shadow:
+      0 0 0 1px var(--primary-color),
+      0 8px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  .node.easel-boundary-rail .node-body {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .boundary-rail-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 28px;
+    border-bottom: 1px solid var(--node-border);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+    color: var(--text-color);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .boundary-rail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-height: 0;
+    padding: 8px 0;
+  }
+
+  .boundary-rail-port {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    height: 24px;
+    min-width: 0;
+    padding: 0 10px;
+    cursor: crosshair;
+    pointer-events: auto;
+  }
+
+  .boundary-rail-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .easel-boundary-input .boundary-rail-port {
+    justify-content: flex-end;
+  }
+
+  .easel-boundary-input .boundary-rail-label {
+    text-align: right;
+  }
+
+  .easel-boundary-output .boundary-rail-port {
+    justify-content: flex-start;
+  }
+
+  .easel-boundary-output .boundary-rail-label {
+    text-align: left;
+  }
+
+  .boundary-rail-port .port-dot {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 auto;
+  }
+
+  .boundary-rail-add-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .boundary-rail-add-label {
+    color: var(--text-muted);
+    opacity: 0.65;
+  }
+
+  .boundary-rail-add-row .port-dot {
+    background: transparent;
+    box-shadow: 0 0 0 1px var(--text-muted);
   }
 
   .node-header {
@@ -322,6 +495,30 @@ export const get_base_css = () => css`
 
   .port-dot.connected {
     background: var(--text-color);
+  }
+
+  .port[data-locked='true'] .port-dot {
+    position: relative;
+    cursor: not-allowed;
+  }
+
+  .port[data-locked='true'] .port-dot::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 13px;
+    height: 13px;
+    border: 1px dashed rgba(245, 158, 11, 0.9);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .port[data-locked='true']:hover .port-dot {
+    box-shadow:
+      0 0 0 3px rgba(245, 158, 11, 0.22),
+      0 0 0 1px rgba(245, 158, 11, 0.9);
   }
 
   .port-type-text {
@@ -548,6 +745,14 @@ export const get_base_css = () => css`
   .wire:hover {
     opacity: 1;
     stroke-width: 3px;
+  }
+
+  .wire[data-locked='true'] {
+    stroke-width: 4px;
+    opacity: 1;
+    filter:
+      drop-shadow(0 0 3px rgba(245, 158, 11, 0.8))
+      drop-shadow(0 0 1px rgba(245, 158, 11, 0.95));
   }
 
   .wire-active {

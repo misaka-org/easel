@@ -10,6 +10,7 @@ import {
 } from '@/core/interactions';
 import { vec2_create } from '@/core/math';
 import * as O from 'fp-ts/Option';
+import { select_tool } from '@/core/tools/select_tool';
 
 describe('interactions', () => {
   const node = () => ({
@@ -108,6 +109,166 @@ describe('interactions', () => {
     const s = update_modifiers(base(), { ctrl: true, shift: false, alt: true, meta: false });
     expect(s.modifiers.ctrl).toBe(true);
     expect(s.modifiers.alt).toBe(true);
+  });
+
+  it('drags a view-only boundary rail from a direct pointer down', () => {
+    const rail = {
+      ...node(),
+      id: 'rail',
+      type: 'subgraph_input',
+      position: vec2_create(100, 100),
+      size: vec2_create(180, 80),
+      inputs: [],
+      outputs: [{ id: '__easel_boundary_add__', label: 'Add', type: 'output' as const }],
+      custom_data: { view_only: true, boundary_direction: 'input' },
+    };
+    let s = add_node(base(), rail);
+    s = pointer_down(s, {
+      screen_position: vec2_create(110, 110),
+      target_node_id: O.some('rail'),
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    expect(s.selected_node_ids).toContain('rail');
+    expect(s.interaction.mode).toBe('dragging');
+
+    s = pointer_move(s, {
+      screen_position: vec2_create(140, 150),
+      target_node_id: O.some('rail'),
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    expect(s.nodes['rail']?.position).toEqual(vec2_create(130, 140));
+  });
+
+  it('select_tool drags view-only rails while box selection still skips them', () => {
+    const on_pointer_down = select_tool.on_pointer_down;
+    const on_pointer_move = select_tool.on_pointer_move;
+    const on_pointer_up = select_tool.on_pointer_up;
+    if (on_pointer_down == null || on_pointer_move == null || on_pointer_up == null) {
+      throw new Error('expected select_tool handlers');
+    }
+    const rail = {
+      ...node(),
+      id: 'rail',
+      type: 'subgraph_input',
+      position: vec2_create(100, 100),
+      size: vec2_create(180, 80),
+      inputs: [],
+      outputs: [{ id: '__easel_boundary_add__', label: 'Add', type: 'output' as const }],
+      custom_data: { view_only: true, boundary_direction: 'input' },
+    };
+    let s = add_node(base(), rail);
+    const down_result = on_pointer_down(s, s.interaction, {
+      screen_position: vec2_create(110, 110),
+      target_node_id: O.some('rail'),
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    if (down_result == null) {
+      throw new Error('expected select_tool pointer_down result');
+    }
+    expect(down_result.state.interaction.mode).toBe('dragging');
+    expect(down_result.state.selected_node_ids).toContain('rail');
+
+    s = down_result.state;
+    const move_result = on_pointer_move(s, s.interaction, {
+      screen_position: vec2_create(140, 150),
+      target_node_id: O.some('rail'),
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    if (move_result == null) {
+      throw new Error('expected select_tool pointer_move result');
+    }
+    expect(move_result.state.nodes['rail']?.position).toEqual(vec2_create(130, 140));
+
+    s = add_node(base(), rail);
+    const box_down = on_pointer_down(s, s.interaction, {
+      screen_position: vec2_create(0, 0),
+      target_node_id: O.none,
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    if (box_down == null) {
+      throw new Error('expected select_tool box pointer_down result');
+    }
+    s = box_down.state;
+    const box_move = on_pointer_move(s, s.interaction, {
+      screen_position: vec2_create(300, 300),
+      target_node_id: O.none,
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    if (box_move == null) {
+      throw new Error('expected select_tool box pointer_move result');
+    }
+    s = box_move.state;
+    const box_up = on_pointer_up(s, s.interaction, {
+      screen_position: vec2_create(300, 300),
+      target_node_id: O.none,
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    if (box_up == null) {
+      throw new Error('expected select_tool box pointer_up result');
+    }
+    expect(box_up.state.selected_node_ids).toContain('n1');
+    expect(box_up.state.selected_node_ids).not.toContain('rail');
+  });
+
+  it('excludes view-only boundary rails from box selection', () => {
+    const rail = {
+      ...node(),
+      id: 'rail',
+      type: 'subgraph_input',
+      position: vec2_create(100, 100),
+      size: vec2_create(180, 80),
+      inputs: [],
+      outputs: [{ id: '__easel_boundary_add__', label: 'Add', type: 'output' as const }],
+      custom_data: { view_only: true, boundary_direction: 'input' },
+    };
+    let s = add_node(base(), rail);
+    s = pointer_down(s, {
+      screen_position: vec2_create(0, 0),
+      target_node_id: O.none,
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    s = pointer_move(s, {
+      screen_position: vec2_create(200, 200),
+      target_node_id: O.none,
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    s = pointer_up(s, {
+      screen_position: vec2_create(200, 200),
+      target_node_id: O.none,
+      target_port_id: O.none,
+      target_port_type: O.none,
+      target_action: O.none,
+      modifiers: mod(),
+    });
+    expect(s.selected_node_ids).toContain('n1');
+    expect(s.selected_node_ids).not.toContain('rail');
   });
 
   it('completes box selection on pointer up', () => {

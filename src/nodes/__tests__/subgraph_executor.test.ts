@@ -25,13 +25,15 @@ function mk_node(id: string, type: string, overrides: Partial<GraphNode> = {}): 
 
 function mk_input_stub(id: string, count: number): GraphNode {
   const outputs: Port[] = [];
-  for (let i = 0; i < count; i++) outputs.push({ id: 'sgi_out_' + i, label: 'In ' + i, type: 'output', value_type: 'any' });
+  for (let i = 0; i < count; i++)
+    outputs.push({ id: 'sgi_out_' + i, label: 'In ' + i, type: 'output', value_type: 'any' });
   return mk_node(id, 'subgraph_input', { outputs, size: vec2_create(20, 20) });
 }
 
 function mk_output_stub(id: string, count: number): GraphNode {
   const inputs: Port[] = [];
-  for (let i = 0; i < count; i++) inputs.push({ id: 'sgo_in_' + i, label: 'Out ' + i, type: 'input', value_type: 'any' });
+  for (let i = 0; i < count; i++)
+    inputs.push({ id: 'sgo_in_' + i, label: 'Out ' + i, type: 'input', value_type: 'any' });
   return mk_node(id, 'subgraph_output', { inputs, size: vec2_create(20, 20) });
 }
 
@@ -44,7 +46,11 @@ function binding(src_id: string, src_port: string, tgt_id: string, tgt_port: str
   };
 }
 
-function mk_ctx(node: GraphNode, inputs: Record<string, unknown> = {}, signal?: AbortSignal): ExecuteContext {
+function mk_ctx(
+  node: GraphNode,
+  inputs: Record<string, unknown> = {},
+  signal?: AbortSignal,
+): ExecuteContext {
   return {
     node,
     inputs,
@@ -53,7 +59,10 @@ function mk_ctx(node: GraphNode, inputs: Record<string, unknown> = {}, signal?: 
   };
 }
 
-function register_mock(type: string, exec_fn?: (ctx: ExecuteContext) => Promise<Record<string, unknown>>) {
+function register_mock(
+  type: string,
+  exec_fn?: (ctx: ExecuteContext) => Promise<Record<string, unknown>>,
+) {
   const default_exec = async () => ({});
   class M {
     execute: (ctx: ExecuteContext) => Promise<Record<string, unknown>>;
@@ -96,7 +105,7 @@ describe('execute_subgraph', () => {
   });
 
   it('chain: input → process → output with registered node type', async () => {
-    register_mock('uppercase', async (ctx) => ({ out: String(ctx.inputs['in']).toUpperCase() }));
+    register_mock('uppercase', async ctx => ({ out: String(ctx.inputs['in']).toUpperCase() }));
 
     const stub_in = mk_input_stub('si', 1);
     const stub_out = mk_output_stub('so', 1);
@@ -116,30 +125,58 @@ describe('execute_subgraph', () => {
       },
     });
 
-    const r = await execute_subgraph(mk_ctx(node, { sg_in_0: "world" }));
-    expect(r).toEqual({ sg_out_0: "WORLD" });
+    const r = await execute_subgraph(mk_ctx(node, { sg_in_0: 'world' }));
+    expect(r).toEqual({ sg_out_0: 'WORLD' });
   });
 
-  it("widget values flow into internal nodes", async () => {
-    register_mock("multiply", async (ctx) => {
-      const factor = Number(ctx.inputs["factor"]);
-      const val = Number(ctx.inputs["val"]);
+  it('muted internal node bypasses execute and forwards input port value', async () => {
+    let calls = 0;
+    register_mock('muted_uppercase', async ctx => {
+      calls++;
+      return { out: String(ctx.inputs['in']).toUpperCase() };
+    });
+
+    const stub_in = mk_input_stub('si', 1);
+    const stub_out = mk_output_stub('so', 1);
+    const proc = mk_node('p', 'muted_uppercase', {
+      muted: true,
+      inputs: [{ id: 'in', label: 'In', type: 'input', value_type: 'text' }],
+      outputs: [{ id: 'out', label: 'Out', type: 'output', value_type: 'text' }],
+    });
+    const b1 = binding('si', 'sgi_out_0', 'p', 'in');
+    const b2 = binding('p', 'out', 'so', 'sgo_in_0');
+    const node = mk_node('sg', 'subgraph', {
+      custom_data: {
+        graph: {
+          nodes: { si: stub_in, p: proc, so: stub_out },
+          edges: [b1, b2],
+        },
+      },
+    });
+
+    const r = await execute_subgraph(mk_ctx(node, { sg_in_0: 'world' }));
+    expect(r).toEqual({ sg_out_0: 'world' });
+    expect(calls).toBe(0);
+  });
+
+  it('widget values flow into internal nodes', async () => {
+    register_mock('multiply', async ctx => {
+      const factor = Number(ctx.inputs['factor']);
+      const val = Number(ctx.inputs['val']);
       return { out: factor * val };
     });
 
-    const stub_in = mk_input_stub("si", 1);
-    const stub_out = mk_output_stub("so", 1);
-    const proc = mk_node("m", "multiply", {
-      inputs: [
-        { id: "val", label: "Value", type: "input", value_type: "number" },
-      ],
-      outputs: [{ id: "out", label: "Result", type: "output", value_type: "number" }],
-      widgets: [{ id: "factor", label: "Factor", type: "number", value: 10 }],
+    const stub_in = mk_input_stub('si', 1);
+    const stub_out = mk_output_stub('so', 1);
+    const proc = mk_node('m', 'multiply', {
+      inputs: [{ id: 'val', label: 'Value', type: 'input', value_type: 'number' }],
+      outputs: [{ id: 'out', label: 'Result', type: 'output', value_type: 'number' }],
+      widgets: [{ id: 'factor', label: 'Factor', type: 'number', value: 10 }],
     });
 
-    const b1 = binding("si", "sgi_out_0", "m", "val");
-    const b2 = binding("m", "out", "so", "sgo_in_0");
-    const node = mk_node("sg", "subgraph", {
+    const b1 = binding('si', 'sgi_out_0', 'm', 'val');
+    const b2 = binding('m', 'out', 'so', 'sgo_in_0');
+    const node = mk_node('sg', 'subgraph', {
       custom_data: {
         graph: {
           nodes: { si: stub_in, m: proc, so: stub_out },
@@ -152,17 +189,17 @@ describe('execute_subgraph', () => {
     expect(r).toEqual({ sg_out_0: 50 });
   });
 
-  it("unknown node type is skipped gracefully", async () => {
-    const stub_in = mk_input_stub("si", 1);
-    const stub_out = mk_output_stub("so", 1);
-    const unknown = mk_node("u", "nonexistent", {
-      inputs: [{ id: "in", label: "In", type: "input" }],
-      outputs: [{ id: "out", label: "Out", type: "output" }],
+  it('unknown node type is skipped gracefully', async () => {
+    const stub_in = mk_input_stub('si', 1);
+    const stub_out = mk_output_stub('so', 1);
+    const unknown = mk_node('u', 'nonexistent', {
+      inputs: [{ id: 'in', label: 'In', type: 'input' }],
+      outputs: [{ id: 'out', label: 'Out', type: 'output' }],
     });
 
-    const b1 = binding("si", "sgi_out_0", "u", "in");
-    const b2 = binding("u", "out", "so", "sgo_in_0");
-    const node = mk_node("sg", "subgraph", {
+    const b1 = binding('si', 'sgi_out_0', 'u', 'in');
+    const b2 = binding('u', 'out', 'so', 'sgo_in_0');
+    const node = mk_node('sg', 'subgraph', {
       custom_data: {
         graph: {
           nodes: { si: stub_in, u: unknown, so: stub_out },
@@ -171,29 +208,29 @@ describe('execute_subgraph', () => {
       },
     });
 
-    const r = await execute_subgraph(mk_ctx(node, { sg_in_0: "data" }));
+    const r = await execute_subgraph(mk_ctx(node, { sg_in_0: 'data' }));
     expect(r).toEqual({});
   });
 
-  it("nested subgraph executes recursively", async () => {
-    register_mock("add1", async (ctx) => ({ out: Number(ctx.inputs["in"]) + 1 }));
+  it('nested subgraph executes recursively', async () => {
+    register_mock('add1', async ctx => ({ out: Number(ctx.inputs['in']) + 1 }));
 
-    const inner_si = mk_input_stub("inner_si", 1);
-    const inner_so = mk_output_stub("inner_so", 1);
-    const inner_proc = mk_node("add", "add1", {
-      inputs: [{ id: "in", label: "In", type: "input", value_type: "number" }],
-      outputs: [{ id: "out", label: "Out", type: "output", value_type: "number" }],
+    const inner_si = mk_input_stub('inner_si', 1);
+    const inner_so = mk_output_stub('inner_so', 1);
+    const inner_proc = mk_node('add', 'add1', {
+      inputs: [{ id: 'in', label: 'In', type: 'input', value_type: 'number' }],
+      outputs: [{ id: 'out', label: 'Out', type: 'output', value_type: 'number' }],
     });
-    const inner_b1 = binding("inner_si", "sgi_out_0", "add", "in");
-    const inner_b2 = binding("add", "out", "inner_so", "sgo_in_0");
+    const inner_b1 = binding('inner_si', 'sgi_out_0', 'add', 'in');
+    const inner_b2 = binding('add', 'out', 'inner_so', 'sgo_in_0');
 
-    register_mock("subgraph", async (ctx) => execute_subgraph(ctx));
+    register_mock('subgraph', async ctx => execute_subgraph(ctx));
 
-    const outer_si = mk_input_stub("outer_si", 1);
-    const outer_so = mk_output_stub("outer_so", 1);
-    const inner_sg = mk_node("inner_sg", "subgraph", {
-      inputs: [{ id: "sg_in_0", label: "In", type: "input" }],
-      outputs: [{ id: "sg_out_0", label: "Out", type: "output" }],
+    const outer_si = mk_input_stub('outer_si', 1);
+    const outer_so = mk_output_stub('outer_so', 1);
+    const inner_sg = mk_node('inner_sg', 'subgraph', {
+      inputs: [{ id: 'sg_in_0', label: 'In', type: 'input' }],
+      outputs: [{ id: 'sg_out_0', label: 'Out', type: 'output' }],
       custom_data: {
         graph: {
           nodes: { inner_si, add: inner_proc, inner_so },
@@ -202,9 +239,9 @@ describe('execute_subgraph', () => {
       },
     });
 
-    const ob1 = binding("outer_si", "sgi_out_0", "inner_sg", "sg_in_0");
-    const ob2 = binding("inner_sg", "sg_out_0", "outer_so", "sgo_in_0");
-    const node = mk_node("outer_sg", "subgraph", {
+    const ob1 = binding('outer_si', 'sgi_out_0', 'inner_sg', 'sg_in_0');
+    const ob2 = binding('inner_sg', 'sg_out_0', 'outer_so', 'sgo_in_0');
+    const node = mk_node('outer_sg', 'subgraph', {
       custom_data: {
         graph: {
           nodes: { outer_si, inner_sg, outer_so },
@@ -217,21 +254,21 @@ describe('execute_subgraph', () => {
     expect(r).toEqual({ sg_out_0: 42 });
   });
 
-  it("aborts on signal", async () => {
-    register_mock("slow", async (ctx) => {
+  it('aborts on signal', async () => {
+    register_mock('slow', async ctx => {
       if (ctx.signal?.aborted) return {};
-      return { out: "done" };
+      return { out: 'done' };
     });
 
-    const stub_in = mk_input_stub("si", 1);
-    const stub_out = mk_output_stub("so", 1);
-    const proc = mk_node("s", "slow", {
-      inputs: [{ id: "in", label: "In", type: "input" }],
-      outputs: [{ id: "out", label: "Out", type: "output" }],
+    const stub_in = mk_input_stub('si', 1);
+    const stub_out = mk_output_stub('so', 1);
+    const proc = mk_node('s', 'slow', {
+      inputs: [{ id: 'in', label: 'In', type: 'input' }],
+      outputs: [{ id: 'out', label: 'Out', type: 'output' }],
     });
-    const b1 = binding("si", "sgi_out_0", "s", "in");
-    const b2 = binding("s", "out", "so", "sgo_in_0");
-    const node = mk_node("sg", "subgraph", {
+    const b1 = binding('si', 'sgi_out_0', 's', 'in');
+    const b2 = binding('s', 'out', 'so', 'sgo_in_0');
+    const node = mk_node('sg', 'subgraph', {
       custom_data: {
         graph: {
           nodes: { si: stub_in, s: proc, so: stub_out },
@@ -242,36 +279,38 @@ describe('execute_subgraph', () => {
 
     const controller = new AbortController();
     controller.abort();
-    const r = await execute_subgraph(mk_ctx(node, { sg_in_0: "x" }, controller.signal));
+    const r = await execute_subgraph(mk_ctx(node, { sg_in_0: 'x' }, controller.signal));
     expect(r).toEqual({});
   });
 
-  it("error in one node does not block unrelated parallel branches", async () => {
-    register_mock("throws", async () => { throw new Error("boom"); });
-    register_mock("ok", async (ctx) => ({ out: "ok-" + ctx.inputs["in"] }));
-
-    const stub_in = mk_input_stub("si", 1);
-    const stub_out = mk_output_stub("so", 2);
-
-    const bad = mk_node("bad", "throws", {
-      inputs: [{ id: "in", label: "In", type: "input" }],
-      outputs: [{ id: "out", label: "Out", type: "output" }],
+  it('error in one node does not block unrelated parallel branches', async () => {
+    register_mock('throws', async () => {
+      throw new Error('boom');
     });
-    const good = mk_node("good", "ok", {
-      inputs: [{ id: "in", label: "In", type: "input" }],
-      outputs: [{ id: "out", label: "Out", type: "output" }],
+    register_mock('ok', async ctx => ({ out: 'ok-' + ctx.inputs['in'] }));
+
+    const stub_in = mk_input_stub('si', 1);
+    const stub_out = mk_output_stub('so', 2);
+
+    const bad = mk_node('bad', 'throws', {
+      inputs: [{ id: 'in', label: 'In', type: 'input' }],
+      outputs: [{ id: 'out', label: 'Out', type: 'output' }],
+    });
+    const good = mk_node('good', 'ok', {
+      inputs: [{ id: 'in', label: 'In', type: 'input' }],
+      outputs: [{ id: 'out', label: 'Out', type: 'output' }],
     });
 
-    const b1 = binding("si", "sgi_out_0", "bad", "in");
-    const b2 = binding("si", "sgi_out_0", "good", "in");
-    const b3 = binding("bad", "out", "so", "sgo_in_0");
-    const b4 = binding("good", "out", "so", "sgo_in_1");
+    const b1 = binding('si', 'sgi_out_0', 'bad', 'in');
+    const b2 = binding('si', 'sgi_out_0', 'good', 'in');
+    const b3 = binding('bad', 'out', 'so', 'sgo_in_0');
+    const b4 = binding('good', 'out', 'so', 'sgo_in_1');
 
-    const node = mk_node("sg", "subgraph", {
-      inputs: [{ id: "sg_in_0", label: "In", type: "input" }],
+    const node = mk_node('sg', 'subgraph', {
+      inputs: [{ id: 'sg_in_0', label: 'In', type: 'input' }],
       outputs: [
-        { id: "sg_out_0", label: "Out 1", type: "output" },
-        { id: "sg_out_1", label: "Out 2", type: "output" },
+        { id: 'sg_out_0', label: 'Out 1', type: 'output' },
+        { id: 'sg_out_1', label: 'Out 2', type: 'output' },
       ],
       custom_data: {
         graph: {
@@ -281,7 +320,7 @@ describe('execute_subgraph', () => {
       },
     });
 
-    const r = await execute_subgraph(mk_ctx(node, { sg_in_0: "x" }));
-    expect(r).toEqual({ sg_out_0: undefined, sg_out_1: "ok-x" });
+    const r = await execute_subgraph(mk_ctx(node, { sg_in_0: 'x' }));
+    expect(r).toEqual({ sg_out_0: undefined, sg_out_1: 'ok-x' });
   });
 });

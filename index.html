@@ -1,142 +1,1000 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Easel Playground</title>
+    <title data-i18n="app_title">Easel Node Workbench</title>
     <style>
+      :root {
+        color-scheme: dark;
+        --app-bg: #080a0c;
+        --surface: #0f1317;
+        --surface-2: #151b20;
+        --surface-3: #1c242b;
+        --border: #29343d;
+        --border-strong: #3a4752;
+        --text: #e7eef3;
+        --text-2: #b4c0ca;
+        --muted: #71808c;
+        --accent: #36c8c0;
+        --accent-soft: rgba(54, 200, 192, 0.14);
+        --accent-text: #0b1515;
+        --warn: #e9b75b;
+        --danger: #ff6b6b;
+        --canvas-bg: #0a0d10;
+        --font-ui: 'Segoe UI Variable Display', 'Aptos Display', 'Trebuchet MS', sans-serif;
+        --font-mono: 'Cascadia Mono', 'SFMono-Regular', Consolas, monospace;
+        --radius: 10px;
+      }
+      body[data-theme='light'] {
+        color-scheme: light;
+        --app-bg: #e9ecef;
+        --surface: #f8fafb;
+        --surface-2: #ffffff;
+        --surface-3: #edf1f4;
+        --border: #cbd5dd;
+        --border-strong: #9aa9b3;
+        --text: #17212b;
+        --text-2: #394a57;
+        --muted: #667b89;
+        --accent: #087f7a;
+        --accent-soft: rgba(8, 127, 122, 0.12);
+        --accent-text: #ffffff;
+        --warn: #9a6a10;
+        --danger: #d64242;
+        --canvas-bg: #e4e8eb;
+        --font-ui: 'Segoe UI Variable Display', 'Aptos Display', 'Trebuchet MS', sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+      }
       body {
         margin: 0;
         overflow: hidden;
-        background: #1e1e1e;
-        color: #fff;
-        font-family: sans-serif;
-        transition: background 0.3s, color 0.3s;
+        background: var(--app-bg);
+        color: var(--text);
+        font-family: var(--font-ui);
+        transition:
+          background 0.2s,
+          color 0.2s;
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+      button {
+        color: inherit;
+      }
+      [hidden] {
+        display: none !important;
       }
       #app {
         width: 100vw;
         height: 100vh;
-        position: relative;
-        overflow: hidden;
-        display: flex;
-      }
-      .easel-canvas {
-        flex: 1;
-        position: relative;
-        overflow: hidden;
-      }
-      .easel-hud {
-        width: 300px;
-        background: #252526;
-        border-left: 1px solid #333;
-        padding: 16px;
         display: flex;
         flex-direction: column;
-        gap: 16px;
-        box-sizing: border-box;
-        overflow-y: auto;
-        transition: background 0.3s, border-color 0.3s;
+        background:
+          radial-gradient(circle at 12% -10%, rgba(54, 200, 192, 0.08), transparent 34%),
+          radial-gradient(circle at 92% 112%, rgba(233, 183, 91, 0.07), transparent 28%),
+          var(--app-bg);
       }
-      .hud-section {
-        background: #1e1e1e;
-        padding: 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        transition: background 0.3s;
-      }
-      .hud-section h3 {
-        margin: 0 0 8px 0;
-        font-size: 14px;
-        color: #aaa;
-      }
-      .btn-row {
+      .app-topbar {
+        flex: 0 0 auto;
+        height: 62px;
         display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 14px;
+        border-bottom: 1px solid var(--border);
+        background: color-mix(in srgb, var(--surface) 92%, transparent);
+        backdrop-filter: blur(14px);
+        z-index: 30;
+      }
+      .brand {
+        min-width: 188px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        user-select: none;
+      }
+      .brand-mark {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        background: conic-gradient(from 220deg, var(--accent), #e9b75b, var(--accent));
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.12),
+          0 6px 18px rgba(54, 200, 192, 0.2);
+      }
+      .brand-copy {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.1;
+      }
+      .brand-title {
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+      }
+      .brand-sub {
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      .topbar-segment {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+      }
+      .topbar-segment.project {
+        flex: 1 1 240px;
+        max-width: 420px;
+        gap: 10px;
+      }
+      .field-label,
+      .select-label,
+      .eyebrow {
+        color: var(--muted);
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      #project-name {
+        width: 100%;
+        min-width: 80px;
+        border: 0;
+        border-bottom: 1px solid transparent;
+        outline: 0;
+        background: transparent;
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 700;
+        padding: 5px 2px;
+        transition: border-color 0.15s;
+      }
+      #project-name:hover,
+      #project-name:focus {
+        border-bottom-color: var(--border-strong);
+      }
+      #file-state {
+        flex: 0 0 auto;
+        padding: 3px 7px;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      #file-state.state-saved {
+        color: var(--accent);
+        border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+        background: var(--accent-soft);
+      }
+      #file-state.state-dirty {
+        color: var(--warn);
+        border-color: color-mix(in srgb, var(--warn) 36%, transparent);
+      }
+      .topbar-actions {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
         gap: 8px;
+        padding-left: 12px;
+        border-left: 1px solid var(--border);
       }
-      button {
-        background: #007acc;
-        color: white;
-        border: none;
-        padding: 6px 12px;
-        border-radius: 4px;
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 32px;
+        padding: 0 12px;
+        border: 1px solid var(--border-strong);
+        border-radius: 8px;
+        background: var(--surface-2);
+        color: var(--text-2);
+        font-size: 12px;
+        font-weight: 700;
         cursor: pointer;
-        flex: 1;
+        white-space: nowrap;
+        transition:
+          border-color 0.15s,
+          background 0.15s,
+          color 0.15s,
+          transform 0.1s;
       }
-      button:hover {
-        background: #0098ff;
+      .btn:hover {
+        border-color: color-mix(in srgb, var(--accent) 70%, var(--border));
+        color: var(--text);
+        background: var(--surface-3);
+      }
+      .btn:focus-visible,
+      select:focus-visible,
+      input:focus-visible {
+        outline: 2px solid color-mix(in srgb, var(--accent) 65%, transparent);
+        outline-offset: 1px;
+      }
+      .btn:active {
+        transform: translateY(1px);
+      }
+      .btn-primary {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: var(--accent-text);
+      }
+      .btn-primary:hover {
+        background: color-mix(in srgb, var(--accent) 84%, white);
+        border-color: var(--accent);
+      }
+      .btn-ghost {
+        border-color: transparent;
+        background: transparent;
+        color: var(--muted);
+        padding: 0 6px;
+      }
+      .btn-ghost:hover {
+        background: var(--surface-2);
+        color: var(--text);
+      }
+      .topbar-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+      }
+      select {
+        height: 32px;
+        min-width: 0;
+        border: 1px solid var(--border-strong);
+        border-radius: 8px;
+        background: var(--surface-2);
+        color: var(--text);
+        padding: 0 24px 0 10px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .workspace {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: 250px minmax(0, 1fr) 312px;
+        overflow: hidden;
+      }
+      .workspace.collapsed-library {
+        grid-template-columns: 44px minmax(0, 1fr) 312px;
+      }
+      .node-library {
+        min-width: 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        background: color-mix(in srgb, var(--surface) 88%, transparent);
+        border-right: 1px solid var(--border);
+        overflow: hidden;
+        transition: min-width 0.18s;
+      }
+      .workspace.collapsed-library .node-library {
+        min-width: 44px;
+      }
+      .panel-heading {
+        height: 42px;
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      .panel-heading h2 {
+        margin: 0;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .library-body {
+        min-height: 0;
+        overflow-y: auto;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .workspace.collapsed-library .library-body,
+      .workspace.collapsed-library .panel-heading span {
+        display: none;
+      }
+      .workspace.collapsed-library .panel-heading {
+        justify-content: center;
+        padding: 0;
+      }
+      .node-search {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface-2);
+        color: var(--text);
+        padding: 8px 10px;
+        outline: none;
+        font-size: 12px;
+      }
+      .node-search::placeholder {
+        color: var(--muted);
+      }
+      .node-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .node-group-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        padding: 6px 2px 2px;
+      }
+      .node-group-label::after {
+        content: '';
+        height: 1px;
+        flex: 1;
+        background: linear-gradient(90deg, var(--border), transparent);
       }
       .node-drag-item {
-        background: #333;
-        padding: 8px;
-        border-radius: 4px;
-        margin-bottom: 8px;
-        cursor: grab;
+        position: relative;
+        display: flex;
+        align-items: center;
+        min-height: 38px;
+        padding: 7px 9px 7px 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface-2);
+        color: var(--text-2);
         font-size: 12px;
-        text-align: center;
-        border: 1px solid #444;
-        transition: background 0.3s;
+        cursor: grab;
+        user-select: none;
+        transition:
+          border-color 0.14s,
+          background 0.14s,
+          color 0.14s,
+          transform 0.14s;
+      }
+      .node-drag-item::before {
+        content: '';
+        position: absolute;
+        left: -1px;
+        top: 8px;
+        bottom: 8px;
+        width: 3px;
+        border-radius: 3px;
+        background: var(--mark-color, var(--accent));
       }
       .node-drag-item:hover {
-        background: #444;
+        border-color: color-mix(in srgb, var(--mark-color, var(--accent)) 68%, var(--border));
+        background: var(--surface-3);
+        color: var(--text);
+        transform: translateX(2px);
       }
       .node-drag-item:active {
         cursor: grabbing;
+        transform: translateY(1px);
+      }
+      .drag-tag {
+        margin-left: auto;
+        color: var(--mark-color, var(--muted));
+        font-family: var(--font-mono);
+        font-size: 9px;
+        letter-spacing: 0.05em;
+      }
+      .canvas-shell {
+        position: relative;
+        min-width: 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: var(--canvas-bg);
+      }
+      .canvas-context-bar {
+        flex: 0 0 34px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 12px;
+        border-bottom: 1px solid var(--border);
+        background: color-mix(in srgb, var(--surface) 72%, transparent);
+        color: var(--text-2);
+        font-size: 11px;
+        z-index: 20;
+        user-select: none;
+      }
+      .context-path {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      .context-separator {
+        color: var(--muted);
+      }
+      #project-scope-path {
+        min-width: 0;
+        overflow: hidden;
+        color: var(--text);
+        font-family: var(--font-mono);
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .canvas-context-bar .hints {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 10px;
+      }
+      kbd {
+        padding: 1px 5px;
+        border: 1px solid var(--border-strong);
+        border-bottom-width: 2px;
+        border-radius: 4px;
+        background: var(--surface-2);
+        color: var(--text-2);
+        font-family: var(--font-mono);
+        font-size: 9px;
+      }
+      .easel-canvas {
+        flex: 1 1 auto;
+        min-width: 0;
+        min-height: 0;
+        position: relative;
+        overflow: hidden;
+      }
+      .file-error {
+        position: absolute;
+        top: 46px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 100;
+        max-width: min(620px, calc(100% - 24px));
+        border: 1px solid color-mix(in srgb, var(--danger) 55%, var(--border));
+        background: color-mix(in srgb, var(--surface) 96%, transparent);
+        color: var(--danger);
+        padding: 10px 14px;
+        border-radius: 9px;
+        font-size: 12px;
+        box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);
+        backdrop-filter: blur(12px);
+      }
+      .side-panel {
+        min-width: 0;
+        min-height: 0;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+        border-left: 1px solid var(--border);
+        background: color-mix(in srgb, var(--surface) 92%, transparent);
+      }
+      .side-section {
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--surface-2);
+        overflow: hidden;
+      }
+      .section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      .section-head h2 {
+        margin: 0;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+      .side-section-body {
+        padding: 10px 12px 12px;
+      }
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .metric {
+        min-width: 0;
+        margin: 0;
+        padding: 9px 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+      .metric dt {
+        margin-bottom: 4px;
+        color: var(--muted);
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      .metric dd {
+        margin: 0;
+        overflow: hidden;
+        color: var(--text);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #hud-stats {
+        margin: 8px 0 0;
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text-2);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        line-height: 1.65;
+        overflow: hidden;
+      }
+      .scope-summary {
+        display: flex;
+        align-items: center;
+        min-height: 34px;
+        padding: 7px 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 700;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      .btn-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .scope-nav {
+        display: none;
+      }
+      .scope-nav.active {
+        display: grid;
+      }
+      .hint {
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.5;
+      }
+      .legacy-section {
+        opacity: 0.82;
+      }
+
+      .mini-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .scope-pill {
+        display: inline-flex;
+        align-items: center;
+        max-width: 100%;
+        gap: 6px;
+        padding: 3px 9px;
+        border-radius: 999px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        color: var(--text-2);
+        font-size: 11px;
+        font-weight: 700;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      .scope-pill strong {
+        color: var(--text);
+      }
+      @media (max-width: 1240px) {
+        .workspace {
+          grid-template-columns: 220px minmax(0, 1fr) 280px;
+        }
+        .workspace.collapsed-library {
+          grid-template-columns: 44px minmax(0, 1fr) 280px;
+        }
+        .brand {
+          min-width: 0;
+        }
+        .topbar-actions {
+          padding-left: 8px;
+        }
+        .topbar-actions .field-label {
+          display: none;
+        }
+      }
+      @media (max-width: 1180px) {
+        .app-topbar {
+          height: auto;
+          min-height: 62px;
+          flex-wrap: wrap;
+          padding: 8px 10px;
+        }
+        .topbar-controls {
+          width: 100%;
+          justify-content: flex-start;
+          overflow-x: auto;
+        }
+        .topbar-segment.project {
+          flex: 1 1 auto;
+          max-width: none;
+        }
+      }
+      @media (max-width: 860px) {
+        .workspace {
+          grid-template-columns: 44px minmax(0, 1fr);
+        }
+        .workspace:not(.collapsed-library) {
+          grid-template-columns: minmax(180px, 42vw) minmax(0, 1fr);
+        }
+        .side-panel {
+          display: none;
+        }
+        .canvas-context-bar .hints {
+          display: none;
+        }
       }
     </style>
   </head>
   <body>
     <div id="app">
-      <div id="canvas" class="easel-canvas"></div>
-      <div id="hud" class="easel-hud">
-        <div class="hud-section">
-          <h3>Add Nodes (Drag & Drop)</h3>
-          <div class="node-drag-item" style="border-left: 4px solid #3b82f6;" draggable="true" data-type="text_generation">Text Generation</div>
-          <div class="node-drag-item" style="border-left: 4px solid #10b981;" draggable="true" data-type="image_generation">Image Generation</div>
-          <div class="node-drag-item" style="border-left: 4px solid #f59e0b;" draggable="true" data-type="audio_generation">Audio Generation</div>
-         <div class="node-drag-item" style="border-left: 4px solid #8b5cf6;" draggable="true" data-type="video_concatenation">Video Concatenation</div>
-         <div class="node-drag-item" style="border-left: 4px solid #06b6d4;" draggable="true" data-type="ip_api">IP Geolocation</div>
-          <div class="node-drag-item" style="border-left: 4px solid #22c55e;" draggable="true" data-type="text_input">Text Input</div>
-          <div class="node-drag-item" style="border-left: 4px solid #a855f7;" draggable="true" data-type="text_view">Text View</div>
-          <div class="node-drag-item" style="border-left: 4px solid #f97316;" draggable="true" data-type="counter">Counter</div>
-
-        </div>
-        <div class="hud-section">
-          <h3>State Actions</h3>
-          <div class="btn-row">
-            <button id="btn-save">Save</button>
-            <button id="btn-load">Load</button>
+      <header class="app-topbar">
+        <div class="brand" data-i18n-title="app_title" title="Easel Node Workbench">
+          <div class="brand-mark"></div>
+          <div class="brand-copy">
+            <span class="brand-title">EASEL</span>
+            <span class="brand-sub" data-i18n="app_brand_sub">Node Workbench</span>
           </div>
-          <div class="btn-row" style="margin-top: 8px;">
-            <select id="scene-selector" style="flex: 1; padding: 6px; background: #333; color: white; border: none; border-radius: 4px;">
-              <option value="default">Default Scene</option>
-              <option value="perf">Performance Test</option>
-              <option value="math">Math Test</option>
-             <option value="executor">Executor Demo</option>
-              <option value="realtime">Realtime CSS Preview</option>
-              <option value="ip_api">IP Geolocation API</option>
-              <option value="context_menu">Context Menu Demo</option>
-              <option value="document_subgraph">Document Subgraph</option>
+        </div>
+        <div class="topbar-segment project">
+          <span class="field-label" data-i18n="app_project_label">Project</span>
+          <input
+            id="project-name"
+            spellcheck="false"
+            data-i18n-aria-label="app_project_name_aria"
+            aria-label="Project name"
+          />
+          <span id="file-state" class="state-dirty" data-i18n="file_state_unsaved">Unsaved</span>
+        </div>
+        <div class="topbar-actions">
+          <span class="field-label" data-i18n="app_file_label">File</span>
+          <label
+            class="btn"
+            for="file-import"
+            data-i18n="app_import"
+            data-i18n-title="app_import_title"
+            title="Open .easel.json (Ctrl/Cmd+O)"
+            >Import</label
+          >
+          <input id="file-import" type="file" accept=".easel.json,.json,application/json" hidden />
+          <button
+            id="btn-export-document"
+            class="btn btn-primary"
+            type="button"
+            data-i18n="app_export"
+            data-i18n-title="app_export_title"
+            title="Export .easel.json (Ctrl/Cmd+E)"
+          >
+            Export
+          </button>
+        </div>
+        <div class="topbar-controls">
+          <div class="topbar-segment">
+            <span class="select-label" data-i18n="app_scene_label">Scene</span>
+            <select
+              id="scene-selector"
+              data-i18n-aria-label="scene_selector_aria"
+              aria-label="Demo scene"
+            >
+              <option value="document_subgraph" data-i18n-value="scene_document_subgraph">
+                Document Subgraph
+              </option>
+              <option value="default" data-i18n-value="scene_basic_canvas">Basic Canvas</option>
+              <option value="math" data-i18n-value="scene_math_test">Math Test</option>
+              <option value="perf" data-i18n-value="scene_performance_test">
+                Performance Test
+              </option>
+              <option value="executor" data-i18n-value="scene_executor_demo">Executor Demo</option>
+              <option value="realtime" data-i18n-value="scene_realtime_css">
+                Realtime CSS Preview
+              </option>
+              <option value="ip_api" data-i18n-value="scene_ip_api">IP Geolocation API</option>
+              <option value="context_menu" data-i18n-value="scene_context_menu">
+                Context Menu Demo
+              </option>
             </select>
           </div>
-          <div class="btn-row" style="margin-top: 8px;">
-            <select id="theme-selector" style="flex: 1; padding: 6px; background: #333; color: white; border: none; border-radius: 4px;">
-              <option value="dark">Dark Theme</option>
-              <option value="light">Light Theme</option>
+          <div class="topbar-segment">
+            <span class="select-label" data-i18n="app_theme_label">Theme</span>
+            <select
+              id="theme-selector"
+              data-i18n-aria-label="theme_selector_aria"
+              aria-label="Theme"
+            >
+              <option value="dark" data-i18n-value="theme_dark">Dark</option>
+              <option value="light" data-i18n-value="theme_light">Light</option>
             </select>
           </div>
-          <div class="btn-row" style="margin-top: 8px;">
-            <button id="btn-enter-subgraph" style="background: #2f9e44; display: none;">Enter Subgraph</button>
-            <button id="btn-exit-subgraph" style="background: #e6a23c; display: none;">Exit Subgraph</button>
+          <div class="topbar-segment">
+            <span class="select-label" data-i18n="app_language_label">Language</span>
+            <select
+              id="locale-selector"
+              data-i18n-aria-label="locale_selector_aria"
+              aria-label="Playground language"
+            >
+              <option value="auto" data-i18n-value="locale_auto">Auto</option>
+              <option value="en" data-i18n-value="locale_en">English</option>
+              <option value="zh" data-i18n-value="locale_zh">Chinese</option>
+            </select>
           </div>
+          <button
+            id="btn-collapse-library"
+            class="btn btn-ghost"
+            type="button"
+            data-i18n="ui_collapse_nodes"
+            data-i18n-title="ui_collapse_title"
+            title="Collapse node library"
+            aria-pressed="false"
+          >
+            Nodes
+          </button>
         </div>
-        <div class="hud-section">
-          <h3>Observability</h3>
-          <pre id="hud-stats" style="margin:0; white-space: pre-wrap; word-wrap: break-word;"></pre>
-        </div>
-      </div>
+      </header>
+      <main class="workspace" id="workspace">
+        <aside id="node-library" class="node-library">
+          <div class="panel-heading">
+            <span data-i18n="library_heading">Node Library</span>
+            <button
+              id="btn-library-close"
+              class="btn btn-ghost"
+              type="button"
+              data-i18n-title="ui_collapse"
+              title="Collapse"
+            >
+              -
+            </button>
+          </div>
+          <div class="library-body">
+            <input
+              id="node-search"
+              class="node-search"
+              type="search"
+              data-i18n-placeholder="library_search_placeholder"
+              data-i18n-aria-label="library_search_placeholder"
+              placeholder="Filter nodes"
+            />
+            <div class="node-group">
+              <div class="node-group-label" data-i18n="library_group_generate">Generate</div>
+              <div
+                class="node-drag-item"
+                style="--mark-color: #38bdf8"
+                draggable="true"
+                data-type="text_generation"
+                data-i18n-title="library_drag_hint"
+                title="Drag onto canvas"
+              >
+                <span data-i18n="node_text_generation">Text Generation</span
+                ><span class="drag-tag">GEN</span>
+              </div>
+              <div
+                class="node-drag-item"
+                style="--mark-color: #34d399"
+                draggable="true"
+                data-type="image_generation"
+                data-i18n-title="library_drag_hint"
+                title="Drag onto canvas"
+              >
+                <span data-i18n="node_image_generation">Image Generation</span
+                ><span class="drag-tag">IMG</span>
+              </div>
+              <div
+                class="node-drag-item"
+                style="--mark-color: #fbbf24"
+                draggable="true"
+                data-type="audio_generation"
+                data-i18n-title="library_drag_hint"
+                title="Drag onto canvas"
+              >
+                <span data-i18n="node_audio_generation">Audio Generation</span
+                ><span class="drag-tag">AUD</span>
+              </div>
+              <div
+                class="node-drag-item"
+                style="--mark-color: #fb7185"
+                draggable="true"
+                data-type="video_concatenation"
+                data-i18n-title="library_drag_hint"
+                title="Drag onto canvas"
+              >
+                <span data-i18n="node_video_concatenation">Video Concatenation</span
+                ><span class="drag-tag">VID</span>
+              </div>
+            </div>
+            <div class="node-group">
+              <div class="node-group-label" data-i18n="library_group_input_data">Input / Data</div>
+              <div
+                class="node-drag-item"
+                style="--mark-color: #34d399"
+                draggable="true"
+                data-type="text_input"
+                data-i18n-title="library_drag_hint"
+                title="Drag onto canvas"
+              >
+                <span data-i18n="node_text_input">Text Input</span><span class="drag-tag">IN</span>
+              </div>
+              <div
+                class="node-drag-item"
+                style="--mark-color: #22d3ee"
+                draggable="true"
+                data-type="ip_api"
+                data-i18n-title="library_drag_hint"
+                title="Drag onto canvas"
+              >
+                <span data-i18n="node_ip_api">IP Geolocation</span><span class="drag-tag">NET</span>
+              </div>
+              <div
+                class="node-drag-item"
+                style="--mark-color: #f97316"
+                draggable="true"
+                data-type="counter"
+                data-i18n-title="library_drag_hint"
+                title="Drag onto canvas"
+              >
+                <span data-i18n="node_counter">Counter</span><span class="drag-tag">NUM</span>
+              </div>
+            </div>
+            <div class="node-group">
+              <div class="node-group-label" data-i18n="library_group_view">View</div>
+              <div
+                class="node-drag-item"
+                style="--mark-color: #a78bfa"
+                draggable="true"
+                data-type="text_view"
+                data-i18n-title="library_drag_hint"
+                title="Drag onto canvas"
+              >
+                <span data-i18n="node_text_view">Text View</span><span class="drag-tag">VIEW</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+        <section class="canvas-shell">
+          <div class="canvas-context-bar">
+            <span class="field-label" data-i18n="canvas_scope_label">Scope</span>
+            <div class="context-path">
+              <span id="project-scope-path"></span>
+            </div>
+            <div class="hints">
+              <span
+                ><kbd>Enter</kbd>
+                <span data-i18n="canvas_hint_enter_host">enter selected host</span></span
+              >
+              <span><kbd>Esc</kbd> <span data-i18n="canvas_hint_exit_scope">exit scope</span></span>
+              <span
+                ><kbd>Ctrl</kbd>+<kbd>E</kbd>
+                <span data-i18n="canvas_hint_export">export</span></span
+              >
+              <span
+                ><kbd>Ctrl</kbd>+<kbd>O</kbd>
+                <span data-i18n="canvas_hint_import">import</span></span
+              >
+            </div>
+          </div>
+          <div id="canvas" class="easel-canvas"></div>
+          <div id="import-error" class="file-error" hidden role="alert"></div>
+        </section>
+        <aside id="hud" class="side-panel">
+          <section class="side-section">
+            <div class="section-head">
+              <h2 data-i18n="status_canvas">Canvas Status</h2>
+              <span class="status-dot"></span>
+            </div>
+            <div class="side-section-body">
+              <div class="metric-grid">
+                <dl class="metric">
+                  <dt data-i18n="status_nodes">Nodes</dt>
+                  <dd id="stat-nodes">0</dd>
+                </dl>
+                <dl class="metric">
+                  <dt data-i18n="status_wires">Wires</dt>
+                  <dd id="stat-wires">0</dd>
+                </dl>
+                <dl class="metric">
+                  <dt data-i18n="status_zoom">Zoom</dt>
+                  <dd id="stat-zoom">1.00x</dd>
+                </dl>
+                <dl class="metric">
+                  <dt data-i18n="status_selected">Selected</dt>
+                  <dd id="stat-selected"></dd>
+                </dl>
+              </div>
+              <pre id="hud-stats"></pre>
+            </div>
+          </section>
+          <section class="side-section">
+            <div class="section-head">
+              <h2 data-i18n="scope_navigation">Scope Navigation</h2>
+            </div>
+            <div class="side-section-body">
+              <span class="scope-pill"
+                ><span data-i18n="scope_path_label">Path</span>
+                <strong id="scope-summary">root</strong></span
+              >
+              <div id="scope-nav" class="btn-row scope-nav">
+                <button id="btn-enter-subgraph" type="button" data-i18n="scope_action_enter">
+                  Enter
+                </button>
+                <button id="btn-exit-subgraph" type="button" data-i18n="scope_action_exit">
+                  Exit
+                </button>
+              </div>
+              <p class="hint" data-i18n="scope_document_hint">
+                Document scene: double-click a host or select it and press Enter. Escape returns to
+                the parent scope.
+              </p>
+            </div>
+          </section>
+          <section class="side-section legacy-section">
+            <div class="section-head">
+              <h2 data-i18n="legacy_heading">Legacy Demo</h2>
+            </div>
+            <div class="side-section-body">
+              <div class="btn-row">
+                <button id="btn-save" type="button" data-i18n="legacy_save">Save</button>
+                <button id="btn-load" type="button" data-i18n="legacy_load">Load</button>
+              </div>
+              <p class="hint" data-i18n="legacy_hint">
+                Old localStorage state actions are kept for legacy demos.
+              </p>
+            </div>
+          </section>
+        </aside>
+      </main>
     </div>
     <script type="module" src="/playground/main.ts"></script>
   </body>
 </html>
-
-

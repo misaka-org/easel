@@ -1,6 +1,7 @@
 import { ref, type Ref } from '@vue/reactivity';
 import type { Easel } from '@/runtime/easel';
 import type { GraphNode } from '@/core/types';
+import { is_node_muted, muted_node_outputs } from '@/core/node_ops';
 import * as E from 'fp-ts/Either';
 import type { ExecutionState, ExecutionNodeState, WireBindingRef } from './types';
 
@@ -88,11 +89,10 @@ export class GraphExecutor {
   }
 
   private check_requirements(node: GraphNode, wires: WireBindingRef[]): string | null {
+    if (is_node_muted(node)) return null;
     for (const port of node.inputs) {
       if (port.required) {
-        const has_wire = wires.some(
-          w => w.target_id === node.id && w.target_handle === port.id,
-        );
+        const has_wire = wires.some(w => w.target_id === node.id && w.target_handle === port.id);
         if (!has_wire) return `Missing required input: ${port.label}`;
       }
     }
@@ -129,9 +129,10 @@ export class GraphExecutor {
     this.state.value = { ...this.state.value, status: 'stopped' };
   }
 
-
   /** LRU cache get — moves entry to most-recent position. */
-  private cache_get(id: string): { fingerprint: string; outputs: Record<string, unknown> } | undefined {
+  private cache_get(
+    id: string,
+  ): { fingerprint: string; outputs: Record<string, unknown> } | undefined {
     const entry = this.input_cache.get(id);
     if (entry) {
       this.input_cache.delete(id);
@@ -141,7 +142,10 @@ export class GraphExecutor {
   }
 
   /** LRU cache set — evicts oldest when over max_cache_size. */
-  private cache_set(id: string, entry: { fingerprint: string; outputs: Record<string, unknown> }): void {
+  private cache_set(
+    id: string,
+    entry: { fingerprint: string; outputs: Record<string, unknown> },
+  ): void {
     if (this.max_cache_size <= 0) return;
     this.input_cache.delete(id);
     this.input_cache.set(id, entry);
@@ -344,7 +348,9 @@ export class GraphExecutor {
 
     try {
       let outputs: Record<string, unknown> = {};
-      if (inst && typeof inst.execute === 'function') {
+      if (is_node_muted(node)) {
+        outputs = muted_node_outputs(node, this.gather_inputs(id));
+      } else if (inst && typeof inst.execute === 'function') {
         const inputs = this.gather_inputs(id);
 
         const fingerprint = this.inputs_fingerprint(inputs);
@@ -373,12 +379,14 @@ export class GraphExecutor {
 
       if (this.abort_controller?.signal.aborted) return;
 
-      const fresh_inputs = this.gather_inputs(id);
-      const fresh_fingerprint = this.inputs_fingerprint(fresh_inputs);
-      this.cache_set(id, {
-        fingerprint: fresh_fingerprint,
-        outputs: GraphExecutor.deep_clone(outputs),
-      });
+      if (!is_node_muted(node)) {
+        const fresh_inputs = this.gather_inputs(id);
+        const fresh_fingerprint = this.inputs_fingerprint(fresh_inputs);
+        this.cache_set(id, {
+          fingerprint: fresh_fingerprint,
+          outputs: GraphExecutor.deep_clone(outputs),
+        });
+      }
 
       this.update_node_state(id, { status: 'completed', progress: 100, outputs });
       this.state.value = {
@@ -442,7 +450,8 @@ export class GraphExecutor {
   /** Deterministic fingerprint of input values 閳?two compilations with same inputs produce same fingerprint */
   /** Deterministic fingerprint — 排序键拼接，避免 JSON.stringify 开销。 */
   private inputs_fingerprint(inputs: Record<string, unknown>): string {
-    return Object.keys(inputs).sort()
+    return Object.keys(inputs)
+      .sort()
       .map(k => k + '\x00' + typeof inputs[k] + '\x00' + String(inputs[k]))
       .join('\x01');
   }
@@ -453,11 +462,13 @@ export class GraphExecutor {
     this.update_node_state(id, { status: 'running', progress: 0 });
 
     const inst = this.easel.get_node_instance(id);
+    const node = this.easel.store.nodes.get(id);
 
     try {
       let outputs: Record<string, unknown> = {};
-      if (inst && typeof inst.execute === 'function') {
-        const node = this.easel.store.nodes.get(id);
+      if (is_node_muted(node)) {
+        outputs = muted_node_outputs(node, this.gather_inputs(id));
+      } else if (inst && typeof inst.execute === 'function') {
         const inputs = this.gather_inputs(id);
 
         // Separate cache (persists across compilations) 閳?skip execution when inputs unchanged
@@ -486,13 +497,15 @@ export class GraphExecutor {
 
       if (this.abort_controller?.signal.aborted) return;
 
-      // Cache fresh outputs so unchanged inputs skip execution on future runs
-      const fresh_inputs = this.gather_inputs(id);
-      const fresh_fingerprint = this.inputs_fingerprint(fresh_inputs);
-      this.cache_set(id, {
-        fingerprint: fresh_fingerprint,
-        outputs: GraphExecutor.deep_clone(outputs),
-      });
+      if (!is_node_muted(node)) {
+        // Cache fresh outputs so unchanged inputs skip execution on future runs
+        const fresh_inputs = this.gather_inputs(id);
+        const fresh_fingerprint = this.inputs_fingerprint(fresh_inputs);
+        this.cache_set(id, {
+          fingerprint: fresh_fingerprint,
+          outputs: GraphExecutor.deep_clone(outputs),
+        });
+      }
 
       this.update_node_state(id, { status: 'completed', progress: 100, outputs });
       this.finish_node(id);

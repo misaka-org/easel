@@ -2,6 +2,7 @@ import type { EaselPlugin, Easel } from '@/runtime/easel';
 import { wire_tool } from './wire_tool';
 import type { WireState } from './wire_tool';
 import { render_wires } from './render';
+import { is_binding_locked } from './lock';
 import { reactive } from '@vue/reactivity';
 
 // ── DataFlowBinding 类型 ────────────────────────────────────────
@@ -162,11 +163,15 @@ export const wire_plugin: EaselPlugin = {
     const wire_state = easel.plugin_data.wire?._wire_state;
     if (!wire_state) return;
 
+    const nodes_record = Object.fromEntries(
+      easel.store.nodes.list().map(node => [node.id, node]),
+    );
     let should_start_wiring = false;
 
     if (target_port_type === 'input') {
       const existing = api.find_by_target(target_node_id, target_port_id);
       if (existing) {
+        if (is_binding_locked(nodes_record, existing)) return;
         api.remove_binding(existing.id);
         wire_state.is_wiring = true;
         wire_state.source_node_id = existing.source_id;

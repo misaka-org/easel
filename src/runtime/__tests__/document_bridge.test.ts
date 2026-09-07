@@ -3,6 +3,7 @@ import type { GraphNode, Port } from '@/core/types';
 import type { GraphBindingRecord, GraphDocument, GraphNodeRecord } from '@/core/graph/types';
 import {
   add_binding,
+  add_graph,
   add_node,
   create_empty_graph_document,
   type GraphDocumentError,
@@ -36,6 +37,9 @@ const make_node = (
     readonly outputs?: readonly Port[];
     readonly position?: { readonly x: number; readonly y: number };
     readonly custom_data?: Record<string, unknown>;
+    readonly muted?: boolean;
+    readonly pinned?: boolean;
+    readonly locked?: boolean;
   } = {},
 ): GraphNodeRecord => {
   return {
@@ -48,6 +52,9 @@ const make_node = (
     inputs: options.inputs ?? [],
     outputs: options.outputs ?? [],
     custom_data: options.custom_data ?? {},
+    ...(options.muted !== undefined ? { muted: options.muted } : {}),
+    ...(options.pinned !== undefined ? { pinned: options.pinned } : {}),
+    ...(options.locked !== undefined ? { locked: options.locked } : {}),
   };
 };
 
@@ -150,6 +157,24 @@ const make_packed_document = (): GraphDocument => {
   );
 };
 
+const make_empty_child_document = (): GraphDocument => {
+  const document = unwrap_document(
+    add_graph(create_empty_graph_document(), {
+      id: 'child',
+      kind: 'subgraph',
+      parent_graph_id: 'root',
+      title: 'Empty Child',
+      input_slots: [],
+      output_slots: [],
+    }),
+  );
+  const host: GraphNodeRecord = {
+    ...make_node('host', 'root'),
+    nested_graph_id: 'child',
+  };
+  return unwrap_document(add_node(document, host));
+};
+
 const make_legacy_node = (id: string): GraphNode => {
   return {
     id,
@@ -188,6 +213,24 @@ const make_fake_easel = (): {
 };
 
 describe('document bridge', () => {
+  it('projects muted, pinned and locked onto legacy nodes', () => {
+    const flagged = make_node('flagged', 'root', {
+      position: { x: 1, y: 2 },
+      muted: true,
+      pinned: true,
+      locked: true,
+    });
+    const document = unwrap_document(add_node(create_empty_graph_document(), flagged));
+    const controller = unwrap_controller(create_document_controller(document));
+    const view = project_document_bridge_view(controller.view);
+
+    expect(view.nodes['flagged']?.muted).toBe(true);
+    expect(view.nodes['flagged']?.pinned).toBe(true);
+    expect(view.nodes['flagged']?.locked).toBe(true);
+    expect(view.nodes['flagged']).not.toHaveProperty('graph_id');
+    expect(view.nodes['flagged']).not.toHaveProperty('nested_graph_id');
+  });
+
   it('projects root scope without graph-only fields, non-root content, or boundary proxies', () => {
     const document = make_packed_document();
     const controller = unwrap_controller(create_document_controller(document));
@@ -227,17 +270,43 @@ describe('document bridge', () => {
     expect(view.nodes['host']).toBeUndefined();
 
     const input_proxy = Object.values(view.nodes).find(
-      node => node.type === 'document_boundary_input',
+      node =>
+        node.type === 'subgraph_input' && node.custom_data?.['boundary_direction'] === 'input',
     );
     const output_proxy = Object.values(view.nodes).find(
-      node => node.type === 'document_boundary_output',
+      node =>
+        node.type === 'subgraph_output' && node.custom_data?.['boundary_direction'] === 'output',
     );
     expect(input_proxy).toBeDefined();
     expect(output_proxy).toBeDefined();
     expect(input_proxy?.inputs).toEqual([]);
-    expect(input_proxy?.outputs.map(port => port.id)).toEqual(['input_0']);
-    expect(output_proxy?.inputs.map(port => port.id)).toEqual(['output_0']);
+    expect(input_proxy?.outputs.map(port => port.id)).toEqual([
+      'input_0',
+      '__easel_boundary_add__',
+    ]);
+    expect(output_proxy?.inputs.map(port => port.id)).toEqual([
+      'output_0',
+      '__easel_boundary_add__',
+    ]);
     expect(output_proxy?.outputs).toEqual([]);
+    expect(input_proxy?.custom_data).toEqual({
+      boundary_direction: 'input',
+      scope_graph_id: 'child',
+      view_only: true,
+    });
+    expect(output_proxy?.custom_data).toEqual({
+      boundary_direction: 'output',
+      scope_graph_id: 'child',
+      view_only: true,
+    });
+    expect(input_proxy?.outputs[0]?.value_type).toBe('text');
+    expect(output_proxy?.inputs[0]?.value_type).toBe('text');
+    expect(input_proxy?.position.x).toBeLessThan(
+      view.nodes['a']?.position.x ?? Number.POSITIVE_INFINITY,
+    );
+    expect(output_proxy?.position.x).toBeGreaterThan(
+      view.nodes['b']?.position.x ?? Number.NEGATIVE_INFINITY,
+    );
     expect(Object.keys(view.nodes).sort()).toEqual(['a', 'b', ...view.view_only_node_ids].sort());
 
     const input_binding = Object.values(view.bindings).find(
@@ -282,6 +351,28 @@ describe('document bridge', () => {
     for (const binding of Object.values(view.bindings)) {
       expect(binding).not.toHaveProperty('graph_id');
     }
+  });
+
+  it('projects an empty child scope with both rails and add ports', () => {
+    const controller = unwrap_controller(create_document_controller(make_empty_child_document()));
+    const child_view = unwrap_view(controller.enter_subgraph('host'));
+    const view = project_document_bridge_view(child_view);
+
+    expect(view.graph.kind).toBe('subgraph');
+    expect(view.graph.input_slots).toEqual([]);
+    expect(view.graph.output_slots).toEqual([]);
+    expect(Object.keys(view.nodes)).toEqual(view.view_only_node_ids);
+    expect(view.view_only_node_ids).toHaveLength(2);
+
+    const input_proxy = Object.values(view.nodes).find(node => node.type === 'subgraph_input');
+    const output_proxy = Object.values(view.nodes).find(node => node.type === 'subgraph_output');
+    expect(input_proxy?.outputs.map(port => port.id)).toEqual(['__easel_boundary_add__']);
+    expect(output_proxy?.inputs.map(port => port.id)).toEqual(['__easel_boundary_add__']);
+    expect(input_proxy?.custom_data?.['scope_graph_id']).toBe('child');
+    expect(output_proxy?.custom_data?.['scope_graph_id']).toBe('child');
+    expect(input_proxy?.position.x).toBeLessThan(output_proxy?.position.x ?? 0);
+    expect(Object.keys(view.bindings)).toEqual([]);
+    expect(view.view_only_binding_ids).toEqual([]);
   });
 
   it('does not modify the controller view while projecting', () => {
@@ -359,5 +450,76 @@ describe('document bridge', () => {
       ),
     );
     expect(fake.easel.store.nodes.has('after_stop')).toBe(false);
+  });
+
+  it('keeps user-moved rail positions when controller changes trigger resync', () => {
+    const controller = unwrap_controller(create_document_controller(make_packed_document()));
+    const fake = make_fake_easel();
+    const stop = mount_document_bridge(fake.easel, controller);
+    try {
+      unwrap_view(controller.enter_subgraph('host'));
+      const projected = project_document_bridge_view(controller.view);
+      const rail = Object.values(projected.nodes).find(
+        node =>
+          node.type === 'subgraph_input' && node.custom_data?.['boundary_direction'] === 'input',
+      );
+      if (rail == null) {
+        throw new Error('expected projected input rail');
+      }
+      const legacy_rail = fake.easel.store.nodes.get(rail.id);
+      if (legacy_rail == null) {
+        throw new Error('expected legacy input rail after mount');
+      }
+      fake.easel.store.nodes.put(rail.id, {
+        ...legacy_rail,
+        position: { x: 999, y: 777 },
+      });
+
+      unwrap_view(
+        controller.add_node(
+          make_node('extra', 'child', {
+            position: { x: 5, y: 5 },
+          }),
+        ),
+      );
+
+      expect(fake.easel.store.nodes.get(rail.id)?.position).toEqual({ x: 999, y: 777 });
+      expect(controller.document.nodes[rail.id]).toBeUndefined();
+    } finally {
+      stop();
+    }
+  });
+
+  it('restores user-moved rail positions when re-entering the same scope', () => {
+    const controller = unwrap_controller(create_document_controller(make_packed_document()));
+    const fake = make_fake_easel();
+    const stop = mount_document_bridge(fake.easel, controller);
+    try {
+      unwrap_view(controller.enter_subgraph('host'));
+      const projected = project_document_bridge_view(controller.view);
+      const rail = Object.values(projected.nodes).find(
+        node =>
+          node.type === 'subgraph_input' && node.custom_data?.['boundary_direction'] === 'input',
+      );
+      if (rail == null) {
+        throw new Error('expected projected input rail');
+      }
+      const legacy_rail = fake.easel.store.nodes.get(rail.id);
+      if (legacy_rail == null) {
+        throw new Error('expected legacy input rail after mount');
+      }
+      fake.easel.store.nodes.put(rail.id, {
+        ...legacy_rail,
+        position: { x: 321, y: 654 },
+      });
+
+      unwrap_view(controller.exit_subgraph());
+      expect(fake.easel.store.nodes.get(rail.id)).toBeUndefined();
+
+      unwrap_view(controller.enter_subgraph('host'));
+      expect(fake.easel.store.nodes.get(rail.id)?.position).toEqual({ x: 321, y: 654 });
+    } finally {
+      stop();
+    }
   });
 });

@@ -6,7 +6,19 @@ import { frame_effect } from './frame_effect';
 
 import type { Easel } from './easel';
 
+const locked_port_title = 'Locked: connected wires cannot be disconnected';
 
+const sync_locked_ports = (el: HTMLElement, locked: boolean): void => {
+  for (const port_el of Array.from(el.querySelectorAll<HTMLElement>('.port'))) {
+    if (locked) {
+      port_el.dataset['locked'] = 'true';
+      port_el.title = locked_port_title;
+    } else {
+      delete port_el.dataset['locked'];
+      port_el.removeAttribute('title');
+    }
+  }
+};
 
 export const render_nodes = (easel: Easel): void => {
   const container = easel.container;
@@ -123,6 +135,22 @@ export const render_nodes = (easel: Easel): void => {
           if (node.style_mode === 'borderless') el.classList.add('borderless');
           else el.classList.remove('borderless');
 
+          if (node.muted === true) {
+            el.dataset['muted'] = 'true';
+          } else {
+            delete el.dataset['muted'];
+          }
+          if (node.pinned === true) {
+            el.dataset['pinned'] = 'true';
+          } else {
+            delete el.dataset['pinned'];
+          }
+          if (node.locked === true) {
+            el.dataset['locked'] = 'true';
+          } else {
+            delete el.dataset['locked'];
+          }
+
           el.style.transform = `translate(${node.position.x}px, ${node.position.y}px)`;
 
           if (node.collapsed) {
@@ -145,6 +173,7 @@ export const render_nodes = (easel: Easel): void => {
           else el.classList.remove('selected');
 
           inst.update(node, st);
+          sync_locked_ports(el, node.locked === true);
         });
 
         node_instances.set(id, { el, inst, runner });

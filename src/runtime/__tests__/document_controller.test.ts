@@ -279,6 +279,41 @@ describe('document controller', () => {
     expect(view.graph.output_slots[0]?.id).toBe('response');
   });
 
+  it('remaps an existing boundary slot through the current-scope controller', () => {
+    const controller = unwrap_controller(create_document_controller(make_boundary_document()));
+    enter_child(controller);
+
+    unwrap_view(
+      controller.add_graph_boundary({
+        direction: 'input',
+        slot: { id: 'request', label: 'Request', value_type: 'text', required: true },
+        mapping: { node_id: 'internal', port_id: 'internal_in' },
+      }),
+    );
+    const host_ports_before = JSON.stringify(controller.document.nodes['host']);
+
+    const second = make_node(
+      'second',
+      'child',
+      [port('second_in', 'input')],
+      [port('second_out', 'output')],
+    );
+    unwrap_view(controller.add_node(second));
+
+    const view = unwrap_view(
+      controller.set_graph_boundary_mapping('input', 'request', {
+        node_id: 'second',
+        port_id: 'second_in',
+      }),
+    );
+
+    expect(view.graph.input_slots).toHaveLength(1);
+    expect(view.graph.input_slots[0]?.id).toBe('request');
+    expect(JSON.stringify(controller.document.nodes['host'])).toBe(host_ports_before);
+    expect(view.boundary_bindings['child:input:request']?.node_id).toBe('second');
+    expect(view.boundary_bindings['child:input:request']?.port_id).toBe('second_in');
+  });
+
   it('rejects commit_document when the active subgraph is removed', () => {
     const document = make_crossing_document();
     const controller = unwrap_controller(create_document_controller(document));
@@ -295,6 +330,27 @@ describe('document controller', () => {
     expect(JSON.stringify(controller.document)).toBe(snapshot);
     expect(controller.path).toEqual(path_snapshot);
     expect(controller.view.graph.id).toBe('child');
+  });
+
+  it('keeps muted, pinned and locked flags in controller serialization roundtrips', () => {
+    const controller = unwrap_controller(create_document_controller(make_crossing_document()));
+    enter_child(controller);
+    unwrap_view(
+      controller.update_node('target', node => ({
+        ...node,
+        muted: true,
+        pinned: true,
+        locked: true,
+      })),
+    );
+
+    const json = controller.serialize({ pretty: true });
+    const restored = unwrap_controller(deserialize_document_controller(json));
+    expect(restored.document.nodes['target']?.muted).toBe(true);
+    expect(restored.document.nodes['target']?.pinned).toBe(true);
+    expect(restored.document.nodes['target']?.locked).toBe(true);
+    expect(restored.path).toEqual(['root']);
+    expect(restored.view.nodes['host']).toBeDefined();
   });
 
   it('roundtrips serialization and always restores from root', () => {

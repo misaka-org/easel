@@ -10,6 +10,7 @@ import type { State, Port, Widget } from '@/core/types';
 import type { Tool, ToolResult } from '@/core/tool';
 import type { PointerEventParams } from '@/core/interactions';
 import { create_data_flow_binding } from './index';
+import { is_binding_locked } from './lock';
 import * as O from 'fp-ts/Option';
 import { pipe } from 'fp-ts/function';
 // ── WireState（临时连线状态，替代 interaction.mode === 'wiring'）───
@@ -71,6 +72,7 @@ export const wire_tool = (easel: Easel, wire_state: WireState): Tool => {
         if (port_type === 'input') {
           const b = easel.plugin_data.wire!.find_by_target(node_id, port_id);
           if (b) {
+            if (is_binding_locked(state.nodes, b)) return O.none;
             easel.plugin_data.wire!.remove_binding(b.id);
             return O.some(start_wiring(state, b.source_id, b.source_handle, event));
           }
@@ -165,6 +167,7 @@ export const wire_tool = (easel: Easel, wire_state: WireState): Tool => {
 
         // 删除旧 binding（如果已连接）
         const existing = easel.plugin_data.wire!.find_by_target(target_node_id, target_port_id);
+        if (existing && is_binding_locked(state.nodes, existing)) return O.none;
         if (existing) easel.plugin_data.wire!.remove_binding(existing.id);
 
         const binding = create_data_flow_binding(

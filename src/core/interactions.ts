@@ -1,4 +1,4 @@
-import type { State, Modifiers, Interaction } from './types';
+import type { State, Modifiers, Interaction, GraphNode } from './types';
 import type { Vec2 } from './math';
 import { vec2_sub, vec2_add, vec2_scale, vec2_create, aabb_intersect } from './math';
 import { move_nodes } from './node_ops';
@@ -25,7 +25,6 @@ export const update_modifiers = (state: State, modifiers: Modifiers): State => (
   ...state,
   modifiers,
 });
-
 
 const start_resizing = (state: State, target_id: string, event: PointerEventParams): State => ({
   ...state,
@@ -57,6 +56,15 @@ const start_dragging = (state: State, target_id: string, event: PointerEventPara
       original_nodes: state.nodes,
     },
   };
+};
+
+const is_view_only_rail = (node: GraphNode): boolean => {
+  const direction = node.custom_data['boundary_direction'];
+  return (
+    node.custom_data['view_only'] === true &&
+    (node.type === 'subgraph_input' || node.type === 'subgraph_output') &&
+    (direction === 'input' || direction === 'output')
+  );
 };
 
 const start_selection_or_pan = (state: State, event: PointerEventParams): State => ({
@@ -144,11 +152,16 @@ const handlers_move: {
 export const pointer_move = (state: State, event: PointerEventParams): State => {
   const interaction = state.interaction;
   switch (interaction.mode) {
-    case 'idle': return handlers_move.idle(state, interaction, event);
-    case 'dragging': return handlers_move.dragging(state, interaction, event);
-    case 'resizing': return handlers_move.resizing(state, interaction, event);
-    case 'panning': return handlers_move.panning(state, interaction, event);
-    case 'box_selecting': return handlers_move.box_selecting(state, interaction, event);
+    case 'idle':
+      return handlers_move.idle(state, interaction, event);
+    case 'dragging':
+      return handlers_move.dragging(state, interaction, event);
+    case 'resizing':
+      return handlers_move.resizing(state, interaction, event);
+    case 'panning':
+      return handlers_move.panning(state, interaction, event);
+    case 'box_selecting':
+      return handlers_move.box_selecting(state, interaction, event);
   }
 };
 
@@ -172,7 +185,9 @@ const finish_box_selection = (
   );
 
   const selected = Object.values(state.nodes)
-    .filter(n => aabb_intersect(n.position, n.size, start_world, size_world))
+    .filter(
+      n => !is_view_only_rail(n) && aabb_intersect(n.position, n.size, start_world, size_world),
+    )
     .map(n => n.id);
 
   return {

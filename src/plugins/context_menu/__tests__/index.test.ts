@@ -69,15 +69,40 @@ describe('build_ns_menu', () => {
 describe('built-in providers', () => {
   function createMockEasel(extra: Record<string, any> = {}) {
     const container = document.createElement('div');
-    const mt = () => ({ get: () => undefined, list: () => [], keys: () => [], put: () => true, delete() {}, has: () => false, on_before_change: () => (() => {}), on_after_change: () => (() => {}) });
+    const mt = () => ({
+      get: () => undefined,
+      list: () => [],
+      keys: () => [],
+      put: () => true,
+      delete() {},
+      has: () => false,
+      on_before_change: () => () => {},
+      on_after_change: () => () => {},
+    });
     return {
       container,
       plugin_data: {} as any,
       dispatch: vi.fn(),
       app_events: { on: vi.fn(), emit: vi.fn(), off: vi.fn() },
       node_events: new Map(),
-      store: { state: { value: {} }, dispatch: vi.fn(), nodes: mt() as any, bindings: mt() as any, serialize: () => ({}), transact: (fn: any) => fn() },
-      camera: { set: vi.fn(), animate_to: vi.fn(), cancel: vi.fn(), zoom_in: vi.fn(), zoom_out: vi.fn(), zoom_reset: vi.fn(), fit_to_view: vi.fn(), is_animating: false } as any,
+      store: {
+        state: { value: {} },
+        dispatch: vi.fn(),
+        nodes: mt() as any,
+        bindings: mt() as any,
+        serialize: () => ({}),
+        transact: (fn: any) => fn(),
+      },
+      camera: {
+        set: vi.fn(),
+        animate_to: vi.fn(),
+        cancel: vi.fn(),
+        zoom_in: vi.fn(),
+        zoom_out: vi.fn(),
+        zoom_reset: vi.fn(),
+        fit_to_view: vi.fn(),
+        is_animating: false,
+      } as any,
       set_theme: vi.fn(),
       tools: { register: vi.fn(), activate: vi.fn(), get: vi.fn(), list: vi.fn(() => []) },
       state: {
@@ -168,6 +193,45 @@ describe('built-in providers', () => {
     expect(items.some((i: any) => i.id === 'clear_wires')).toBe(false);
   });
 
+  it('canvas clear wires removes only unlocked bindings', () => {
+    const nodes = [
+      { id: 'free_source', locked: false },
+      { id: 'locked_source', locked: true },
+      { id: 'locked_target', locked: true },
+    ];
+    const bindings = [
+      { id: 'free', source_id: 'free_source', target_id: 'free_target' },
+      { id: 'source_locked', source_id: 'locked_source', target_id: 'free_target' },
+      { id: 'target_locked', source_id: 'free_source', target_id: 'locked_target' },
+    ];
+    const removed: string[] = [];
+    const easel = createMockEasel({
+      plugin_data: {
+        wire: {
+          get_bindings: () => bindings.slice(),
+          remove_binding: (id: string) => removed.push(id),
+        },
+      },
+      store: {
+        nodes: {
+          list: () => nodes,
+        },
+      },
+    });
+    context_menu_plugin.setup(easel);
+    const service = easel.plugin_data.context_menu;
+    const items = service.collect({
+      node_id: undefined,
+      screen_pos: { x: 0, y: 0 },
+      world_pos: { x: 0, y: 0 },
+      container: easel.container,
+    });
+    const clear = items.find((item: any) => item.id === 'clear_wires');
+    expect(clear).toBeDefined();
+    clear?.action?.();
+    expect(removed).toEqual(['free']);
+  });
+
   it('node_instance_provider delegates to get_context_menu_items', () => {
     const getContextItems = vi
       .fn()
@@ -203,5 +267,28 @@ describe('built-in providers', () => {
     expect(addNode).toBeDefined();
     expect(addNode.label).toBe('Add Node');
     expect(addNode.submenu).toBeDefined();
+  });
+
+  it('injects menu styles that cap width and wrap long labels', () => {
+    const easel = createMockEasel();
+    context_menu_plugin.setup(easel);
+
+    const style_el = easel.container.querySelector(
+      '#easel-context-menu-style',
+    ) as HTMLStyleElement | null;
+    const css = style_el?.textContent ?? '';
+
+    const menu_rule = css.match(/\.easel-context-menu\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(menu_rule).toContain('max-width: min(320px, 100%);');
+
+    const item_label_rule = css.match(/\.easel-context-menu-item-label\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(item_label_rule).toContain('min-width: 0;');
+    expect(item_label_rule).toContain('overflow-wrap: anywhere;');
+
+    const label_text_rule = css.match(/\.easel-context-menu-label-text\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(label_text_rule).toContain('min-width: 0;');
+    expect(label_text_rule).toContain('overflow-wrap: anywhere;');
+
+    expect(css).not.toContain('white-space: nowrap');
   });
 });

@@ -1,4 +1,5 @@
 import type { GraphNode } from '@/core/types';
+import { is_node_muted, muted_node_outputs } from '@/core/node_ops';
 import type { ExecuteContext, EaselNodeContext } from '@/runtime/registry';
 import { get_node_constructor } from '@/runtime/registry';
 import EventEmitter from 'eventemitter3';
@@ -7,9 +8,7 @@ import type { EaselEvents, NodeEventPayloads } from '@/runtime/easel';
 type Edge = { source_id: string; target_id: string; source_handle: string; target_handle: string };
 
 /** Execute subgraph internal graph with external inputs. */
-export async function execute_subgraph(
-  ctx: ExecuteContext,
-): Promise<Record<string, unknown>> {
+export async function execute_subgraph(ctx: ExecuteContext): Promise<Record<string, unknown>> {
   const graph = ctx.node.custom_data['graph'] as
     | { nodes: Record<string, GraphNode>; edges: Edge[] }
     | undefined;
@@ -21,7 +20,10 @@ export async function execute_subgraph(
 
   const adj: Record<string, string[]> = {};
   const indeg: Record<string, number> = {};
-  for (const id of ids) { adj[id] = []; indeg[id] = 0; }
+  for (const id of ids) {
+    adj[id] = [];
+    indeg[id] = 0;
+  }
   for (const e of edges) {
     if (adj[e.source_id] && adj[e.target_id]) {
       adj[e.source_id]!.push(e.target_id);
@@ -76,6 +78,11 @@ export async function execute_subgraph(
       continue;
     }
 
+    if (is_node_muted(nd)) {
+      out[id] = muted_node_outputs(nd, inp);
+      continue;
+    }
+
     const ctor = get_node_constructor(nd.type);
     if (ctor) {
       const tmp_el = document.createElement('div');
@@ -87,7 +94,8 @@ export async function execute_subgraph(
       if (typeof inst.execute === 'function') {
         try {
           out[id] = await inst.execute({
-            node: nd, inputs: inp,
+            node: nd,
+            inputs: inp,
             report_progress: () => {},
             signal: ctx.signal,
           });

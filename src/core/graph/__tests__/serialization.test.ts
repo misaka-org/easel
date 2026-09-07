@@ -113,6 +113,58 @@ describe('graph serialization', () => {
     throw new Error(`unexpected deserialization failure: ${result.left}`);
   });
 
+  it('roundtrips optional muted, pinned and locked node flags', () => {
+    const document = make_document();
+    const source = document.nodes['source'];
+    if (source == null) {
+      throw new Error('expected source node');
+    }
+    const marked_document: GraphDocument = {
+      ...document,
+      nodes: {
+        ...document.nodes,
+        source: { ...source, muted: true, pinned: false, locked: true },
+      },
+    };
+
+    const result = deserialize_graph_document(serialize_graph_document(marked_document));
+    if (E.isRight(result)) {
+      expect(result.right.nodes['source']?.muted).toBe(true);
+      expect(result.right.nodes['source']?.pinned).toBe(false);
+      expect(result.right.nodes['source']?.locked).toBe(true);
+    } else {
+      throw new Error(`unexpected deserialization failure: ${result.left}`);
+    }
+  });
+
+  it('accepts old documents without muted, pinned or locked fields', () => {
+    const document = make_document();
+    const target = document.nodes['target'];
+    if (target == null) {
+      throw new Error('expected target node');
+    }
+    const marked_document: GraphDocument = {
+      ...document,
+      nodes: {
+        ...document.nodes,
+        target: { ...target, muted: true, pinned: true, locked: true },
+      },
+    };
+    const parsed = JSON.parse(serialize_graph_document(marked_document)) as Record<string, any>;
+    delete parsed.nodes.target.muted;
+    delete parsed.nodes.target.pinned;
+    delete parsed.nodes.target.locked;
+
+    const result = deserialize_graph_document(JSON.stringify(parsed));
+    if (E.isRight(result)) {
+      expect(result.right.nodes['target']?.muted).toBeUndefined();
+      expect(result.right.nodes['target']?.pinned).toBeUndefined();
+      expect(result.right.nodes['target']?.locked).toBeUndefined();
+    } else {
+      throw new Error(`unexpected deserialization failure: ${result.left}`);
+    }
+  });
+
   it('emits parseable plain JSON with pretty and compact output', () => {
     const document = make_document();
     const compact = serialize_graph_document(document);
@@ -178,7 +230,9 @@ describe('graph serialization', () => {
       nodes: { ...parsed.nodes, host: { ...host, inputs: [] } },
     };
 
-    const issues = get_validation_issues(deserialize_graph_document(JSON.stringify(invalid_document)));
+    const issues = get_validation_issues(
+      deserialize_graph_document(JSON.stringify(invalid_document)),
+    );
     expect(issues.map(issue => issue.path)).toContain('nodes.host.inputs');
   });
 });

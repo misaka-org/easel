@@ -13,6 +13,10 @@ import { vec2_sub, vec2_scale } from '@/core/math';
 import { frame_effect } from '@/runtime/frame_effect';
 
 import type { GraphNode, Widget } from '@/core/types';
+import {
+  calc_boundary_rail_port_center,
+  is_document_boundary_rail,
+} from '@/runtime/document_boundary_rail';
 
 // Layout constants matching CSS defaults for DefaultNode / SubgraphNode
 const LAYOUT = {
@@ -74,6 +78,10 @@ function calc_rel_pos(
       x: type === 'input' ? 0 : Math.max(0, node.size.x),
       y: mid_y,
     };
+  }
+
+  if (is_document_boundary_rail(node)) {
+    return calc_boundary_rail_port_center(node, port_id);
   }
 
   if (node.type === 'subgraph_input') {
@@ -228,6 +236,7 @@ export const render_wires = (easel: Easel): void => {
       }
 
       const source_node = store.nodes.get(source_id);
+      const target_node = store.nodes.get(target_id);
       const source_port = source_node?.outputs.find((p: Port) => p.id === source_handle);
       const vtype = source_port?.value_type;
 
@@ -235,6 +244,16 @@ export const render_wires = (easel: Easel): void => {
         el.dataset.valueType = vtype;
       } else {
         delete el.dataset.valueType;
+      }
+
+      if (
+        source_node &&
+        target_node &&
+        (source_node.locked === true || target_node.locked === true)
+      ) {
+        el.dataset.locked = 'true';
+      } else {
+        delete el.dataset.locked;
       }
 
       const p1 = get_port_position(source_id, source_handle, 'output', state);

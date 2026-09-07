@@ -7,11 +7,11 @@
 ```ts
 const executor = new GraphExecutor(easel);
 
-executor.compile();          // 编译：检查依赖，拓扑排序
-await executor.run();        // 全量执行
-await executor.step();       // 单步执行一个节点
-executor.stop();             // 停止
-executor.clear_cache();      // 清除输入缓存
+executor.compile(); // 编译：检查依赖，拓扑排序
+await executor.run(); // 全量执行
+await executor.step(); // 单步执行一个节点
+executor.stop(); // 停止
+executor.clear_cache(); // 清除输入缓存
 ```
 
 ## 执行流程
@@ -22,6 +22,16 @@ run()     -> 从 ready_queue 取零入度节点，并行执行
          -> 完成后递减下游入度，新零入度节点入队
          -> 全部完成 status -> "completed"
 ```
+
+## Muted / Bypass
+
+`muted === true` 即 bypass，没有另一套 bypass 状态。执行引擎遇到 muted 节点会：
+
+- `compile()` 不检查该节点的 required input/widget，避免因绕过导致误报错误
+- 不调用节点的 `execute()`，因此不产生正常节点副作用
+- 用 `muted_node_outputs()` 按输入端口 id 或同序端口直通输入到输出；没有可直通输入时输出为空
+- 不写入普通执行缓存，mute 状态切换后不会复用旧的正常执行结果
+- GraphExecutor 的 `run() / step() / realtime` 与 legacy `execute_subgraph()` 共用同一套规则
 
 ## 缓存机制
 
@@ -47,9 +57,9 @@ SubgraphNode 对执行引擎透明：
 ## 实时模式
 
 ```ts
-executor.start_realtime();   // 监听输入变化自动重算下游
+executor.start_realtime(); // 监听输入变化自动重算下游
 executor.stop_realtime();
-executor.notify_input_change(nodeId);  // 手动触发
+executor.notify_input_change(nodeId); // 手动触发
 ```
 
 - 输入变化后 80ms 防抖
@@ -60,7 +70,7 @@ executor.notify_input_change(nodeId);  // 手动触发
 
 ```ts
 type ExecutionState = {
-  status: "idle" | "running" | "paused" | "error" | "completed" | "stopped";
+  status: 'idle' | 'running' | 'paused' | 'error' | 'completed' | 'stopped';
   node_states: Record<string, ExecutionNodeState>;
   ready_queue: string[];
   running_nodes: string[];
