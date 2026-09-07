@@ -522,4 +522,71 @@ describe('document bridge', () => {
       stop();
     }
   });
+
+  it('patches node flags without replacing legacy nodes or legacy wire bindings', () => {
+    const controller = unwrap_controller(create_document_controller(make_packed_document()));
+    const fake = make_fake_easel();
+    const stop = mount_document_bridge(fake.easel, controller);
+    try {
+      unwrap_view(controller.enter_subgraph('host'));
+      const legacy_a = fake.easel.store.nodes.get('a');
+      if (legacy_a == null) {
+        throw new Error('expected legacy node after child mount');
+      }
+      fake.easel.store.nodes.put('a', { ...legacy_a, position: { x: 321, y: 654 } });
+      fake.bindings.push({
+        id: 'legacy_extra',
+        source_id: 'b',
+        source_handle: 'b_out',
+        target_id: 'legacy_only_target',
+        target_handle: 'in',
+      });
+
+      unwrap_view(controller.update_node('a', node => ({ ...node, muted: true })));
+      expect(fake.easel.store.nodes.get('a')?.position).toEqual({ x: 321, y: 654 });
+      expect(fake.bindings.map(binding => binding.id)).toContain('legacy_extra');
+      expect(fake.easel.store.nodes.get('a')?.muted).toBe(true);
+      expect(controller.document.nodes['a']?.muted).toBe(true);
+
+      const extra_index = fake.bindings.findIndex(binding => binding.id === 'legacy_extra');
+      if (extra_index !== -1) {
+        fake.bindings.splice(extra_index, 1);
+      }
+      unwrap_view(controller.update_node('a', node => ({ ...node, pinned: true })));
+      expect(fake.easel.store.nodes.get('a')?.position).toEqual({ x: 321, y: 654 });
+      expect(fake.bindings.map(binding => binding.id)).not.toContain('legacy_extra');
+      expect(fake.easel.store.nodes.get('a')?.muted).toBe(true);
+      expect(fake.easel.store.nodes.get('a')?.pinned).toBe(true);
+      expect(controller.document.nodes['a']?.pinned).toBe(true);
+    } finally {
+      stop();
+    }
+  });
+
+  it('still full-syncs when the scope changes after a flag-only patch', () => {
+    const controller = unwrap_controller(create_document_controller(make_packed_document()));
+    const fake = make_fake_easel();
+    const stop = mount_document_bridge(fake.easel, controller);
+    try {
+      unwrap_view(controller.enter_subgraph('host'));
+      unwrap_view(controller.update_node('a', node => ({ ...node, muted: true })));
+      expect(fake.easel.store.nodes.get('a')?.muted).toBe(true);
+
+      fake.bindings.push({
+        id: 'legacy_child_extra',
+        source_id: 'a',
+        source_handle: 'a_out',
+        target_id: 'legacy_child_target',
+        target_handle: 'in',
+      });
+      unwrap_view(controller.exit_subgraph());
+
+      expect(fake.easel.store.nodes.get('a')).toBeUndefined();
+      expect(fake.easel.store.nodes.get('source')).toBeDefined();
+      expect(fake.bindings.map(binding => binding.id)).not.toContain('legacy_child_extra');
+      expect(controller.document.nodes['a']?.muted).toBe(true);
+    } finally {
+      stop();
+    }
+  });
 });

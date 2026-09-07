@@ -56,6 +56,131 @@ export type DocumentBridgeView = {
   readonly view_only_binding_ids: readonly BindingId[];
 };
 
+export type DocumentBridgeNodeFlagPatch = {
+  readonly muted?: boolean;
+  readonly pinned?: boolean;
+  readonly locked?: boolean;
+};
+
+const same_string_array = (left: readonly string[], right: readonly string[]): boolean => {
+  if (left.length !== right.length) {
+    return false;
+  }
+  return left.every((value, index) => value === right[index]);
+};
+
+const same_key_set = (left: object, right: object): boolean => {
+  return same_string_array(Object.keys(left).sort(), Object.keys(right).sort());
+};
+
+const same_json_value = (left: unknown, right: unknown): boolean => {
+  if (Object.is(left, right)) {
+    return true;
+  }
+  if (left === null || right === null || typeof left !== 'object' || typeof right !== 'object') {
+    return false;
+  }
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return (
+      Array.isArray(left) &&
+      Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((value, index) => same_json_value(value, right[index]))
+    );
+  }
+  if (!same_key_set(left, right)) {
+    return false;
+  }
+  return Object.keys(left).every(key => {
+    return same_json_value(
+      (left as Record<string, unknown>)[key],
+      (right as Record<string, unknown>)[key],
+    );
+  });
+};
+
+const omit_node_flags = (node: GraphNode): Omit<GraphNode, 'muted' | 'pinned' | 'locked'> => {
+  const { muted: _muted, pinned: _pinned, locked: _locked, ...rest } = node;
+  return rest;
+};
+
+const same_view_except_node_flags = (
+  previous: DocumentBridgeView,
+  next: DocumentBridgeView,
+): boolean => {
+  if (!same_string_array(previous.path, next.path)) {
+    return false;
+  }
+  if (!same_json_value(previous.graph, next.graph)) {
+    return false;
+  }
+  if (!same_key_set(previous.nodes, next.nodes)) {
+    return false;
+  }
+  if (!same_key_set(previous.bindings, next.bindings)) {
+    return false;
+  }
+  for (const [binding_id, binding] of Object.entries(previous.bindings)) {
+    const next_binding = next.bindings[binding_id];
+    if (next_binding == null || !same_json_value(binding, next_binding)) {
+      return false;
+    }
+  }
+  if (!same_string_array(previous.view_only_node_ids, next.view_only_node_ids)) {
+    return false;
+  }
+  if (!same_string_array(previous.view_only_binding_ids, next.view_only_binding_ids)) {
+    return false;
+  }
+  return true;
+};
+
+/**
+ * Return next muted/pinned/locked values when the two views differ only by node flags.
+ * Return null when scope, node structure, bindings, or view-only ids also changed.
+ */
+export const get_document_bridge_flag_patch = (
+  previous: DocumentBridgeView,
+  next: DocumentBridgeView,
+): Readonly<Record<NodeId, DocumentBridgeNodeFlagPatch>> | null => {
+  if (!same_view_except_node_flags(previous, next)) {
+    return null;
+  }
+  const patch: Record<NodeId, DocumentBridgeNodeFlagPatch> = {};
+  for (const [node_id, next_node] of Object.entries(next.nodes)) {
+    const previous_node = previous.nodes[node_id];
+    if (
+      previous_node == null ||
+      !same_json_value(omit_node_flags(previous_node), omit_node_flags(next_node))
+    ) {
+      return null;
+    }
+
+    const flags: {
+      muted?: boolean;
+      pinned?: boolean;
+      locked?: boolean;
+    } = {};
+    let changed = false;
+    if (!Object.is(previous_node.muted, next_node.muted)) {
+      flags.muted = next_node.muted;
+      changed = true;
+    }
+    if (!Object.is(previous_node.pinned, next_node.pinned)) {
+      flags.pinned = next_node.pinned;
+      changed = true;
+    }
+    if (!Object.is(previous_node.locked, next_node.locked)) {
+      flags.locked = next_node.locked;
+      changed = true;
+    }
+    if (changed) {
+      patch[node_id] = flags;
+    }
+  }
+  return patch;
+};
+
 /** 去掉 GraphNodeRecord 的 graph-only 字段，得到旧 Easel 可消费的 GraphNode。 */
 const project_node = (record: GraphNodeRecord): GraphNode => {
   return {
@@ -457,22 +582,37 @@ export const mount_document_bridge = (
   controller: DocumentController,
 ): (() => void) => {
   const rail_layout_by_scope = new Map<string, DocumentBridgeRailLayout>();
+  let last_synced_view: DocumentBridgeView | null = null;
   const runner = effect(() => {
     const _session = controller.session;
     run_without_tracking(() => {
+      const next_view = project_document_bridge_view(controller.view);
+      if (last_synced_view != null) {
+        const flag_patch = get_document_bridge_flag_patch(last_synced_view, next_view);
+        if (flag_patch != null) {
+          for (const [node_id, flags] of Object.entries(flag_patch)) {
+            const current_node = easel.store.nodes.get(node_id);
+            if (current_node == null) {
+              continue;
+            }
+            easel.store.nodes.put(node_id, { ...current_node, ...flags });
+          }
+          last_synced_view = next_view;
+          return;
+        }
+      }
       for (const [graph_id, layout] of collect_all_legacy_rail_layouts(easel)) {
         rail_layout_by_scope.set(graph_id, layout);
       }
-      const projected_view = project_document_bridge_view(controller.view);
-      const scope_key = projected_view.graph.id;
+      const scope_key = next_view.graph.id;
       sync_document_controller_to_legacy(easel, controller, {
         rail_layout: rail_layout_by_scope.get(scope_key),
       });
-      const synced_view = project_document_bridge_view(controller.view);
-      const synced_layout = collect_legacy_rail_positions(easel, synced_view);
+      const synced_layout = collect_legacy_rail_positions(easel, next_view);
       if (synced_layout.input != null || synced_layout.output != null) {
         rail_layout_by_scope.set(scope_key, synced_layout);
       }
+      last_synced_view = next_view;
     });
     void _session;
   });
